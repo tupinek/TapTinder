@@ -405,7 +405,7 @@ while ( 1 ) {
                     $cmd_log_fp,
                     $cmd_mt,
                     undef,
-                    $ck->{base_dn}
+                    '../',   # we are inside temp dir 
                 );
                 print "Command '$cmd_name' return $cmd_rc.\n" if $ver > 4;
             }
