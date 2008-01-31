@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Carp qw(carp croak);
+use Carp qw(carp croak verbose);
 use FindBin qw($RealBin); 
 
 use File::Spec::Functions;
@@ -205,7 +205,7 @@ while ( 1 ) {
 
         # 'svn co' if needed
         unless ( -d $ck->{src_dn} ) {
-            print "Source dir '" . $ck->{src_dir}. "' not found.\n" if $ver > 2;
+            print "Source dir '" . $ck->{src_dn}. "' not found.\n" if $ver > 2;
             print "Trying 'svn co'\n" if $ver > 2;
             my $rep_full_path = $cc->{repository} . $cc->{repository_path};
             my $cmd = 'svn co "' . $rep_full_path . '" "' . $ck->{src_dn} . '"';
