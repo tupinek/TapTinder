@@ -403,7 +403,7 @@ while ( 1 ) {
                 my ( $cmd_rc, $out ) = sys_for_watchdog( 
                     $cmd, 
                     $cmd_log_fp,
-                    $cmd_mt
+                    $cmd_mt,
                     undef,
                     $ck->{base_dn}
                 );
