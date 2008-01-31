@@ -1,0 +1,10 @@
+--- 
+parrot:
+   repository: https://svn.perl.org/parrot/
+   repository_path: trunk/
+   client_id: SomeNumber
+   client_passwd: YourClientPasswd
+   email: email@somedomain.com
+   irc_nick: YourProjectIRCNick
+   taptinderserv: http://test.perl6.cz/ttserv/upload.pl
+   compressupload: 0

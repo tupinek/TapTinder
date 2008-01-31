@@ -8,6 +8,7 @@ our $VERSION = 0.01;
 our @EXPORT_OK = qw(sys sys_for_watchdog);
 
 use Storable;
+use File::Spec::Functions;
 
 sub sys {
     my ( $cmd, $temp_out_fn ) = @_;
@@ -46,13 +47,13 @@ sub sys {
 
 
 sub sys_for_watchdog {
-    my ( $cmd, $log_fn, $timeout, $sleep ) = @_; 
+    my ( $cmd, $log_fn, $timeout, $sleep, $dir ) = @_; 
 
     die "cmd is mandatory" unless defined $cmd;
     $log_fn = $cmd . '.log' unless defined $log_fn;
     $timeout = 5*60 unless defined $timeout;
 
-    my $ipc_fn = '../watchdog-setting.bin';
+    my $ipc_fn = catfile( $dir, 'watchdog-setting.bin' );
 
     if ( -e $ipc_fn ) {
         print "found '$ipc_fn', probably already running\n";

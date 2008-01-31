@@ -11,14 +11,16 @@ use File::Path;
 use File::Copy;
 
 use lib 'libcpan';
+use lib "$FindBin::Bin/libcpan";
 use Data::Dump qw(dump);
 use File::Copy::Recursive qw(dircopy);
+use YAML;
 
 use lib 'lib';
+use lib "$FindBin::Bin/lib";
 use Watchdog qw(sys sys_for_watchdog);
 use SVNShell qw(svnversion svnup);
-
-use lib "$FindBin::Bin/lib";
+use TAPTinder::TestedRevs;
 
 use Term::ReadKey;
 ReadMode('cbreak');
@@ -30,6 +32,7 @@ ReadMode('cbreak');
 #  >3 .. verbose 3
 #  >4 
 #  >5 .. debug output
+#  >10 .. set params to devel value
 my $ver = $ARGV[0] ? $ARGV[0] : 2;
 
 print "Verbose level: $ver\n" if $ver > 2;
@@ -37,11 +40,25 @@ print "Working path: '" . $RealBin . "'\n" if $ver > 3;
 
 print "Loading config file.\n" if $ver > 2;
 
+my $fn_client_config = 'client-conf.yaml';
+my $fp_client_conf = catfile( $RealBin, $fn_client_config );
+print "Client config file path: '" . $fp_client_conf . "'\n" if $ver > 5;
+unless ( -e $fp_client_conf ) {
+    croak 
+        "Client config file '$fn_client_config' not found.\n"
+        . "Use '$fn_client_config'.example to create one.\n"
+    ;
+}
+my ( $client_conf ) = YAML::LoadFile( $fp_client_conf );
+dump( $client_conf ) if $ver > 6;
+
+
 my $fp_conf = catfile( $RealBin, 'conf.pl' );
 print "Config file path: '" . $fp_conf . "'\n" if $ver > 5;
 my $conf = require $fp_conf;
 
 dump( $conf ) if $ver > 6;
+print "\n" if $ver > 6;
 
 print "Validating config file.\n" if $ver > 3;
 foreach my $c_num ( 0..$#$conf ) {
@@ -49,9 +66,14 @@ foreach my $c_num ( 0..$#$conf ) {
     print "num: $c_num\n" if $ver > 5;
 
     # global keys
-    foreach my $mck ( qw(name repository commands) ) {
+    foreach my $mck ( qw(name commands) ) {
         croak "Option '$mck' not found for '$ck'!\n" unless defined $ck->{$mck};
         print "$mck: '" . $ck->{$mck} . "'\n" if !ref($ck->{$mck}) && $ver > 5;
+    }
+
+    my $name = $ck->{name};
+    unless ( exists $client_conf->{$name} ) {
+        croak "Client config not found for project '$name'. Try to update '$fn_client_config'.";
     }
 
     # commands keys
@@ -63,13 +85,16 @@ foreach my $c_num ( 0..$#$conf ) {
             print "  $mack: '" . $ack->{$mack} . "'\n" if !ref($ack->{$mack}) && $ver > 5;
         }
     }
-    $ck->{src_dn} = $ck->{name} . '-src' unless exists $ck->{src_dn};
-    $ck->{temp_dn} = $ck->{name} . '-temp' unless exists $ck->{temp_dn};
-    $ck->{results_dn} = $ck->{name} . '-results' unless exists $ck->{results_dn};
+    $ck->{base_dn} = '../client-data/' unless exists $ck->{base_dn};
+    $ck->{src_dn} = $ck->{base_dn} . $ck->{name} . '-src' unless exists $ck->{src_dn};
+    $ck->{temp_dn} = $ck->{base_dn} . $ck->{name} . '-temp' unless exists $ck->{temp_dn};
+    $ck->{results_dn} = $ck->{base_dn} . $ck->{name} . '-results' unless exists $ck->{results_dn};
     $ck->{src_add_dn} = $ck->{name} . '-src-add' unless exists $ck->{src_add_dn};
     
+    mkdir $ck->{results_dn} unless -d $ck->{results_dn};
+    
     # todo
-    $ck->{temp_dn_back} = '..' unless exists $ck->{temp_dn_back};
+    $ck->{temp_dn_back} = '../../client' unless exists $ck->{temp_dn_back};
 
     # todo
     $ck->{rm_temp_dir} = 1 unless exists $ck->{rm_temp_dir};
@@ -112,6 +137,8 @@ if ( -e $fp_state ) {
     print "Loading default state.\n" if $ver > 3;
     $state = default_state();
 }
+dump( $state ) if $ver > 6;
+print "\n" if $ver > 6;
 
 
 my $conf_last = $#$conf;
@@ -121,11 +148,15 @@ my $run_num = 0;
 my $num_of_not_skipped_confs = undef;
 
 my $attempt = 0;
+my $all_attempt = {};
 my $slt_num = 0;
+
+my $slt_koef = 60;
+$slt_koef = 1 if $ver >= 11;
 my $slt = {
-    'first' =>  2.5*60,
-    'step'  =>  1.0*60,
-    'max'   => 20.0*60,
+    'first' =>  2.5*$slt_koef,
+    'step'  =>  1.0*$slt_koef,
+    'max'   => 20.0*$slt_koef,
 };
 
 #$slt = { 'first' => 3, 'step' => 1, 'max' => 7, }; # debug attempts
@@ -149,11 +180,14 @@ while ( 1 ) {
             $slt_num++;
         }
         $attempt++;
+        $all_attempt->{$ck_num}++;
 
         # reset state to default
         $state = default_state() if $run_num != 0;
 
         my $ck = $conf->[$ck_num];
+        my $cc = $client_conf->{ $ck->{name} };
+
         # todo
         #   $state->{ck_hash} = hash($ck)
         #   $conf_a->{ignore_ck_hash}
@@ -173,10 +207,14 @@ while ( 1 ) {
         unless ( -d $ck->{src_dn} ) {
             print "Source dir '" . $ck->{src_dir}. "' not found.\n" if $ver > 2;
             print "Trying 'svn co'\n" if $ver > 2;
-            my $cmd = 'svn co "' . $ck->{repository} . '" "' . $ck->{src_dn} . '"';
+            my $rep_full_path = $cc->{repository} . $cc->{repository_path};
+            my $cmd = 'svn co "' . $rep_full_path . '" "' . $ck->{src_dn} . '"';
             my ( $cmd_rc, $out ) = sys_for_watchdog( 
                 $cmd, 
-                $ck->{results_dn} . '/svn_co.txt' 
+                $ck->{results_dn} . '/svn_co.txt',
+                10*60,
+                undef,
+                $ck->{base_dn}
             );
             if ( $cmd_rc ) {
                 print "$ck->{name}: svn co failed, return code: $cmd_rc\n" if $ver > 0;
@@ -202,20 +240,27 @@ while ( 1 ) {
         }
 
         # svn up
-        while ( not $state->{svnup_done} ) {    
-            my $to_rev = 'HEAD';
+        my $to_rev = get_revision_to_test( $ck->{name}, $state->{src_rev} );
+        print "to_rev from get_revision_to_test $to_rev, attempt $attempt, run_attempt " . $all_attempt->{$ck_num} . " \n" if $ver > 8;
+        my $new_rev = $to_rev;
+        $to_rev = 'HEAD' if (not defined $to_rev) || ($all_attempt->{$ck_num} <= 2);
+        if ( (not $state->{svnup_done}) && ($to_rev eq 'HEAD' || $to_rev != $state->{src_rev}) ) {
+            $state->{svnup_done} = 0;
+            print "Trying upgrade to '$to_rev'.\n" if $ver > 4;
             # $to_rev = $state->{src_rev} + 1;
-
-            my ( $up_ok, $o_log, $new_rev ) = svnup( 
+            my $svn_tmp_file = undef;
+            $svn_tmp_file = 'README' if $to_rev eq 'HEAD';
+            my ( $up_ok, $o_log, $tmp_new_rev ) = svnup( 
                 $ck->{src_dn}, 
                 $to_rev, 
-                'README'
+                $svn_tmp_file
             );
             if ( $up_ok ) {
-                if ( $new_rev > $state->{src_rev} ) {            
+                if ( $tmp_new_rev != $state->{src_rev} ) {            
                     $state->{svnup_done} = 1;
+                    $new_rev = $tmp_new_rev;
                 } else {
-                    print "Newer revision not found in repository!\n" if $ver > 3;
+                    print "Revision '$to_rev' not found in repository!\n" if $ver > 3;
                 }
             } else {
                 print "$ck->{name}: Org dir svn up to $to_rev failed:\n" if $ver > 3;
@@ -230,6 +275,7 @@ while ( 1 ) {
 
         # svn up done ok
         $attempt = 0;
+        $all_attempt->{$ck_num} = 0;
         
         #next NEXT_CONF; # debug attempts
 
@@ -358,6 +404,8 @@ while ( 1 ) {
                     $cmd, 
                     $cmd_log_fp,
                     $cmd_mt
+                    undef,
+                    $ck->{base_dn}
                 );
                 print "Command '$cmd_name' return $cmd_rc.\n" if $ver > 4;
             }
@@ -379,6 +427,7 @@ while ( 1 ) {
         }
 
         chdir( $ck->{temp_dn_back} ) or croak $!;
+        revision_test_done( $ck->{name}, $state->{temp_rev} );
     }
 
     my $char = undef;

@@ -8,35 +8,34 @@ use warnings;
 
 use Getopt::Long;
 use LWP::UserAgent;
+use YAML;
 
-use constant VERSION => 0.4;
+use constant VERSION => 0.01;
 sub debug($);
 
 our $compress = sub { return };
 
-GetOptions(
-    "smokeserv=s" => \( my $smokeserv          = "http://smoke.parrotcode.org/smoke/" ),
-    "help"        => \&usage,
-    "compress|c!" => \( my $compression_wanted = 1 ),
-    "version" => sub { print "smokeserv-client.pl v" . VERSION . "\n"; exit },
-)          or usage();
-@ARGV == 1 or usage();
+my $project_name = $ARGV[0] || die "No project name\n";
+my $file = $ARGV[1] || die "No file to upload.\n";
+my $conf_fname = $ARGV[2] || die "No config file path.\n";
 
-debug "smokeserv-client v" . VERSION . " started.\n";
+my ( $all_conf ) = YAML::LoadFile( $conf_fname );
+my $conf = $all_conf->{$project_name};
 
-setup_compression() if $compression_wanted;
+debug "taptinder client upload v" . VERSION . " started.\n";
+
+setup_compression() if $conf->{compressupload};
 
 my %request = ( upload => 1, version => VERSION, smokes => [] );
 
 {
-    my $file = shift @ARGV;
     debug "Reading smoke \"$file\" to upload... ";
 
     open my $fh, "<", $file or die "Couldn't open \"$file\" for reading: $!\n";
     local $/;
     my $smoke = <$fh>;
 
-    unless ( $smoke =~ /^<!DOCTYPE html/ ) {
+    unless ( $smoke =~ /^-{3}/ ) {
         debug "doesn't look like a smoke; aborting.\n";
         exit 1;
     }
@@ -46,18 +45,20 @@ my %request = ( upload => 1, version => VERSION, smokes => [] );
 }
 
 {
-    debug "Sending data to smokeserver \"$smokeserv\"... ";
+    my $taptinderserv = $conf->{taptinderserv};
+    debug "Sending data to taptinderserv \"$taptinderserv\"... ";
     my $ua = LWP::UserAgent->new;
-    $ua->agent( "pugs-smokeserv-client/" . VERSION );
+    $ua->agent( "taptinder-client-upload/" . VERSION );
     $ua->env_proxy;
 
-    my $resp = $ua->post( $smokeserv => \%request );
+    my $resp = $ua->post( $taptinderserv => \%request );
     if ( $resp->is_success ) {
         if ( $resp->content =~ /^ok/ ) {
             debug "success!\n";
             exit 0;
         }
         else {
+            #debug "error:\n" . $resp->as_string . "\n";
             debug "error: " . $resp->content . "\n";
             exit 1;
         }
@@ -67,21 +68,6 @@ my %request = ( upload => 1, version => VERSION, smokes => [] );
         exit 1;
     }
 }
-
-sub usage {
-    print STDERR <<USAGE; exit }
-Usage: $0 [options] -- smoke1.html smoke2.html ...
-
-Available options:
-  --smokeserv=http://path/to/smokeserv.pl
-    Sets the path to the smoke server.
-  --version
-    Outputs the version of this program and exits.
-  --help
-    Show this help.
-
-Options may be abbreviated to uniqueness.
-USAGE
 
 # Nice debugging output.
 {

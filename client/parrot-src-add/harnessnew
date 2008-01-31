@@ -111,6 +111,9 @@ my $runcore_tests_only = grep { $_ eq '--runcore-tests' } @ARGV;
 my $html = grep { $_ eq '--html' } @ARGV;
 @ARGV = grep { $_ ne '--html' } @ARGV;
 
+my $yaml = grep { $_ eq '--yaml' } @ARGV;
+@ARGV = grep { $_ ne '--yaml' } @ARGV;
+
 my $run_exec = grep { $_ eq '--run-exec' } @ARGV;
 @ARGV = grep { $_ ne '--run-exec' } @ARGV;
 
@@ -138,6 +141,7 @@ perl t/harness [options] [testfiles]
     --core-tests
     --runcore-tests
     --html
+    --yaml
 EOF
     exit;
 }
@@ -230,9 +234,7 @@ unless ($runcore_tests_only) {
 # line or from @default tests
 my @tests = map { glob( $_ ) } (@ARGV ? @ARGV : @default_tests);
 
-if (!$html) {
-    Test::Harness::runtests(@tests);
-} else {
+if ($html) {
     my @smoke_config_vars = qw(
         osname archname cc build_dir cpuarch revision VERSION optimize DEVEL
     );
@@ -295,6 +297,75 @@ if (!$html) {
 
       print "smoke.html has been generated.\n";
     }
+}
+elsif ($yaml) {
+	my $version = '0.01';
+	
+    eval {
+        require YAML;
+    };
+    die "You must have YAML installed.\n\n$@"
+        if $@;
+
+	my $conf_fpath = '../../client/client-conf.yaml';
+	my $project_name = 'parrot';
+	my ( $all_conf ) = YAML::LoadFile( $conf_fpath ) 
+		|| die "Can't find your config file '$conf_fpath'\n";
+	my $conf = $all_conf->{$project_name};
+	delete $conf->{client_passwd};
+
+    my @sel_pconfig_keys = qw(
+        osname archname cc build_dir cpuarch revision VERSION optimize DEVEL
+    );
+    
+	my $sel_pconfig;
+    foreach ( @sel_pconfig_keys ) {
+        $sel_pconfig->{$_} = $PConfig{$_};
+    }
+
+    my $start = time();
+    if ( 1 ) {
+        my $strap = Test::Harness::Straps->new;
+        my @all_results;
+        foreach my $test_file (@tests) {
+            my %results = $strap->analyze_file($test_file);
+            $results{'test_file'} = $test_file;
+            push @all_results, \%results;
+        }
+        my $end = time();
+        my $duration = $end - $start;
+        my %data = (
+            'version' => $version,
+            'conf' => $conf,
+            'results'   => \@all_results,
+            'duration'  => $duration,
+            'pconfig'	=> $sel_pconfig,
+	        'harness_args' => (($args) ? $args : "N/A"),
+        );
+        
+        print YAML::DumpFile("taptinder-results.yaml", \%data); 
+    }
+    else {
+        eval {
+            require Test::TAP::Model;
+        };
+        die "You must have Test::TAP::Model installed.\n\n$@"
+            if $@;
+
+        my $t = Test::TAP::Model->new();
+        $t->run_tests(@tests);
+        my $end = time();
+        my $duration = $end - $start;
+
+        my $structure = $t->structure;
+        open YAML, ">", "smoke.yaml";
+        print YAML YAML::Dump($structure); 
+        close YAML;
+    }
+    exit 0;
+}
+else {
+    Test::Harness::runtests(@tests);
 }
 
 =head1 HISTORY
