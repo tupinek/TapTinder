@@ -31,7 +31,7 @@ my $smoker_copy_sub = sub {
         print "src_add dir '$cn->{src_add_dn}' not found!\n" if $ver > 1;
         return 0;
     }
-    my $fn = 'smoker.yml';
+    my $fn = '.smoker.yml';
     unless ( copy( $cn->{src_add_dn} . '/' . $fn, $cn->{temp_dn} ) ) {
         unlink( $cn->{temp_dn} . '/' . $fn ) if -e $cn->{temp_dn} . '/' . $fn;
         print "Cant't copy '$fn' $!\n" if $ver > 1;
@@ -121,43 +121,5 @@ push @$conf, {
         },
     ]
 };
-
-$conf_cmd = 'perl Makefile.PL';
-$make_cmd = 'nmake';
-push @$conf, {
-    'skip' => 0,
-    'name' => 'pugs',
-    'repository' => 'http://svn.pugscode.org/pugs/',
-    'after_temp_copied' => $smoker_copy_sub,
-
-    'commands' => [
-        { 
-            'name' => 'makefile',
-            'cmd' => $conf_cmd,
-            'mt' => 10*60,
-        },
-        { 
-            'name' => 'make',
-            'cmd' => $make_cmd,
-            'mt'  => 1*60*60,
-        },
-        { 
-            'before' => $config_yml_rewrite_sub,
-            'name' => 'make smoke',
-            'cmd' => $make_cmd . ' smoke',
-            'mt'  => 30*60,
-            'after'  => sub {
-                my ( $cn, $state, $ver ) = @_;
-                my $rc = copy( 
-                    'smoke.html',  
-                    $state->{results_path_prefix} . 'smoke.html' 
-                );
-                print "make smoke - after return code: $rc\n" if $ver > 1;
-                return $rc;
-            },
-        },
-    ]
-};
-
 
 return $conf;
