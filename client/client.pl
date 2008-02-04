@@ -163,7 +163,14 @@ my $slt = {
 
 print "\n" if $ver > 0;
 while ( 1 ) {
-    print "Run number: " . ( $run_num + 1 ) . ":\n" if $ver > 2;
+    
+    my @lt = localtime(time);
+    my $start_time = 
+        $lt[2].':'.$lt[1].':'.$lt[0].' '
+        . $lt[3].'.'.($lt[4] + 1).'.'.($lt[5] + 1900)
+    ;
+    print "Run number: " . ( $run_num + 1 ) . "\n" if $ver > 2;
+    print "Start time: $start_time\n" if $ver > 2;
     
     NEXT_CONF: foreach my $ck_num ( $conf_first..$conf_last ) {
         
