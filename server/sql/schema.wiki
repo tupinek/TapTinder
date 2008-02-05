@@ -1,0 +1,330 @@
+=== DB Create ===
+<!-- PARSE PART DBCREATE BEGIN -->
+<source lang=sql>
+SET FOREIGN_KEY_CHECKS=0;
+</source>
+
+==== user ====
+User info.
+* user_id
+* login
+* passwd
+* ...
+<source lang=sql>
+CREATE TABLE user (
+    user_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    login       VARCHAR(20) NOT NULL,
+    passwd      VARCHAR(20) NOT NULL,
+    active      BOOLEAN NOT NULL DEFAULT 1,
+    created     DATETIME NOT NULL,
+    last_login  DATETIME NOT NULL,
+    INDEX i_user_id (user_id),
+    INDEX login (login)
+) TYPE=InnoDB;
+</source>
+
+==== client ====
+Client (computer) info.
+* client_id
+* user_id
+* passwd
+* active
+* IP
+* archname
+* cpuarch
+* osname
+* prev_client_id
+<source lang=sql>
+CREATE TABLE client (
+    client_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    passwd      VARCHAR(20) NOT NULL,
+    active      BOOLEAN NOT NULL DEFAULT 1,
+    user_id     INT UNSIGNED NOT NULL,
+    created     DATETIME NOT NULL,
+    last_login  DATETIME NOT NULL,
+    INDEX i_client_id (user_id),
+    CONSTRAINT `fk_client_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`)
+) TYPE=InnoDB;
+</source>
+
+==== conf ====
+Test run configurations. With md5 hash and alias_conf_id (reference to onother conf_id with the same semantics, but onother syntax).
+* conf_id
+* hash
+* cc
+* harness_args
+* devel
+* optimize
+* alias_conf_id
+<source lang=sql>
+CREATE TABLE conf (
+    conf_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    hash            VARCHAR(50) NOT NULL,
+    cc              VARCHAR(255) DEFAULT NULL,
+    harness_args    VARCHAR(255) DEFAULT NULL,
+    devel           VARCHAR(255) DEFAULT NULL,
+    `optimize`      VARCHAR(255) DEFAULT NULL,
+    alias_conf_id   INT UNSIGNED DEFAULT NULL,
+    INDEX i_conf_id (conf_id),
+    INDEX i_hash (hash),
+    CONSTRAINT `fk_conf_alias_conf_id` FOREIGN KEY (`conf_id`) REFERENCES `conf` (`conf_id`)
+) TYPE=InnoDB;
+</source>
+
+==== project ====
+Project.
+* project_id
+* name
+* info
+<source lang=sql>
+CREATE TABLE project (
+    project_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    name            VARCHAR(255) NOT NULL,
+    url             VARCHAR(255) NOT NULL,
+    info            TEXT DEFAULT NULL,
+    INDEX i_project_id (project_id)
+) TYPE=InnoDB;
+</source>
+
+==== rep ====
+Project repository.
+* rep_id
+* project_id
+* active
+* name
+* path
+* info
+<source lang=sql>
+CREATE TABLE rep (
+    rep_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    project_id  INT UNSIGNED NOT NULL,
+    active      BOOLEAN NOT NULL DEFAULT 1,
+    name        VARCHAR(255) NOT NULL,
+    path        VARCHAR(255) NOT NULL,
+    info        TEXT DEFAULT NULL,
+    INDEX i_rep_id (rep_id),
+    CONSTRAINT `fk_rep_project_id` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`)
+) TYPE=InnoDB;
+</source>
+
+==== user_rep ====
+Relation between user and repository.
+* user_rep_id
+* rep_id
+* rep_login
+* user_id
+<source lang=sql>
+CREATE TABLE user_rep (
+    user_rep_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    rep_id          INT UNSIGNED NOT NULL,
+    rep_login       VARCHAR(255) NOT NULL,
+    user_id         INT UNSIGNED DEFAULT NULL,
+    INDEX i_user_id (user_id),
+    INDEX i_rep_id (rep_id),
+    CONSTRAINT `fk_user_rep_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`),
+    CONSTRAINT `fk_user_rep_rep_id` FOREIGN KEY (`rep_id`) REFERENCES `rep` (`rep_id`)
+) TYPE=InnoDB;
+</source>
+
+==== rep_path ====
+Repository path (trunk/, branch/oo/, ...).
+* rep_path_id
+* rep_id
+* path
+<source lang=sql>
+CREATE TABLE rep_path (
+    rep_path_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    rep_id          INT UNSIGNED NOT NULL,
+    path            VARCHAR(255) NOT NULL,
+    INDEX i_rep_path_id (rep_path_id),
+    INDEX i_rep_id (rep_id),
+    CONSTRAINT `fk_rep_path_rep_id` FOREIGN KEY (`rep_id`) REFERENCES `rep` (`rep_id`)
+) TYPE=InnoDB;
+</source>
+
+==== rev ====
+Revision info.
+* rev_id
+* number
+* rep_path_id
+* date
+* author_id
+* msg
+* ...
+<source lang=sql>
+CREATE TABLE rev (
+    rev_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    number          INT UNSIGNED NOT NULL,
+    rep_path_id     INT UNSIGNED NOT NULL,
+    author_id       INT UNSIGNED NOT NULL,
+    date            DATETIME NOT NULL,
+    msg             TEXT,
+    INDEX i_rev_id (rev_id),
+    INDEX i_number (number),
+    CONSTRAINT `fk_rev_rep_path_id` FOREIGN KEY (`rep_path_id`) REFERENCES `rep_path` (`rep_path_id`),
+    CONSTRAINT `fk_rev_rep_author_id` FOREIGN KEY (`author_id`) REFERENCES `user_rep` (`user_rep_id`)
+) TYPE=InnoDB;
+</source>
+
+==== rep_file ====
+Files (probably tests files only) in repository path.
+* rep_file_id
+* rep_path_id
+* sub_path
+* file_name
+* rev_from_id
+* rev_to_id
+* tests_num -- plan, total tests which should have been run
+<source lang=sql>
+CREATE TABLE rep_file (
+    rep_file_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    rep_path_id     INT UNSIGNED NOT NULL,
+    sub_path        VARCHAR(255) NOT NULL,
+    file_name       VARCHAR(255) NOT NULL,
+    rev_from_id     INT UNSIGNED NOT NULL,
+    rev_to_id       INT UNSIGNED NOT NULL,
+    tests_num		INT UNSIGNED NOT NULL,
+    INDEX i_rep_file_id (rep_file_id),
+    INDEX i_rep_path_id (rep_path_id),
+    INDEX i_rev_from_id (rev_from_id),
+    INDEX i_rev_to_id (rev_to_id),
+    CONSTRAINT `fk_rep_file_rep_path_id` FOREIGN KEY (`rep_path_id`) REFERENCES `rep_path` (`rep_path_id`),
+    CONSTRAINT `fk_rep_file_rev_from_id` FOREIGN KEY (`rev_from_id`) REFERENCES `rev` (`rev_id`),
+    CONSTRAINT `fk_rep_file_rev_to_id` FOREIGN KEY (`rev_to_id`) REFERENCES `rev` (`rev_id`)
+) TYPE=InnoDB;
+</source>
+
+==== rep_test ====
+Number and name of the test. Each rep_file can contains many tests.
+* rep_test_id
+* rep_file_id
+* number -- number of test in rep_file
+* name -- first inserted, name of the test (if any)
+* has_another_name -- if another name was found
+<source lang=sql>
+CREATE TABLE rep_test (
+    rep_test_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    rep_file_id         INT UNSIGNED NOT NULL,
+    number              INT UNSIGNED NOT NULL,
+    name                VARCHAR(255) NOT NULL,
+    has_another_name    BOOLEAN NOT NULL DEFAULT 0,
+    INDEX i_rep_test_id (rep_test_id),
+    INDEX i_rep_file_id (rep_file_id),
+    CONSTRAINT `fk_rep_test_rep_file_id` FOREIGN KEY (`rep_file_id`) REFERENCES `rep_file` (`rep_file_id`)
+) TYPE=InnoDB;
+</source>
+
+==== trun ====
+Test run info and test run statistics (cache).
+* trun_id
+* client_id
+* conf_id
+* rev_id
+* num_failed -- cache
+* num_notseen -- cache
+* num_todo -- cache
+* num_bonus -- cache
+* num_skip -- cache
+* num_ok -- cache
+<source lang=sql>
+CREATE TABLE trun (
+    trun_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    client_id       INT UNSIGNED NOT NULL,
+    conf_id         INT UNSIGNED NOT NULL,
+    rev_id          INT UNSIGNED NOT NULL,
+    num_failed      INT UNSIGNED NOT NULL,
+    num_notseen     INT UNSIGNED NOT NULL,
+    num_todo        INT UNSIGNED NOT NULL,
+    num_bonus       INT UNSIGNED NOT NULL,
+    num_skip        INT UNSIGNED NOT NULL,
+    num_ok          INT UNSIGNED NOT NULL,
+    INDEX i_trun_id (trun_id),
+    INDEX i_client_id (client_id),
+    INDEX i_conf_id (conf_id),
+    CONSTRAINT `fk_trun_client_id` FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`),
+    CONSTRAINT `fk_trun_conf_id` FOREIGN KEY (`conf_id`) REFERENCES `conf` (`conf_id`)
+) TYPE=InnoDB;
+</source>
+
+==== tfile ====
+Test run file results - summary result for all tests in file. All_passed is shortcup to data test.
+* tfile_id
+* trun_id
+* all_passed -- (in Harness::Straps max == seen == ok)
+* tskippall_msg_id (can be null)
+<source lang=sql>
+CREATE TABLE tfile (
+    tfile_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    trun_id             INT UNSIGNED NOT NULL,
+    all_passed          BOOLEAN NOT NULL DEFAULT 0,
+    tskippall_msg_id    INT UNSIGNED DEFAULT NULL,
+    INDEX i_trun_id (trun_id),
+    CONSTRAINT `fk_tfile_trun_id` FOREIGN KEY (`trun_id`) REFERENCES `trun` (`trun_id`)
+) TYPE=InnoDB;
+</source>
+
+==== ttest ====
+Test results for each test (test case, subtest) submitted in trun.
+* ttest_id
+* rep_test_id
+* tresult_id
+<source lang=sql>
+CREATE TABLE ttest (
+    ttest_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    rep_test_id         INT UNSIGNED NOT NULL,
+    tresult_id          INT UNSIGNED NOT NULL,
+    INDEX i_rep_test_id (rep_test_id),
+    INDEX i_tresult_id (tresult_id),
+    CONSTRAINT `fk_ttest_rep_test_id` FOREIGN KEY (`rep_test_id`) REFERENCES `rep_test` (`rep_test_id`),
+    CONSTRAINT `fk_ttest_tresult_id` FOREIGN KEY (`tresult_id`) REFERENCES `tresult` (`tresult_id`)
+) TYPE=InnoDB;
+</source>
+
+==== tresult ====
+Test result info. Probably 0 .. not seen, 1 .. failed, 2 .. unknown, 3 .. todo, 4 .. bonus (unexpectedly succeeded), 5 .. skip, 6 .. ok
+* tresult_id
+* title
+* info
+<source lang=sql>
+CREATE TABLE tresult (
+    tresult_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    title           INT UNSIGNED NOT NULL,
+    info            BOOLEAN NOT NULL DEFAULT 0,
+    INDEX i_tresult_id (tresult_id)
+) TYPE=InnoDB;
+</source>
+
+==== tdiag_msg ====
+Diagnostic messages.
+* tdiag_id
+* ttest_id
+* msg
+* hash
+<source lang=sql>
+CREATE TABLE tdiag_msg (
+    tdiag_msg_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    ttest_id        INT UNSIGNED NOT NULL,
+    msg             TEXT,
+    hash            VARCHAR(50) NOT NULL,
+    INDEX i_ttest_id (ttest_id),
+    INDEX i_hash (hash),
+    CONSTRAINT `fk_tdiag_msg_ttest_id` FOREIGN KEY (`ttest_id`) REFERENCES `ttest` (`ttest_id`)
+) TYPE=InnoDB;
+</source>
+
+==== tskipall_msg ====
+Reasons to skipp all tests.
+* tskippall_msg_id
+* msg
+* hash
+<source lang=sql>
+CREATE TABLE tskipall_msg (
+    tskipall_msg_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msg                 TEXT,
+    hash                VARCHAR(50) NOT NULL,
+    INDEX i_hash (hash)
+) TYPE=InnoDB;
+</source>
+
+<!-- PARSE PART DBCREATE END -->
+
