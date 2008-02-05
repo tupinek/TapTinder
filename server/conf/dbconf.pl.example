@@ -1,0 +1,7 @@
+return {
+    db => {
+        dsn => 'dbi:mysql:database=taptinder;host=localhost',
+        user => 'taptinder-user',
+        password => 'taptinderpasswd',
+    },
+};
