@@ -1,5 +1,6 @@
-=== DB Create ===
+=== Schema ===
 
+<!-- perl utils\wiki_schema.pl sql\schema.wiki 1 > sql\schema.sql -->
 <!-- PARSE PART DBCREATE BEGIN -->
 <source lang=sql>
 SET FOREIGN_KEY_CHECKS=0;
@@ -52,30 +53,6 @@ CREATE TABLE client (
     INDEX i_client_id (user_id),
     CONSTRAINT `fk_client_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`),
     CONSTRAINT `fk_client_prev_client_id` FOREIGN KEY (`prev_client_id`) REFERENCES `client` (`client_id`)
-) TYPE=InnoDB;
-</source>
-
-==== conf ====
-Test run configurations. With md5 hash and alias_conf_id (reference to onother conf_id with the same semantics, but onother syntax).
-* conf_id
-* hash
-* cc
-* harness_args
-* devel
-* optimize
-* alias_conf_id
-<source lang=sql>
-CREATE TABLE conf (
-    conf_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
-    hash            VARCHAR(50) NOT NULL,
-    cc              VARCHAR(255) DEFAULT NULL,
-    harness_args    VARCHAR(255) DEFAULT NULL,
-    devel           VARCHAR(255) DEFAULT NULL,
-    `optimize`      VARCHAR(255) DEFAULT NULL,
-    alias_conf_id   INT UNSIGNED DEFAULT NULL,
-    INDEX i_conf_id (conf_id),
-    INDEX i_hash (hash),
-    CONSTRAINT `fk_conf_alias_conf_id` FOREIGN KEY (`conf_id`) REFERENCES `conf` (`conf_id`)
 ) TYPE=InnoDB;
 </source>
 
@@ -227,6 +204,30 @@ CREATE TABLE rep_test (
 ) TYPE=InnoDB;
 </source>
 
+==== conf ====
+Test run configurations. With md5 hash and alias_conf_id (reference to onother conf_id with the same semantics, but onother syntax).
+* conf_id
+* hash
+* cc
+* harness_args
+* devel
+* optimize
+* alias_conf_id
+<source lang=sql>
+CREATE TABLE conf (
+    conf_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    hash            VARCHAR(50) NOT NULL,
+    cc              VARCHAR(255) DEFAULT NULL,
+    harness_args    VARCHAR(255) DEFAULT NULL,
+    devel           VARCHAR(255) DEFAULT NULL,
+    `optimize`      VARCHAR(255) DEFAULT NULL,
+    alias_conf_id   INT UNSIGNED DEFAULT NULL,
+    INDEX i_conf_id (conf_id),
+    INDEX i_hash (hash),
+    CONSTRAINT `fk_conf_alias_conf_id` FOREIGN KEY (`conf_id`) REFERENCES `conf` (`conf_id`)
+) TYPE=InnoDB;
+</source>
+
 ==== trun ====
 Test run info and test run statistics (cache).
 * trun_id
@@ -259,6 +260,20 @@ CREATE TABLE trun (
 ) TYPE=InnoDB;
 </source>
 
+==== tskipall_msg ====
+Reasons to skipp all tests.
+* tskippall_msg_id
+* msg
+* hash
+<source lang=sql>
+CREATE TABLE tskipall_msg (
+    tskipall_msg_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msg                 TEXT,
+    hash                VARCHAR(50) NOT NULL,
+    INDEX i_hash (hash)
+) TYPE=InnoDB;
+</source>
+
 ==== tfile ====
 Test run file results - summary result for all tests in file. All_passed is shortcup to data test.
 * tfile_id
@@ -276,6 +291,20 @@ CREATE TABLE tfile (
 ) TYPE=InnoDB;
 </source>
 
+==== tresult ====
+Test result info. Probably 0 .. not seen, 1 .. failed, 2 .. unknown, 3 .. todo, 4 .. bonus (unexpectedly succeeded), 5 .. skip, 6 .. ok
+* tresult_id
+* title
+* info
+<source lang=sql>
+CREATE TABLE tresult (
+    tresult_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    title           INT UNSIGNED NOT NULL,
+    info            VARCHAR(255),
+    INDEX i_tresult_id (tresult_id)
+) TYPE=InnoDB;
+</source>
+
 ==== ttest ====
 Test results for each test (test case, subtest) submitted in trun.
 * ttest_id
@@ -290,20 +319,6 @@ CREATE TABLE ttest (
     INDEX i_tresult_id (tresult_id),
     CONSTRAINT `fk_ttest_rep_test_id` FOREIGN KEY (`rep_test_id`) REFERENCES `rep_test` (`rep_test_id`),
     CONSTRAINT `fk_ttest_tresult_id` FOREIGN KEY (`tresult_id`) REFERENCES `tresult` (`tresult_id`)
-) TYPE=InnoDB;
-</source>
-
-==== tresult ====
-Test result info. Probably 0 .. not seen, 1 .. failed, 2 .. unknown, 3 .. todo, 4 .. bonus (unexpectedly succeeded), 5 .. skip, 6 .. ok
-* tresult_id
-* title
-* info
-<source lang=sql>
-CREATE TABLE tresult (
-    tresult_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    title           INT UNSIGNED NOT NULL,
-    info            BOOLEAN NOT NULL DEFAULT 0,
-    INDEX i_tresult_id (tresult_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -325,23 +340,7 @@ CREATE TABLE tdiag_msg (
 ) TYPE=InnoDB;
 </source>
 
-==== tskipall_msg ====
-Reasons to skipp all tests.
-* tskippall_msg_id
-* msg
-* hash
-<source lang=sql>
-CREATE TABLE tskipall_msg (
-    tskipall_msg_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    msg                 TEXT,
-    hash                VARCHAR(50) NOT NULL,
-    INDEX i_hash (hash)
-) TYPE=InnoDB;
-</source>
-
 <source lang=sql>
 commit;
 </source>
-
 <!-- PARSE PART DBCREATE END -->
-

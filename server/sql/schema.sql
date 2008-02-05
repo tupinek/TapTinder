@@ -7,12 +7,12 @@
 -- Drop all tables:
 SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS `client`, `conf`, `project`, `rep`, `rep_file`, `rep_path`, `rep_test`, `rev`, `tdiag_msg`, `tfile`, `tresult`, `trun`, `tskipall_msg`, `ttest`, `user`, `user_rep`;
 
--- line: 5
+-- line: 6
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 
 
--- line: 16
+-- line: 17
 CREATE TABLE user (
     user_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     login       VARCHAR(20) NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE user (
 ) TYPE=InnoDB;
 
 
--- line: 40
+-- line: 41
 CREATE TABLE client (
     client_id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     passwd          VARCHAR(20) NOT NULL,
@@ -44,22 +44,7 @@ CREATE TABLE client (
 ) TYPE=InnoDB;
 
 
--- line: 68
-CREATE TABLE conf (
-    conf_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
-    hash            VARCHAR(50) NOT NULL,
-    cc              VARCHAR(255) DEFAULT NULL,
-    harness_args    VARCHAR(255) DEFAULT NULL,
-    devel           VARCHAR(255) DEFAULT NULL,
-    `optimize`      VARCHAR(255) DEFAULT NULL,
-    alias_conf_id   INT UNSIGNED DEFAULT NULL,
-    INDEX i_conf_id (conf_id),
-    INDEX i_hash (hash),
-    CONSTRAINT `fk_conf_alias_conf_id` FOREIGN KEY (`conf_id`) REFERENCES `conf` (`conf_id`)
-) TYPE=InnoDB;
-
-
--- line: 88
+-- line: 65
 CREATE TABLE project (
     project_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     name            VARCHAR(255) NOT NULL,
@@ -69,7 +54,7 @@ CREATE TABLE project (
 ) TYPE=InnoDB;
 
 
--- line: 107
+-- line: 84
 CREATE TABLE rep (
     rep_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     project_id  INT UNSIGNED NOT NULL,
@@ -83,7 +68,7 @@ CREATE TABLE rep (
 ) TYPE=InnoDB;
 
 
--- line: 127
+-- line: 104
 CREATE TABLE user_rep (
     user_rep_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     rep_id          INT UNSIGNED NOT NULL,
@@ -96,7 +81,7 @@ CREATE TABLE user_rep (
 ) TYPE=InnoDB;
 
 
--- line: 146
+-- line: 123
 CREATE TABLE rep_path (
     rep_path_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     rep_id          INT UNSIGNED NOT NULL,
@@ -109,7 +94,7 @@ CREATE TABLE rep_path (
 ) TYPE=InnoDB;
 
 
--- line: 168
+-- line: 145
 CREATE TABLE rev (
     rev_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     number          INT UNSIGNED NOT NULL,
@@ -124,7 +109,7 @@ CREATE TABLE rev (
 ) TYPE=InnoDB;
 
 
--- line: 192
+-- line: 169
 CREATE TABLE rep_file (
     rep_file_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     rep_path_id     INT UNSIGNED NOT NULL,
@@ -143,7 +128,7 @@ CREATE TABLE rep_file (
 ) TYPE=InnoDB;
 
 
--- line: 218
+-- line: 195
 CREATE TABLE rep_test (
     rep_test_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     rep_file_id         INT UNSIGNED NOT NULL,
@@ -156,7 +141,22 @@ CREATE TABLE rep_test (
 ) TYPE=InnoDB;
 
 
--- line: 243
+-- line: 217
+CREATE TABLE conf (
+    conf_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    hash            VARCHAR(50) NOT NULL,
+    cc              VARCHAR(255) DEFAULT NULL,
+    harness_args    VARCHAR(255) DEFAULT NULL,
+    devel           VARCHAR(255) DEFAULT NULL,
+    `optimize`      VARCHAR(255) DEFAULT NULL,
+    alias_conf_id   INT UNSIGNED DEFAULT NULL,
+    INDEX i_conf_id (conf_id),
+    INDEX i_hash (hash),
+    CONSTRAINT `fk_conf_alias_conf_id` FOREIGN KEY (`conf_id`) REFERENCES `conf` (`conf_id`)
+) TYPE=InnoDB;
+
+
+-- line: 244
 CREATE TABLE trun (
     trun_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     client_id       INT UNSIGNED NOT NULL,
@@ -177,6 +177,15 @@ CREATE TABLE trun (
 
 
 -- line: 269
+CREATE TABLE tskipall_msg (
+    tskipall_msg_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msg                 TEXT,
+    hash                VARCHAR(50) NOT NULL,
+    INDEX i_hash (hash)
+) TYPE=InnoDB;
+
+
+-- line: 284
 CREATE TABLE tfile (
     tfile_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     trun_id             INT UNSIGNED NOT NULL,
@@ -187,7 +196,16 @@ CREATE TABLE tfile (
 ) TYPE=InnoDB;
 
 
--- line: 285
+-- line: 300
+CREATE TABLE tresult (
+    tresult_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    title           INT UNSIGNED NOT NULL,
+    info            VARCHAR(255),
+    INDEX i_tresult_id (tresult_id)
+) TYPE=InnoDB;
+
+
+-- line: 314
 CREATE TABLE ttest (
     ttest_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     rep_test_id         INT UNSIGNED NOT NULL,
@@ -199,16 +217,7 @@ CREATE TABLE ttest (
 ) TYPE=InnoDB;
 
 
--- line: 302
-CREATE TABLE tresult (
-    tresult_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    title           INT UNSIGNED NOT NULL,
-    info            BOOLEAN NOT NULL DEFAULT 0,
-    INDEX i_tresult_id (tresult_id)
-) TYPE=InnoDB;
-
-
--- line: 317
+-- line: 332
 CREATE TABLE tdiag_msg (
     tdiag_msg_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     ttest_id        INT UNSIGNED NOT NULL,
@@ -220,15 +229,6 @@ CREATE TABLE tdiag_msg (
 ) TYPE=InnoDB;
 
 
--- line: 334
-CREATE TABLE tskipall_msg (
-    tskipall_msg_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    msg                 TEXT,
-    hash                VARCHAR(50) NOT NULL,
-    INDEX i_hash (hash)
-) TYPE=InnoDB;
-
-
--- line: 343
+-- line: 344
 commit;
 

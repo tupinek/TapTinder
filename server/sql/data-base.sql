@@ -2,10 +2,18 @@ start transaction;
 
 SET FOREIGN_KEY_CHECKS=0;
 
-delete from user;
-delete from client;
-delete from project;
-delete from rep;
+-- delete data inserted below
+delete from user; delete from client; delete from project; 
+delete from rep; delete from tresult;
+
+-- delete data from imported by cron/repository-update.pl
+delete from user_rep; delete from rep_path; delete from rev; 
+delete from rep_file;
+
+-- delete submited tests
+delete from rep_test; delete from conf; delete from trun; 
+delete from tskipall_msg; delete from tfile; delete from ttest;
+delete from tdiag_msg;
 
 
 SET FOREIGN_KEY_CHECKS=1;
@@ -39,5 +47,22 @@ VALUES (
 '1', '1', '1', 'parrot repository', 'http://svn.perl.org/parrot/', ''
 );
 
+
+INSERT INTO `tresult` ( `tresult_id` , `title` , `info` )
+VALUES (
+'0', 'not seen', NULL
+), (
+'1', 'failed', NULL
+), (
+'2', 'unknown', NULL
+), (
+'3', 'todo', NULL
+), (
+'4', 'bonus', NULL
+), (
+'5', 'skip', NULL
+), (
+'6', 'ok', NULL
+);
 
 commit;
