@@ -264,6 +264,10 @@ while ( 1 ) {
             );
             if ( $up_ok ) {
                 if ( $tmp_new_rev != $state->{src_rev} ) {
+                    if ( get_revision_to_test( $ck->{name}, $tmp_new_rev ) != $tmp_new_rev ) {
+                        print "HEAD revision $tmp_new_rev already tested.\n";
+                        next NEXT_CONF;
+                    }
                     $state->{svnup_done} = 1;
                     $new_rev = $tmp_new_rev;
                 } else {
