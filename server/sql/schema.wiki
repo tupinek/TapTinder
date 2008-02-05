@@ -101,6 +101,7 @@ Project repository.
 * active
 * name
 * path
+* url
 * info
 <source lang=sql>
 CREATE TABLE rep (
@@ -109,6 +110,7 @@ CREATE TABLE rep (
     active      BOOLEAN NOT NULL DEFAULT 1,
     name        VARCHAR(255) NOT NULL,
     path        VARCHAR(255) NOT NULL,
+    url         VARCHAR(255) DEFAULT NULL,
     info        TEXT DEFAULT NULL,
     INDEX i_rep_id (rep_id),
     CONSTRAINT `fk_rep_project_id` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`)
@@ -135,18 +137,21 @@ CREATE TABLE user_rep (
 </source>
 
 ==== rep_path ====
-Repository path (trunk/, branch/oo/, ...).
+Repository path (trunk/, branch/pdd17pmc/, ...).
 * rep_path_id
 * rep_id
 * path
+* base_rev_id -- from which revision is this created
 <source lang=sql>
 CREATE TABLE rep_path (
     rep_path_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     rep_id          INT UNSIGNED NOT NULL,
     path            VARCHAR(255) NOT NULL,
+    base_rev_id     INT UNSIGNED DEFAULT NULL,
     INDEX i_rep_path_id (rep_path_id),
     INDEX i_rep_id (rep_id),
-    CONSTRAINT `fk_rep_path_rep_id` FOREIGN KEY (`rep_id`) REFERENCES `rep` (`rep_id`)
+    CONSTRAINT `fk_rep_path_rep_id` FOREIGN KEY (`rep_id`) REFERENCES `rep` (`rep_id`),
+    CONSTRAINT `fk_rep_path_base_rev_id` FOREIGN KEY (`base_rev_id`) REFERENCES `rev` (`rev_id`)
 ) TYPE=InnoDB;
 </source>
 
