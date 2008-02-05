@@ -21,7 +21,6 @@ CREATE TABLE user (
     active      BOOLEAN NOT NULL DEFAULT 1,
     created     DATETIME NOT NULL,
     last_login  DATETIME DEFAULT NULL,
-    INDEX i_user_id (user_id),
     INDEX login (login)
 ) TYPE=InnoDB;
 </source>
@@ -50,7 +49,6 @@ CREATE TABLE client (
     archname        VARCHAR(255) DEFAULT NULL,
     active          BOOLEAN NOT NULL DEFAULT 1,
     prev_client_id  INT UNSIGNED DEFAULT NULL,
-    INDEX i_client_id (user_id),
     CONSTRAINT `fk_client_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`),
     CONSTRAINT `fk_client_prev_client_id` FOREIGN KEY (`prev_client_id`) REFERENCES `client` (`client_id`)
 ) TYPE=InnoDB;
@@ -66,8 +64,7 @@ CREATE TABLE project (
     project_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     name            VARCHAR(255) NOT NULL,
     url             VARCHAR(255) NOT NULL,
-    info            TEXT DEFAULT NULL,
-    INDEX i_project_id (project_id)
+    info            TEXT DEFAULT NULL
 ) TYPE=InnoDB;
 </source>
 
@@ -89,7 +86,6 @@ CREATE TABLE rep (
     path        VARCHAR(255) NOT NULL,
     url         VARCHAR(255) DEFAULT NULL,
     info        TEXT DEFAULT NULL,
-    INDEX i_rep_id (rep_id),
     CONSTRAINT `fk_rep_project_id` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`)
 ) TYPE=InnoDB;
 </source>
@@ -106,8 +102,9 @@ CREATE TABLE user_rep (
     rep_id          INT UNSIGNED NOT NULL,
     rep_login       VARCHAR(255) NOT NULL,
     user_id         INT UNSIGNED DEFAULT NULL,
-    INDEX i_user_id (user_id),
     INDEX i_rep_id (rep_id),
+    INDEX i_rep_login (rep_login),
+    INDEX i_user_id (user_id),
     CONSTRAINT `fk_user_rep_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`),
     CONSTRAINT `fk_user_rep_rep_id` FOREIGN KEY (`rep_id`) REFERENCES `rep` (`rep_id`)
 ) TYPE=InnoDB;
@@ -125,7 +122,6 @@ CREATE TABLE rep_path (
     rep_id          INT UNSIGNED NOT NULL,
     path            VARCHAR(255) NOT NULL,
     base_rev_id     INT UNSIGNED DEFAULT NULL,
-    INDEX i_rep_path_id (rep_path_id),
     INDEX i_rep_id (rep_id),
     CONSTRAINT `fk_rep_path_rep_id` FOREIGN KEY (`rep_id`) REFERENCES `rep` (`rep_id`),
     CONSTRAINT `fk_rep_path_base_rev_id` FOREIGN KEY (`base_rev_id`) REFERENCES `rev` (`rev_id`)
@@ -149,7 +145,6 @@ CREATE TABLE rev (
     author_id       INT UNSIGNED NOT NULL,
     date            DATETIME NOT NULL,
     msg             TEXT,
-    INDEX i_rev_id (rev_id),
     INDEX i_number (number),
     CONSTRAINT `fk_rev_rep_path_id` FOREIGN KEY (`rep_path_id`) REFERENCES `rep_path` (`rep_path_id`),
     CONSTRAINT `fk_rev_rep_author_id` FOREIGN KEY (`author_id`) REFERENCES `user_rep` (`user_rep_id`)
@@ -172,9 +167,8 @@ CREATE TABLE rep_file (
     sub_path        VARCHAR(255) NOT NULL,
     file_name       VARCHAR(255) NOT NULL,
     rev_from_id     INT UNSIGNED NOT NULL,
-    rev_to_id       INT UNSIGNED NOT NULL,
+    rev_to_id       INT UNSIGNED DEFAULT NULL,
     tests_num       INT UNSIGNED NOT NULL,
-    INDEX i_rep_file_id (rep_file_id),
     INDEX i_rep_path_id (rep_path_id),
     INDEX i_rev_from_id (rev_from_id),
     INDEX i_rev_to_id (rev_to_id),
@@ -198,7 +192,6 @@ CREATE TABLE rep_test (
     number              INT UNSIGNED NOT NULL,
     name                VARCHAR(255) NOT NULL,
     has_another_name    BOOLEAN NOT NULL DEFAULT 0,
-    INDEX i_rep_test_id (rep_test_id),
     INDEX i_rep_file_id (rep_file_id),
     CONSTRAINT `fk_rep_test_rep_file_id` FOREIGN KEY (`rep_file_id`) REFERENCES `rep_file` (`rep_file_id`)
 ) TYPE=InnoDB;
@@ -222,7 +215,6 @@ CREATE TABLE conf (
     devel           VARCHAR(255) DEFAULT NULL,
     `optimize`      VARCHAR(255) DEFAULT NULL,
     alias_conf_id   INT UNSIGNED DEFAULT NULL,
-    INDEX i_conf_id (conf_id),
     INDEX i_hash (hash),
     CONSTRAINT `fk_conf_alias_conf_id` FOREIGN KEY (`conf_id`) REFERENCES `conf` (`conf_id`)
 ) TYPE=InnoDB;
@@ -252,7 +244,6 @@ CREATE TABLE trun (
     num_bonus       INT UNSIGNED NOT NULL,
     num_skip        INT UNSIGNED NOT NULL,
     num_ok          INT UNSIGNED NOT NULL,
-    INDEX i_trun_id (trun_id),
     INDEX i_client_id (client_id),
     INDEX i_conf_id (conf_id),
     CONSTRAINT `fk_trun_client_id` FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`),
@@ -298,10 +289,9 @@ Test result info. Probably 0 .. not seen, 1 .. failed, 2 .. unknown, 3 .. todo, 
 * info
 <source lang=sql>
 CREATE TABLE tresult (
-    tresult_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    title           INT UNSIGNED NOT NULL,
-    info            VARCHAR(255),
-    INDEX i_tresult_id (tresult_id)
+    tresult_id      INT UNSIGNED NOT NULL PRIMARY KEY,
+    title           VARCHAR(10),
+    info            VARCHAR(255)
 ) TYPE=InnoDB;
 </source>
 
