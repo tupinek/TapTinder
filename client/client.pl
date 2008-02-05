@@ -1,10 +1,10 @@
-#!perl 
+#!perl
 
 use strict;
 use warnings;
 
 use Carp qw(carp croak verbose);
-use FindBin qw($RealBin); 
+use FindBin qw($RealBin);
 
 use File::Spec::Functions;
 use File::Path;
@@ -30,7 +30,7 @@ ReadMode('cbreak');
 #  >1 .. verbose 1 - print base run info about sucesfull svn ups
 #  >2 .. verbose 2 - default
 #  >3 .. verbose 3
-#  >4 
+#  >4
 #  >5 .. debug output
 #  >10 .. set params to devel value
 my $ver = $ARGV[0] ? $ARGV[0] : 2;
@@ -44,7 +44,7 @@ my $fn_client_config = 'client-conf.yaml';
 my $fp_client_conf = catfile( $RealBin, $fn_client_config );
 print "Client config file path: '" . $fp_client_conf . "'\n" if $ver > 5;
 unless ( -e $fp_client_conf ) {
-    croak 
+    croak
         "Client config file '$fn_client_config' not found.\n"
         . "Use '$fn_client_config'.example to create one.\n"
     ;
@@ -90,9 +90,9 @@ foreach my $c_num ( 0..$#$conf ) {
     $ck->{temp_dn} = $ck->{base_dn} . $ck->{name} . '-temp' unless exists $ck->{temp_dn};
     $ck->{results_dn} = $ck->{base_dn} . $ck->{name} . '-results' unless exists $ck->{results_dn};
     $ck->{src_add_dn} = $ck->{name} . '-src-add' unless exists $ck->{src_add_dn};
-    
+
     mkdir $ck->{results_dn} unless -d $ck->{results_dn};
-    
+
     # todo
     $ck->{temp_dn_back} = '../../client' unless exists $ck->{temp_dn_back};
 
@@ -163,17 +163,17 @@ my $slt = {
 
 print "\n" if $ver > 0;
 while ( 1 ) {
-    
+
     my @lt = localtime(time);
-    my $start_time = 
+    my $start_time =
         $lt[2].':'.$lt[1].':'.$lt[0].' '
         . $lt[3].'.'.($lt[4] + 1).'.'.($lt[5] + 1900)
     ;
     print "Run number: " . ( $run_num + 1 ) . "\n" if $ver > 2;
     print "Start time: $start_time\n" if $ver > 2;
-    
+
     NEXT_CONF: foreach my $ck_num ( $conf_first..$conf_last ) {
-        
+
         # sleep
         $slt_num = 0 if $attempt == 0;
         print "attempt:$attempt, conf_last:$conf_last, slt_num:$slt_num\n" if $ver > 5;
@@ -216,8 +216,8 @@ while ( 1 ) {
             print "Trying 'svn co'\n" if $ver > 2;
             my $rep_full_path = $cc->{repository} . $cc->{repository_path};
             my $cmd = 'svn co "' . $rep_full_path . '" "' . $ck->{src_dn} . '"';
-            my ( $cmd_rc, $out ) = sys_for_watchdog( 
-                $cmd, 
+            my ( $cmd_rc, $out ) = sys_for_watchdog(
+                $cmd,
                 $ck->{results_dn} . '/svn_co.txt',
                 10*60,
                 undef,
@@ -257,13 +257,13 @@ while ( 1 ) {
             # $to_rev = $state->{src_rev} + 1;
             my $svn_tmp_file = undef;
             $svn_tmp_file = 'README' if $to_rev eq 'HEAD';
-            my ( $up_ok, $o_log, $tmp_new_rev ) = svnup( 
-                $ck->{src_dn}, 
-                $to_rev, 
+            my ( $up_ok, $o_log, $tmp_new_rev ) = svnup(
+                $ck->{src_dn},
+                $to_rev,
                 $svn_tmp_file
             );
             if ( $up_ok ) {
-                if ( $tmp_new_rev != $state->{src_rev} ) {            
+                if ( $tmp_new_rev != $state->{src_rev} ) {
                     $state->{svnup_done} = 1;
                     $new_rev = $tmp_new_rev;
                 } else {
@@ -283,7 +283,7 @@ while ( 1 ) {
         # svn up done ok
         $attempt = 0;
         $all_attempt->{$ck_num} = 0;
-        
+
         #next NEXT_CONF; # debug attempts
 
         if ( $ck->{rm_temp_dir} ) {
@@ -321,13 +321,13 @@ while ( 1 ) {
 
         if ( $ck->{after_temp_copied} ) {
             if ( $state->{after_temp_copied_done} ) {
-                print "SKIP: after_temp_copied hook.\n" if $ver > 3; 
+                print "SKIP: after_temp_copied hook.\n" if $ver > 3;
             } else {
-                print "Running after_temp_copied hook.\n" if $ver > 3; 
+                print "Running after_temp_copied hook.\n" if $ver > 3;
                 my $after_temp_copied_ret_code = $ck->{after_temp_copied}->( $ck, $state, $ver );
                 print "After_temp_copied hook return: $after_temp_copied_ret_code\n" if $ver > 4;
                 unless ( $after_temp_copied_ret_code ) {
-                    print "$ck->{name}: Running after_temp_copied hook failed." if $ver > 0; 
+                    print "$ck->{name}: Running after_temp_copied hook failed." if $ver > 0;
                     next;
                 }
             }
@@ -353,8 +353,8 @@ while ( 1 ) {
         print "Revision number: $state->{temp_rev}\n" if $ver > 4;
 
         my $timestamp = time();
-        $state->{results_path_prefix} = 
-            $RealBin . '/' 
+        $state->{results_path_prefix} =
+            $RealBin . '/'
             . $ck->{results_dn} . '/'
             . 'r' . $state->{temp_rev} . '-' . $timestamp .  '/'
         ;
@@ -388,11 +388,11 @@ while ( 1 ) {
                 if ( $state->{cmd}->{before_done} ) {
                     print "SKIP: before_cmd hook.\n" if $ver > 3;
                 } else {
-                    print "Running before_cmd hook.\n" if $ver > 3; 
+                    print "Running before_cmd hook.\n" if $ver > 3;
                     my $before_ret_code = $cmd_conf->{before}->( $ck, $state, $ver );
                     print "Before cmd hook return: $before_ret_code\n" if $ver > 4;
                     unless ( $before_ret_code ) {
-                        print "$ck->{name}: Running before_cmd hook failed.\n" if $ver > 0; 
+                        print "$ck->{name}: Running before_cmd hook failed.\n" if $ver > 0;
                         next;
                     }
                 }
@@ -402,17 +402,17 @@ while ( 1 ) {
             if ( $state->{cmd}->{cmd_done} ) {
                 print "SKIP: after_cmd hook.\n" if $ver > 3;
             } else {
-                my $cmd_log_fp = 
-                     $state->{results_path_prefix} 
+                my $cmd_log_fp =
+                     $state->{results_path_prefix}
                      . ($cmd_num+1) . '-' .  $cmd_name . '.out'
                 ;
                 # todo, .out to configure
-                my ( $cmd_rc, $out ) = sys_for_watchdog( 
-                    $cmd, 
+                my ( $cmd_rc, $out ) = sys_for_watchdog(
+                    $cmd,
                     $cmd_log_fp,
                     $cmd_mt,
                     undef,
-                    '../',   # we are inside temp dir 
+                    '../',   # we are inside temp dir
                 );
                 print "Command '$cmd_name' return $cmd_rc.\n" if $ver > 4;
             }
@@ -422,11 +422,11 @@ while ( 1 ) {
                 if ( $state->{cmd}->{after_done} ) {
                     print "SKIP: after_cmd hook.\n" if $ver > 3;
                 } else {
-                    print "Running after_cmd hook.\n" if $ver > 3; 
+                    print "Running after_cmd hook.\n" if $ver > 3;
                     my $after_ret_code = $cmd_conf->{after}->( $ck, $state, $ver );
                     print "After_cmd hook return: $after_ret_code\n" if $ver > 4;
                     unless ( $after_ret_code ) {
-                        print "$ck->{name}: Running after_cmd hook failed.\n" if $ver > 0; 
+                        print "$ck->{name}: Running after_cmd hook failed.\n" if $ver > 0;
                     }
                 }
             }
@@ -441,7 +441,7 @@ while ( 1 ) {
     my $char = undef;
     while ( defined ($char = ReadKey(-1)) ) { 1; }
     if ( $char ) {
-        print "User press '$char'.\n" if $ver > 3; 
+        print "User press '$char'.\n" if $ver > 3;
         $char = uc( $char );
         # TODO
         if ( $char eq 'P' ) {
