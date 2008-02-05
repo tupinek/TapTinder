@@ -144,7 +144,7 @@ print_tables_for_sql( $ra_tables );
 print "\n\n";
 
 print "-- Drop all tables:\n";
-print "-- ";
+#print "-- ";
 print "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS ";
 print_tables_for_sql( $ra_tables );
 print ";";

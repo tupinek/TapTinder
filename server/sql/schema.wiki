@@ -1,7 +1,9 @@
 === DB Create ===
+
 <!-- PARSE PART DBCREATE BEGIN -->
 <source lang=sql>
 SET FOREIGN_KEY_CHECKS=0;
+start transaction;
 </source>
 
 ==== user ====
@@ -17,7 +19,7 @@ CREATE TABLE user (
     passwd      VARCHAR(20) NOT NULL,
     active      BOOLEAN NOT NULL DEFAULT 1,
     created     DATETIME NOT NULL,
-    last_login  DATETIME NOT NULL,
+    last_login  DATETIME DEFAULT NULL,
     INDEX i_user_id (user_id),
     INDEX login (login)
 ) TYPE=InnoDB;
@@ -28,22 +30,28 @@ Client (computer) info.
 * client_id
 * user_id
 * passwd
-* active
-* IP
-* archname
+* ip
 * cpuarch
 * osname
+* archname
+* active
 * prev_client_id
 <source lang=sql>
 CREATE TABLE client (
-    client_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
-    passwd      VARCHAR(20) NOT NULL,
-    active      BOOLEAN NOT NULL DEFAULT 1,
-    user_id     INT UNSIGNED NOT NULL,
-    created     DATETIME NOT NULL,
-    last_login  DATETIME NOT NULL,
+    client_id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    passwd          VARCHAR(20) NOT NULL,
+    user_id         INT UNSIGNED NOT NULL,
+    created         DATETIME NOT NULL,
+    last_login      DATETIME DEFAULT NULL,
+    ip              VARCHAR(15) DEFAULT NULL,
+    cpuarch         VARCHAR(50) DEFAULT NULL,
+    osname          VARCHAR(50) DEFAULT NULL,
+    archname        VARCHAR(255) DEFAULT NULL,
+    active          BOOLEAN NOT NULL DEFAULT 1,
+    prev_client_id  INT UNSIGNED DEFAULT NULL,
     INDEX i_client_id (user_id),
-    CONSTRAINT `fk_client_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`)
+    CONSTRAINT `fk_client_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`),
+    CONSTRAINT `fk_client_prev_client_id` FOREIGN KEY (`prev_client_id`) REFERENCES `client` (`client_id`)
 ) TYPE=InnoDB;
 </source>
 
@@ -183,7 +191,7 @@ CREATE TABLE rep_file (
     file_name       VARCHAR(255) NOT NULL,
     rev_from_id     INT UNSIGNED NOT NULL,
     rev_to_id       INT UNSIGNED NOT NULL,
-    tests_num		INT UNSIGNED NOT NULL,
+    tests_num       INT UNSIGNED NOT NULL,
     INDEX i_rep_file_id (rep_file_id),
     INDEX i_rep_path_id (rep_path_id),
     INDEX i_rev_from_id (rev_from_id),
@@ -324,6 +332,10 @@ CREATE TABLE tskipall_msg (
     hash                VARCHAR(50) NOT NULL,
     INDEX i_hash (hash)
 ) TYPE=InnoDB;
+</source>
+
+<source lang=sql>
+commit;
 </source>
 
 <!-- PARSE PART DBCREATE END -->
