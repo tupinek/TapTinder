@@ -360,7 +360,7 @@ while ( 1 ) {
         $state->{results_path_prefix} =
             $RealBin . '/'
             . $ck->{results_dn} . '/'
-            . 'r' . $state->{temp_rev} . '-' . $timestamp .  '/'
+            . int($timestamp) . '-r' . $state->{temp_rev} . '/'
         ;
         unless ( mkpath( $state->{results_path_prefix} ) ) {
             print "$ck->{name}: Can't create results dir '$state->{results_path_prefix}'.\n" if $ver > 0;
