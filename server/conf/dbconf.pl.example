@@ -4,4 +4,10 @@ return {
         user => 'taptinder-user',
         password => 'taptinderpasswd',
     },
+    project => {
+        parrot => {
+            repository => 'http://svn.perl.org/parrot/',
+            log_dump_refresh => 5*60, # seconds
+        },
+    }
 };
