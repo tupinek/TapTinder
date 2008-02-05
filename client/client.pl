@@ -434,6 +434,7 @@ while ( 1 ) {
         }
 
         chdir( $ck->{temp_dn_back} ) or croak $!;
+        print "Saving rev done for " . $state->{temp_rev} . ".\n" if $ver > 3;
         revision_test_done( $ck->{name}, $state->{temp_rev} );
     }
 
