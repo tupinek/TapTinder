@@ -1,4 +1,4 @@
-=== Schema ===
+=== Header ===
 
 <!-- perl utils\wiki_schema.pl sql\schema.wiki 1 > sql\schema.sql -->
 <!-- PARSE PART DBCREATE BEGIN -->
@@ -6,6 +6,8 @@
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 </source>
+
+=== Tables ===
 
 ==== user ====
 User info.
@@ -94,13 +96,13 @@ CREATE TABLE rep (
 Relation between user and repository.
 * user_rep_id
 * rep_id
-* rep_login
+* rep_login - can be null, see parrot rev 1346 created by cvs2svn
 * user_id
 <source lang=sql>
 CREATE TABLE user_rep (
     user_rep_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     rep_id          INT UNSIGNED NOT NULL,
-    rep_login       VARCHAR(255) NOT NULL,
+    rep_login       VARCHAR(255) DEFAULT NULL,
     user_id         INT UNSIGNED DEFAULT NULL,
     INDEX i_rep_id (rep_id),
     INDEX i_rep_login (rep_login),
@@ -115,23 +117,20 @@ Repository path (trunk/, branch/pdd17pmc/, ...).
 * rep_path_id
 * rep_id
 * path
-* base_rev_id -- from which revision is this created
 <source lang=sql>
 CREATE TABLE rep_path (
     rep_path_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     rep_id          INT UNSIGNED NOT NULL,
     path            VARCHAR(255) NOT NULL,
-    base_rev_id     INT UNSIGNED DEFAULT NULL,
     INDEX i_rep_id (rep_id),
-    CONSTRAINT `fk_rep_path_rep_id` FOREIGN KEY (`rep_id`) REFERENCES `rep` (`rep_id`),
-    CONSTRAINT `fk_rep_path_base_rev_id` FOREIGN KEY (`base_rev_id`) REFERENCES `rev` (`rev_id`)
+    CONSTRAINT `fk_rep_path_rep_id` FOREIGN KEY (`rep_id`) REFERENCES `rep` (`rep_id`)
 ) TYPE=InnoDB;
 </source>
 
 ==== rev ====
 Revision info.
 * rev_id
-* number
+* rev_num
 * rep_path_id
 * date
 * author_id
@@ -140,12 +139,12 @@ Revision info.
 <source lang=sql>
 CREATE TABLE rev (
     rev_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
-    number          INT UNSIGNED NOT NULL,
-    rep_path_id     INT UNSIGNED NOT NULL,
+    rev_num         INT UNSIGNED NOT NULL,
+    rep_path_id     INT UNSIGNED DEFAULT NULL,
     author_id       INT UNSIGNED NOT NULL,
     date            DATETIME NOT NULL,
     msg             TEXT,
-    INDEX i_number (number),
+    INDEX i_rev_num (rev_num),
     CONSTRAINT `fk_rev_rep_path_id` FOREIGN KEY (`rep_path_id`) REFERENCES `rep_path` (`rep_path_id`),
     CONSTRAINT `fk_rev_rep_author_id` FOREIGN KEY (`author_id`) REFERENCES `user_rep` (`user_rep_id`)
 ) TYPE=InnoDB;
@@ -156,25 +155,21 @@ Files (probably tests files only) in repository path.
 * rep_file_id
 * rep_path_id
 * sub_path
-* file_name
-* rev_from_id
-* rev_to_id
+* rev_num_from
+* rev_num_to
 * tests_num -- plan, total tests which should have been run
 <source lang=sql>
 CREATE TABLE rep_file (
     rep_file_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     rep_path_id     INT UNSIGNED NOT NULL,
     sub_path        VARCHAR(255) NOT NULL,
-    file_name       VARCHAR(255) NOT NULL,
-    rev_from_id     INT UNSIGNED NOT NULL,
-    rev_to_id       INT UNSIGNED DEFAULT NULL,
-    tests_num       INT UNSIGNED NOT NULL,
+    rev_num_from    INT UNSIGNED NOT NULL,
+    rev_num_to      INT UNSIGNED DEFAULT NULL,
+    tests_num       INT UNSIGNED DEFAULT NULL,
     INDEX i_rep_path_id (rep_path_id),
-    INDEX i_rev_from_id (rev_from_id),
-    INDEX i_rev_to_id (rev_to_id),
-    CONSTRAINT `fk_rep_file_rep_path_id` FOREIGN KEY (`rep_path_id`) REFERENCES `rep_path` (`rep_path_id`),
-    CONSTRAINT `fk_rep_file_rev_from_id` FOREIGN KEY (`rev_from_id`) REFERENCES `rev` (`rev_id`),
-    CONSTRAINT `fk_rep_file_rev_to_id` FOREIGN KEY (`rev_to_id`) REFERENCES `rev` (`rev_id`)
+    INDEX i_rev_num_from (rev_num_from),
+    INDEX i_rev_num_to (rev_num_to),
+    CONSTRAINT `fk_rep_file_rep_path_id` FOREIGN KEY (`rep_path_id`) REFERENCES `rep_path` (`rep_path_id`)
 ) TYPE=InnoDB;
 </source>
 
@@ -329,6 +324,8 @@ CREATE TABLE tdiag_msg (
     CONSTRAINT `fk_tdiag_msg_ttest_id` FOREIGN KEY (`ttest_id`) REFERENCES `ttest` (`ttest_id`)
 ) TYPE=InnoDB;
 </source>
+
+=== Footer ===
 
 <source lang=sql>
 commit;
