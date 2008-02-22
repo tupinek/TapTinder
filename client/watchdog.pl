@@ -50,7 +50,7 @@ sub kill_inside {
 
 
 my ( $st, $mtime, $diff );
-my $ipc_fn = 'watchdog-setting.bin';
+my $ipc_fn = '../client-data/watchdog-setting.bin';
 
 my $text = '';
 my ( $o_text, $ch_time, $mch_time );
