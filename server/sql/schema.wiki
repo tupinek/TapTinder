@@ -23,7 +23,7 @@ CREATE TABLE user (
     active      BOOLEAN NOT NULL DEFAULT 1,
     created     DATETIME NOT NULL,
     last_login  DATETIME DEFAULT NULL,
-    INDEX login (login)
+    INDEX i_login (login)
 ) TYPE=InnoDB;
 </source>
 
@@ -31,6 +31,8 @@ CREATE TABLE user (
 Client (computer) info.
 * client_id
 * user_id
+* name
+* info
 * passwd
 * ip
 * cpuarch
@@ -41,8 +43,10 @@ Client (computer) info.
 <source lang=sql>
 CREATE TABLE client (
     client_id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
-    passwd          VARCHAR(20) NOT NULL,
     user_id         INT UNSIGNED NOT NULL,
+    name            VARCHAR(20) DEFAULT NULL,
+    passwd          VARCHAR(20) NOT NULL,
+    info            TEXT DEFAULT NULL,
     created         DATETIME NOT NULL,
     last_login      DATETIME DEFAULT NULL,
     ip              VARCHAR(15) DEFAULT NULL,
@@ -60,6 +64,7 @@ CREATE TABLE client (
 Project.
 * project_id
 * name
+* url
 * info
 <source lang=sql>
 CREATE TABLE project (
@@ -71,7 +76,7 @@ CREATE TABLE project (
 </source>
 
 ==== rep ====
-Project repository.
+Project repository. Each project can has only one active repository.
 * rep_id
 * project_id
 * active
@@ -112,6 +117,28 @@ CREATE TABLE user_rep (
 ) TYPE=InnoDB;
 </source>
 
+==== rev ====
+Revision info.
+* rev_id
+* rev_num
+* date
+* author_id
+* msg
+* ...
+<source lang=sql>
+CREATE TABLE rev (
+    rev_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    rev_num         INT UNSIGNED NOT NULL,
+    rep_id          INT UNSIGNED DEFAULT NULL,
+    author_id       INT UNSIGNED NOT NULL,
+    date            DATETIME NOT NULL,
+    msg             TEXT,
+    INDEX i_rev_num (rev_num),
+    CONSTRAINT `fk_rev_rep_id` FOREIGN KEY (`rep_id`) REFERENCES `rep` (`rep_id`),
+    CONSTRAINT `fk_rev_rep_author_id` FOREIGN KEY (`author_id`) REFERENCES `user_rep` (`user_rep_id`)
+) TYPE=InnoDB;
+</source>
+
 ==== rep_path ====
 Repository path (trunk/, branch/pdd17pmc/, ...).
 * rep_path_id
@@ -127,26 +154,17 @@ CREATE TABLE rep_path (
 ) TYPE=InnoDB;
 </source>
 
-==== rev ====
-Revision info.
+==== rev_rep_path ====
+Revision to repository path map (M:N).
 * rev_id
-* rev_num
 * rep_path_id
-* date
-* author_id
-* msg
-* ...
 <source lang=sql>
-CREATE TABLE rev (
-    rev_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
-    rev_num         INT UNSIGNED NOT NULL,
-    rep_path_id     INT UNSIGNED DEFAULT NULL,
-    author_id       INT UNSIGNED NOT NULL,
-    date            DATETIME NOT NULL,
-    msg             TEXT,
-    INDEX i_rev_num (rev_num),
-    CONSTRAINT `fk_rev_rep_path_id` FOREIGN KEY (`rep_path_id`) REFERENCES `rep_path` (`rep_path_id`),
-    CONSTRAINT `fk_rev_rep_author_id` FOREIGN KEY (`author_id`) REFERENCES `user_rep` (`user_rep_id`)
+CREATE TABLE rev_rep_path (
+    rev_id              INT UNSIGNED NOT NULL,
+    rep_path_id         INT UNSIGNED NOT NULL,
+    INDEX i_rev_id_rep_path_id (rev_id, rep_path_id),
+    CONSTRAINT `fk_rev_rep_path_rev_id` FOREIGN KEY (`rev_id`) REFERENCES `rev` (`rev_id`),
+    CONSTRAINT `fk_rev_rep_path_rep_path_id` FOREIGN KEY (`rep_path_id`) REFERENCES `rep_path` (`rep_path_id`)
 ) TYPE=InnoDB;
 </source>
 
@@ -157,7 +175,6 @@ Files (probably tests files only) in repository path.
 * sub_path
 * rev_num_from
 * rev_num_to
-* tests_num -- plan, total tests which should have been run
 <source lang=sql>
 CREATE TABLE rep_file (
     rep_file_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
@@ -165,7 +182,6 @@ CREATE TABLE rep_file (
     sub_path        VARCHAR(255) NOT NULL,
     rev_num_from    INT UNSIGNED NOT NULL,
     rev_num_to      INT UNSIGNED DEFAULT NULL,
-    tests_num       INT UNSIGNED DEFAULT NULL,
     INDEX i_rep_path_id (rep_path_id),
     INDEX i_rev_num_from (rev_num_from),
     INDEX i_rev_num_to (rev_num_to),
@@ -173,11 +189,59 @@ CREATE TABLE rep_file (
 ) TYPE=InnoDB;
 </source>
 
+==== change ====
+* change_id
+* short
+* info
+<source lang=sql>
+CREATE TABLE `change` (
+    change_id       INT UNSIGNED NOT NULL PRIMARY KEY, 
+    abbr            VARCHAR(1) NOT NULL,
+    info            VARCHAR(10) NOT NULL,
+    INDEX i_abbr (abbr)
+) TYPE=InnoDB;
+</source>
+
+==== rep_file_change ====
+* rev_id
+* rep_file_id
+* change_id
+<source lang=sql>
+CREATE TABLE rep_file_change (
+    rev_id              INT UNSIGNED NOT NULL,
+    rep_file_id         INT UNSIGNED NOT NULL,
+    change_id           INT UNSIGNED NOT NULL,
+    INDEX i_rev_id_rep_file_id (rev_id, rep_file_id),
+    CONSTRAINT `fk_rep_file_change_rev_id` FOREIGN KEY (`rev_id`) REFERENCES `rev` (`rev_id`),
+    CONSTRAINT `fk_rep_file_change_rep_file_id` FOREIGN KEY (`rep_file_id`) REFERENCES `rep_file` (`rep_file_id`),
+    CONSTRAINT `fk_rep_file_change_change_id` FOREIGN KEY (`change_id`) REFERENCES `change` (`change_id`)
+) TYPE=InnoDB;
+</source>
+
+==== rep_file_change_from ====
+* rev_id
+* rep_file_id
+* from_rep_file_id
+<source lang=sql>
+CREATE TABLE rep_file_change_from (
+    rev_id              INT UNSIGNED NOT NULL,
+    rep_file_id         INT UNSIGNED NOT NULL,
+    from_rev_id         INT UNSIGNED DEFAULT NULL,
+    from_rep_file_id    INT UNSIGNED DEFAULT NULL,
+    INDEX i_rev_id_rep_file_id (rev_id, rep_file_id),
+    CONSTRAINT `fk_rep_file_change_from_rev_id` FOREIGN KEY (`rev_id`) REFERENCES `rev` (`rev_id`),
+    CONSTRAINT `fk_rep_file_change_from_rep_file_id` FOREIGN KEY (`rep_file_id`) REFERENCES `rep_file` (`rep_file_id`),
+    CONSTRAINT `fk_rep_file_change_from_from_rev_id` FOREIGN KEY (`from_rev_id`) REFERENCES `rev` (`rev_id`),
+    CONSTRAINT `fk_rep_file_change_from_from_rep_file_id` FOREIGN KEY (`from_rep_file_id`) REFERENCES `rep_file` (`rep_file_id`)
+) TYPE=InnoDB;
+</source>
+
+
 ==== rep_test ====
 Number and name of the test. Each rep_file can contains many tests.
 * rep_test_id
 * rep_file_id
-* number -- number of test in rep_file
+* number -- this test number in rep_file
 * name -- first inserted, name of the test (if any)
 * has_another_name -- if another name was found
 <source lang=sql>
@@ -261,17 +325,19 @@ CREATE TABLE tskipall_msg (
 </source>
 
 ==== tfile ====
-Test run file results - summary result for all tests in file. All_passed is shortcup to data test.
+Test file summary results - summary result for all tests in file. All_passed is shortcup to data test.
 * tfile_id
 * trun_id
 * all_passed -- (in Harness::Straps max == seen == ok)
 * tskippall_msg_id (can be null)
+* hang -- if test hang and was killed
 <source lang=sql>
 CREATE TABLE tfile (
     tfile_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     trun_id             INT UNSIGNED NOT NULL,
     all_passed          BOOLEAN NOT NULL DEFAULT 0,
     tskippall_msg_id    INT UNSIGNED DEFAULT NULL,
+    hang                BOOLEAN DEFAULT 0,
     INDEX i_trun_id (trun_id),
     CONSTRAINT `fk_tfile_trun_id` FOREIGN KEY (`trun_id`) REFERENCES `trun` (`trun_id`)
 ) TYPE=InnoDB;
@@ -293,15 +359,19 @@ CREATE TABLE tresult (
 ==== ttest ====
 Test results for each test (test case, subtest) submitted in trun.
 * ttest_id
+* trun_id
 * rep_test_id
 * tresult_id
 <source lang=sql>
 CREATE TABLE ttest (
     ttest_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    trun_id             INT UNSIGNED NOT NULL,
     rep_test_id         INT UNSIGNED NOT NULL,
     tresult_id          INT UNSIGNED NOT NULL,
     INDEX i_rep_test_id (rep_test_id),
+    INDEX i_trun_id (trun_id),
     INDEX i_tresult_id (tresult_id),
+    CONSTRAINT `fk_ttest_trun_id` FOREIGN KEY (`trun_id`) REFERENCES `trun` (`trun_id`),
     CONSTRAINT `fk_ttest_rep_test_id` FOREIGN KEY (`rep_test_id`) REFERENCES `rep_test` (`rep_test_id`),
     CONSTRAINT `fk_ttest_tresult_id` FOREIGN KEY (`tresult_id`) REFERENCES `tresult` (`tresult_id`)
 ) TYPE=InnoDB;
@@ -331,3 +401,28 @@ CREATE TABLE tdiag_msg (
 commit;
 </source>
 <!-- PARSE PART DBCREATE END -->
+
+
+=== ToDo ===
+* tests_num -- plan, total tests which should have been run, null -> this isn't test file
+
+=== Repository changes ===
+* rev_num_from = 100, rev_num_to = 100 -> file inserted in rev 100 and deleted in 101
+* rev_num_to = null - file exists in "max(rev_num) for rep_id"
+
+==== A .. added (copied from) ====
+* insert into rep_file, rev_num_from=rev_num, rev_num_to=null
+* insert into rep_file_change
+* insert into rep_file_change_from
+
+==== M .. modified ====
+* insert into rep_file_change
+
+==== D .. deleted ====
+* change rev_num_to
+
+==== R .. replacing ====
+* change rev_num_to to rev_num-1 for prev rep_file
+* insert into rep_file, rev_num_from=rev_num, rev_num_to=null
+* insert into rep_file_change
+* insert into rep_file_change_from

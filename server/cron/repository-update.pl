@@ -10,6 +10,7 @@ use Devel::StackTrace;
 
 use SVN::Log;
 
+
 my $conf_fpath = catfile( $RealBin, '..', 'conf', 'dbconf.pl' );
 my $conf = require $conf_fpath;
 croak "Config loaded from '$conf_fpath' is empty.\n" unless $conf;
@@ -267,8 +268,43 @@ sub insert_rep_path {
 }
 
 
+# $rev_id, $rep_path_id
+sub exists_rev_rep_path {
+    my $cname = (caller(0))[3];
+    unless ( defined $sth_cache->{$cname} ) {
+        $sth_cache->{$cname} = $dbh->prepare(qq{
+            select 1 as found
+              from rev_rep_path
+             where rev_id = ?
+               and rep_path_id = ?
+        }) or croak $dbh->errstr;
+    }
+    my $result = $dbh->selectrow_hashref( $sth_cache->{$cname}, {}, @_ );
+    db_error($dbh) if $sth_cache->{$cname}->err;
+    print dump_get( $cname, \@_, $result ) if $debug;
+    return $result->{found};
+}
 
-# $rev_num, $rep_path_id (undef)
+
+# $rev_id, $rep_path_id
+sub insert_rev_rep_path {
+    my $cname = (caller(0))[3];
+    unless ( defined $sth_cache->{$cname} ) {
+        $sth_cache->{$cname} = $dbh->prepare(qq{
+            insert into rev_rep_path ( rev_id, rep_path_id ) values ( ?, ? )
+        }) or croak $dbh->errstr;
+    }
+    $sth_cache->{$cname}->execute( @_ );
+    db_error($dbh) if $sth_cache->{$cname}->err;
+    my $result = get_rep_path_id( @_[0], @_[1] );
+    print dump_get( $cname, \@_, $result ) if $debug;
+    return $result;
+}
+
+
+
+
+# $rev_num
 sub get_rev_id {
     my $cname = (caller(0))[3];
     unless ( defined $sth_cache->{$cname} ) {
@@ -276,13 +312,12 @@ sub get_rev_id {
             select rev_id
               from rev
              where rev_num = ?
-               and rep_path_id = ? OR (rep_path_id IS NULL AND ? = 1)
         }) or croak $dbh->errstr;
     }
     my $result = $dbh->selectrow_hashref( 
         $sth_cache->{$cname},
         {},
-        @_[0], @_[1], defined(@_[1]) ? 0 : 1
+        @_[0]
     );
     db_error($dbh) if $sth_cache->{$cname}->err;
     print dump_get( $cname, \@_, $result ) if $debug;
@@ -295,9 +330,10 @@ sub get_max_rev_num {
     unless ( defined $sth_cache->{$cname} ) {
         $sth_cache->{$cname} = $dbh->prepare(qq{
             select max(rev.rev_num) as max
-              from rev, rep_path
-             where rep_path.rep_path_id = rev.rep_path_id
-               and rep_path.rep_id = ?
+              from rep_path, rev_rep_path, rev
+             where rep_path.rep_id = ?
+               and rev_rep_path.rep_path_id = rep_path.rep_path_id
+               and rev.rep_id = rev_rep_path.rev_id
         }) or croak $dbh->errstr;
     }
     my $result = $dbh->selectrow_hashref( $sth_cache->{$cname}, @_ );
@@ -306,12 +342,12 @@ sub get_max_rev_num {
     return $result->{max};
 }
 
-# $rev_num, $rep_path_id, $date, $rep_user_id (author_id), $msg
+# $rev_num, $date, $rep_user_id (author_id), $msg
 sub insert_rev {
     my $cname = (caller(0))[3];
     unless ( defined $sth_cache->{$cname} ) {
         $sth_cache->{$cname} = $dbh->prepare(qq{
-            insert into rev ( rev_num, rep_path_id, author_id, date, msg ) values ( ?, ?, ?, ?, ? )
+            insert into rev ( rev_num, author_id, date, msg ) values ( ?, ?, ?, ? )
         }) or croak $dbh->errstr;
     }
     $sth_cache->{$cname}->execute( @_ );
@@ -351,7 +387,7 @@ sub insert_rep_file {
     my $cname = (caller(0))[3];
     unless ( defined $sth_cache->{$cname} ) {
         $sth_cache->{$cname} = $dbh->prepare(qq{
-            insert into rep_file ( sub_path, rep_path_id, rev_num_to ) values ( ?, ?, ? )
+            insert into rep_file ( sub_path, rep_path_id, rev_num_from ) values ( ?, ?, ? )
         }) or croak $dbh->errstr;
     }
     $sth_cache->{$cname}->execute( @_ );
@@ -363,7 +399,7 @@ sub insert_rep_file {
 
 
 # $sub_path, $rep_path_id, $revision
-sub update_rep_file_set_deleted {
+sub set_rep_file_deleted {
     my $cname = (caller(0))[3];
     my ( $sub_path, $rep_path_id, $revision ) = @_;
     unless ( defined $sth_cache->{$cname} ) {
@@ -373,7 +409,7 @@ sub update_rep_file_set_deleted {
              where rep_path_id = ?
                and sub_path = ?
                and rev_num_from <= ?
-               and rev_num_to IS NULL
+               and rev_num_to is null
         }) or croak $dbh->errstr;
     }
     $sth_cache->{$cname}->execute( 
@@ -383,6 +419,12 @@ sub update_rep_file_set_deleted {
     my $result = get_rep_file_id( @_[0], @_[1], @_[2] );
     print dump_get( $cname, \@_, $result ) if $debug;
     return $result;
+}
+
+
+sub set_rep_file_modified {
+    my ( $sub_path, $rep_path_id, $revision ) = @_;
+    return 1;
 }
 
 
@@ -434,10 +476,10 @@ sub process_file {
         insert_rep_file( $sub_path, $rep_path_id, $revision );
     }
     elsif ( $action eq 'D' ) {
-        update_rep_file_set_deleted( $sub_path, $rep_path_id, $revision );
+        set_rep_file_deleted( $sub_path, $rep_path_id, $revision );
     }
     elsif ( $action eq 'M' ) {
-        # do nothing
+        set_rep_file_modified( $sub_path, $rep_path_id, $revision );
     }
     else {
         $@ = "Uknown file svn action '$action'.";
@@ -458,6 +500,20 @@ foreach my $rd ( @$revs ) {
         next;
     }
     
+    # insert rev if needed
+    my $rev_id = get_rev_id( $rd->{'revision'} );
+    unless ( defined $rev_id ) {
+        my $date_ts = svntime_to_dbtime( $rd->{date} );
+        log_error( $dbh, $rd, "Time parser error datestr '$rd->{date}'." ) unless defined $date_ts;
+        my $author_rep_user_id = $users->{ $rd->{'author'} }->{user_rep_id};
+        $rev_id = insert_rev( 
+            $rd->{'revision'},
+            $author_rep_user_id,
+            $date_ts,
+            $rd->{'message'}
+        );
+    }
+
     # group files by rep_path
     # table rev can contain same rev_num for different rev_path_ids
     my $rp_changes = {};
@@ -479,76 +535,36 @@ foreach my $rd ( @$revs ) {
         my ( $rep_path, $sub_path ) = split_rep_path( $project_name, $path );
         log_error( $dbh, $rd, "Parsing path '$path' failed." ) unless defined $rep_path;
 
-        if ( exists $rp_changes->{$rep_path} ) {
-            # check only for copyfrom_rev a if found check copyfrom_path
-            if ( exists $path_info->{copyfrom_rev} && $rp_changes->{$rep_path}->{copyfrom_rev} != $path_info->{copyfrom_rev} ) {
-                carp( "Revision $rd->{revision} contains copyfrom_rev '$rp_changes->{$rep_path}->{copyfrom_rev}' and '$path_info->{copyfrom_rev}'" );
-                if ( (defined $path_info->{copyfrom_rev}) && ($path_info->{copyfrom_rev} < $rp_changes->{$rep_path}->{copyfrom_rev}) ) {
-                    $rp_changes->{$rep_path}->{copyfrom_rev} = $path_info->{copyfrom_rev};
-                }
-            }
-        }
-        else {
+        unless ( exists $rp_changes->{$rep_path} ) {
             $rp_changes->{$rep_path} = {
                 sub_paths => {},
-                copyfrom_rev => undef,
-                copyfrom_path => undef,
             };
 
-            if ( exists $path_info->{copyfrom_rev} ) {
-                $rp_changes->{$rep_path}->{copyfrom_rev} = $path_info->{copyfrom_rev};
-                $rp_changes->{$rep_path}->{copyfrom_path} = $path_info->{copyfrom_path};
-            }
-            
             # get or insert rep_path
-            $rp_changes->{$rep_path}->{rep_path_id} = get_rep_path_id( $rep_id, $rep_path );
-            unless ( defined $rp_changes->{$rep_path}->{rep_path_id} ) {
-                $rp_changes->{$rep_path}->{rep_path_id} = insert_rep_path( 
-                    $rep_id,
-                    $rep_path
-                );
-                #$dbh->commit or db_error( $dbh, "Commiting rep_path failed." );
+            my $rep_path_id = get_rep_path_id( $rep_id, $rep_path );
+            unless ( defined $rep_path_id ) {
+                $rep_path_id = insert_rep_path( $rep_id, $rep_path );
             }
+
+            # insert rev_rep_path unless exists
+            unless ( exists_rev_rep_path( $rev_id, $rep_path_id ) ) {
+                insert_rev_rep_path( $rev_id, $rep_path_id );
+            }
+
+            $rp_changes->{$rep_path}->{rep_path_id} = $rep_path_id;
         }
         # store ref to path info
         $rp_changes->{$rep_path}->{sub_paths}->{$sub_path} = $rd->{'paths'}->{$path};
         print "rep_path: $rep_path, sub_path: $sub_path\n" if $debug > 4;
     }
     
-    # insert rev if needed
-    my $date_ts = svntime_to_dbtime( $rd->{date} );
-    log_error( $dbh, $rd, "Time parser error datestr '$rd->{date}'." ) unless defined $date_ts;
-    my $author_rep_user_id = $users->{ $rd->{'author'} }->{user_rep_id};
+    print dmp( $rp_changes );
+    #$dbh->rollback; die;
 
-    #print dmp( $rp_changes );
     my @rp_keys = keys %$rp_changes;
-    if ( scalar @rp_keys <= 0 ) {
-        my $rev_id = get_rev_id( $rd->{'revision'}, undef );
-        unless ( defined $rev_id ) {
-            $rev_id = insert_rev( 
-                $rd->{'revision'},
-                undef,
-                $author_rep_user_id,
-                $date_ts,
-                $rd->{'message'}
-            );
-        }
-        
-    } else {
+    if ( scalar @rp_keys > 0 ) {
         foreach my $rep_path ( @rp_keys ) {
             my $rep_path_id = $rp_changes->{$rep_path}->{rep_path_id};
-
-            # TODO duplicate data, split using new table rep_path_rev_map ?
-            my $rev_id = get_rev_id( $rd->{'revision'}, $rep_path_id );
-            unless ( defined $rev_id ) {
-                $rev_id = insert_rev( 
-                    $rd->{'revision'},
-                    $rep_path_id,
-                    $author_rep_user_id,
-                    $date_ts,
-                    $rd->{'message'}
-                );
-            }
             #$dbh->commit or db_error( $dbh, "Commiting rev_num $rd->{'revision'} failed." );
 
             my $sub_paths = $rp_changes->{$rep_path}->{sub_paths};
