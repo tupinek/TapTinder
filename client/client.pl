@@ -355,6 +355,11 @@ while ( 1 ) {
         croak "svn info failed: $o_log" unless defined $o_rev;
         $state->{temp_rev} = $o_rev;
         print "Revision number: $state->{temp_rev}\n" if $ver > 4;
+        
+        if ( $state->{temp_rev} !~ /^\d+$/ ) {
+            print "Revision number is not numeric. Probably Subversion error, see [perl #49788].";
+            next NEXT_CONF;
+        }
 
         my $timestamp = time();
         $state->{results_path_prefix} =
