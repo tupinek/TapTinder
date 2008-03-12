@@ -1,4 +1,3 @@
-use DBI;
 use strict;
 
 use Carp qw(carp croak verbose);
@@ -10,6 +9,8 @@ use Devel::StackTrace;
 
 use SVN::Log;
 
+use lib '../lib';
+use TapTin::DB;
 
 my $conf_fpath = catfile( $RealBin, '..', 'conf', 'dbconf.pl' );
 my $conf = require $conf_fpath;
@@ -27,21 +28,10 @@ my $log_dump_file = $project_name.'-replog-dump.pl';
 $log_dump_file = $project_name.'-replog-debugdump.pl' if $debug_logpart;
 my $log_dump_fn = catfile( $RealBin, '..', 'conf', $log_dump_file );
 
-my $dbh;
-my $sth_cache;
 
-my $dbh = DBI->connect(
-    $conf->{db}->{dsn},
-    $conf->{db}->{user},
-    $conf->{db}->{password},
-    { RaiseError => 0, AutoCommit => 0 }
-) or die $DBI::errstr;
-
-
-sub trc {
-    my $trace = Devel::StackTrace->new;
-    return $trace->as_string;
-}
+my $db = TapTin::DB->new();
+$db->debug( $debug );
+$db->connect( $conf->{db} );
 
 sub dmp {
     my $dd = Data::Dumper->new( [ @_ ] );
@@ -124,314 +114,10 @@ if ( ( !$debug_logpart || (not -e $log_dump_fn) )
     save_state();
 }
 
-
-sub log_error {
-    my ( $dbh, $rd, $msg ) = @_;
-    
-    $dbh->rollback;
-    $dbh->disconnect;
-    if ( defined $rd ) {
-        croak 
-            $msg
-            . "\n"
-            . "For revison " . $rd->{revision} . ".\n"
-            . dmp( $rd ) ."\n"
-        ;
-    }
-}
-
-
-sub db_error {
-    my ( $dbh, $msg ) = @_;
-    
-    $dbh->rollback;
-    $dbh->disconnect;
-    $msg = '' unless defined $msg;
-    $msg .= $dbh->errstr;
-    $msg .= "\n\n" . trc();
-    croak $msg;
-}
-
-
-sub dump_get {
-    my ( $sub_name, $ra_args, $results ) = @_;
-    print "function $sub_name, input (" . join(', ',@$ra_args) . "), result " . dmp($results);
-}
-
-# next functions use global variables $dbh, $sth_cache, $debug
-
-# $repository, $project_name
-sub get_rep_id {
-    my $cname = (caller(0))[3];
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            select rep_id
-              from rep, project 
-             where rep.path = ? 
-               and rep.active = 1
-               and project.project_id = rep.project_id
-               and project.name = ?
-        }) or croak $dbh->errstr;
-    }
-    my $result = $dbh->selectrow_hashref( $sth_cache->{$cname}, {}, @_ );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result->{rep_id};
-}
-
-
-# $rep_id
-sub get_rep_users {
-    my $cname = (caller(0))[3];
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            select user_rep_id,
-                   rep_login
-              from user_rep
-             where rep_id = ?
-        }) or croak $dbh->errstr;
-    }
-    $sth_cache->{$cname}->execute( @_ );
-    my $result = $sth_cache->{$cname}->fetchall_hashref( 'rep_login' );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result;
-}
-
-# $rep_id, $rep_login (null)
-sub get_rep_user_id {
-    my $cname = (caller(0))[3];
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            select user_rep_id
-              from user_rep
-             where rep_id = ?
-               and rep_login = ? OR (rep_login IS NULL AND ? = 1)
-        }) or croak $dbh->errstr;
-    }
-    my $result = $dbh->selectrow_hashref(
-        $sth_cache->{$cname}, {},
-        @_[0], @_[1], defined(@_[1]) ? 0 : 1
-    );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result->{user_rep_id};
-}
-
-# $rep_id, $rep_login
-sub insert_rep_user {
-    my $cname = (caller(0))[3];
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            insert into user_rep ( rep_id, rep_login ) values ( ?, ? )
-        }) or croak $dbh->errstr;
-    }
-    $sth_cache->{$cname}->execute( @_ );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    #my $result = $dbh->last_insert_id( undef, undef, undef, undef);
-    my $result = get_rep_user_id( @_[0], @_[1] );
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result;
-}
-
-
-# $rep_id, $rep_path
-sub get_rep_path_id {
-    my $cname = (caller(0))[3];
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            select rep_path_id
-              from rep_path
-             where rep_id = ?
-               and path = ?
-        }) or croak $dbh->errstr;
-    }
-    my $result = $dbh->selectrow_hashref( $sth_cache->{$cname}, {}, @_ );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result->{rep_path_id};
-}
-
-# $rep_id, $rep_path, $base_rev_id
-sub insert_rep_path {
-    my $cname = (caller(0))[3];
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            insert into rep_path ( rep_id, path ) values ( ?, ? )
-        }) or croak $dbh->errstr;
-    }
-    $sth_cache->{$cname}->execute( @_ );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    my $result = get_rep_path_id( @_[0], @_[1] );
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result;
-}
-
-
-# $rev_id, $rep_path_id
-sub exists_rev_rep_path {
-    my $cname = (caller(0))[3];
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            select 1 as found
-              from rev_rep_path
-             where rev_id = ?
-               and rep_path_id = ?
-        }) or croak $dbh->errstr;
-    }
-    my $result = $dbh->selectrow_hashref( $sth_cache->{$cname}, {}, @_ );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result->{found};
-}
-
-
-# $rev_id, $rep_path_id
-sub insert_rev_rep_path {
-    my $cname = (caller(0))[3];
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            insert into rev_rep_path ( rev_id, rep_path_id ) values ( ?, ? )
-        }) or croak $dbh->errstr;
-    }
-    $sth_cache->{$cname}->execute( @_ );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    my $result = get_rep_path_id( @_[0], @_[1] );
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result;
-}
-
-
-
-
-# $rev_num
-sub get_rev_id {
-    my $cname = (caller(0))[3];
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            select rev_id
-              from rev
-             where rev_num = ?
-        }) or croak $dbh->errstr;
-    }
-    my $result = $dbh->selectrow_hashref( 
-        $sth_cache->{$cname},
-        {},
-        @_[0]
-    );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result->{rev_id};
-}
-
-# $rep_id
-sub get_max_rev_num {
-    my $cname = (caller(0))[3];
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            select max(rev.rev_num) as max
-              from rep_path, rev_rep_path, rev
-             where rep_path.rep_id = ?
-               and rev_rep_path.rep_path_id = rep_path.rep_path_id
-               and rev.rep_id = rev_rep_path.rev_id
-        }) or croak $dbh->errstr;
-    }
-    my $result = $dbh->selectrow_hashref( $sth_cache->{$cname}, @_ );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result->{max};
-}
-
-# $rev_num, $date, $rep_user_id (author_id), $msg
-sub insert_rev {
-    my $cname = (caller(0))[3];
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            insert into rev ( rev_num, author_id, date, msg ) values ( ?, ?, ?, ? )
-        }) or croak $dbh->errstr;
-    }
-    $sth_cache->{$cname}->execute( @_ );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    my $result = get_rev_id( @_[0], @_[1] );
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result;
-}
-
-
-# $sub_path, $rep_path_id, $revision
-sub get_rep_file_id {
-    my $cname = (caller(0))[3];
-    my ( $sub_path, $rep_path_id, $revision ) = @_;
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            select rep_file_id
-              from rep_file
-             where rep_path_id = ?
-               and sub_path = ?
-               and rev_num_from <= ?
-               and (rev_num_to IS NULL OR rev_num_to >= ?)
-        }) or croak $dbh->errstr;
-    }
-    my $result = $dbh->selectrow_hashref( 
-        $sth_cache->{$cname},
-        {},
-        $rep_path_id, $sub_path, $revision, $revision
-    );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result->{rev_file_id};
-}
-
-# $sub_path, $rep_path_id, $revision
-sub insert_rep_file {
-    my $cname = (caller(0))[3];
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            insert into rep_file ( sub_path, rep_path_id, rev_num_from ) values ( ?, ?, ? )
-        }) or croak $dbh->errstr;
-    }
-    $sth_cache->{$cname}->execute( @_ );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    my $result = get_rep_file_id( @_[0], @_[1], @_[2] );
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result;
-}
-
-
-# $sub_path, $rep_path_id, $revision
-sub set_rep_file_deleted {
-    my $cname = (caller(0))[3];
-    my ( $sub_path, $rep_path_id, $revision ) = @_;
-    unless ( defined $sth_cache->{$cname} ) {
-        $sth_cache->{$cname} = $dbh->prepare(qq{
-            update rep_file
-               set rev_num_to = ?
-             where rep_path_id = ?
-               and sub_path = ?
-               and rev_num_from <= ?
-               and rev_num_to is null
-        }) or croak $dbh->errstr;
-    }
-    $sth_cache->{$cname}->execute( 
-        $revision, $rep_path_id, $sub_path, $revision
-    );
-    db_error($dbh) if $sth_cache->{$cname}->err;
-    my $result = get_rep_file_id( @_[0], @_[1], @_[2] );
-    print dump_get( $cname, \@_, $result ) if $debug;
-    return $result;
-}
-
-
-sub set_rep_file_modified {
-    my ( $sub_path, $rep_path_id, $revision ) = @_;
-    return 1;
-}
-
-
-my $rep_id = get_rep_id( $conf_rep->{repository}, $project_name );
+my $rep_id = $db->get_rep_id( $conf_rep->{repository}, $project_name );
 
 # userting users into user_rep table
-my $users = get_rep_users( $rep_id );
+my $users = $db->get_rep_users( $rep_id );
 foreach my $rd ( @$revs ) {
     my $author = $rd->{'author'}; # can be null, will create row in rep_user
     if ( exists $users->{$author} ) {
@@ -439,7 +125,7 @@ foreach my $rd ( @$revs ) {
     }
     else {
         print "author '$author' not exists in DB, inserting\n" if $debug > 1;
-        my $user_rep_id = insert_rep_user( $rep_id, $author );
+        my $user_rep_id = $db->insert_rep_user( $rep_id, $author );
         # temporary data, probably different keys than in data loaded from DB
         $users->{$author} = {
             user_rep_id => $user_rep_id,
@@ -447,8 +133,8 @@ foreach my $rd ( @$revs ) {
         }
     }
 }
-$dbh->commit or db_error( $dbh, "Commiting users failed." );
-$users = get_rep_users( $rep_id );
+$db->commit or $db->db_error( "Commiting users failed." );
+$users = $db->get_rep_users( $rep_id );
 
 # /trunk, /braches/BRANCHNAME, /tags/TAGNAME
 sub split_rep_path {
@@ -468,18 +154,18 @@ sub svntime_to_dbtime {
 
 
 sub process_file {
-    my ( $dbh, $sub_path, $info, $revision, $rep_path_id ) = @_;
+    my ( $db, $sub_path, $info, $revision, $rep_path_id ) = @_;
 
     my $action = $info->{action};
 
     if ( $action eq 'A' || $action eq 'R' ) {
-        insert_rep_file( $sub_path, $rep_path_id, $revision );
+        $db->insert_rep_file( $sub_path, $rep_path_id, $revision );
     }
     elsif ( $action eq 'D' ) {
-        set_rep_file_deleted( $sub_path, $rep_path_id, $revision );
+        $db->set_rep_file_deleted( $sub_path, $rep_path_id, $revision );
     }
     elsif ( $action eq 'M' ) {
-        set_rep_file_modified( $sub_path, $rep_path_id, $revision );
+        $db->set_rep_file_modified( $sub_path, $rep_path_id, $revision );
     }
     else {
         $@ = "Uknown file svn action '$action'.";
@@ -490,7 +176,7 @@ sub process_file {
 }
 
 # todo, doesn't work
-my $max_revnum_in_db = get_max_rev_num( $rep_id );
+my $max_revnum_in_db = $db->get_max_rev_num( $rep_id );
 print "max_revnum_in_db: $max_revnum_in_db\n" if $debug > 3;
 $max_revnum_in_db = 0 unless defined $max_revnum_in_db;
 
@@ -501,12 +187,12 @@ foreach my $rd ( @$revs ) {
     }
     
     # insert rev if needed
-    my $rev_id = get_rev_id( $rd->{'revision'} );
+    my $rev_id = $db->get_rev_id( $rd->{'revision'} );
     unless ( defined $rev_id ) {
         my $date_ts = svntime_to_dbtime( $rd->{date} );
-        log_error( $dbh, $rd, "Time parser error datestr '$rd->{date}'." ) unless defined $date_ts;
+        $db->log_rev_error( $rd, "Time parser error datestr '$rd->{date}'." ) unless defined $date_ts;
         my $author_rep_user_id = $users->{ $rd->{'author'} }->{user_rep_id};
-        $rev_id = insert_rev( 
+        $rev_id = $db->insert_rev( 
             $rd->{'revision'},
             $author_rep_user_id,
             $date_ts,
@@ -533,7 +219,7 @@ foreach my $rd ( @$revs ) {
         }
 
         my ( $rep_path, $sub_path ) = split_rep_path( $project_name, $path );
-        log_error( $dbh, $rd, "Parsing path '$path' failed." ) unless defined $rep_path;
+        $db->log_rev_error( $rd, "Parsing path '$path' failed." ) unless defined $rep_path;
 
         unless ( exists $rp_changes->{$rep_path} ) {
             $rp_changes->{$rep_path} = {
@@ -541,14 +227,14 @@ foreach my $rd ( @$revs ) {
             };
 
             # get or insert rep_path
-            my $rep_path_id = get_rep_path_id( $rep_id, $rep_path );
+            my $rep_path_id = $db->get_rep_path_id( $rep_id, $rep_path );
             unless ( defined $rep_path_id ) {
-                $rep_path_id = insert_rep_path( $rep_id, $rep_path );
+                $rep_path_id = $db->insert_rep_path( $rep_id, $rep_path );
             }
 
             # insert rev_rep_path unless exists
-            unless ( exists_rev_rep_path( $rev_id, $rep_path_id ) ) {
-                insert_rev_rep_path( $rev_id, $rep_path_id );
+            unless ( $db->exists_rev_rep_path( $rev_id, $rep_path_id ) ) {
+                $db->insert_rev_rep_path( $rev_id, $rep_path_id );
             }
 
             $rp_changes->{$rep_path}->{rep_path_id} = $rep_path_id;
@@ -559,23 +245,23 @@ foreach my $rd ( @$revs ) {
     }
     
     print dmp( $rp_changes );
-    #$dbh->rollback; die;
+    #$db->rollback; die;
 
     my @rp_keys = keys %$rp_changes;
     if ( scalar @rp_keys > 0 ) {
         foreach my $rep_path ( @rp_keys ) {
             my $rep_path_id = $rp_changes->{$rep_path}->{rep_path_id};
-            #$dbh->commit or db_error( $dbh, "Commiting rev_num $rd->{'revision'} failed." );
+            #$db->commit or $db->db_error( "Commiting rev_num $rd->{'revision'} failed." );
 
             my $sub_paths = $rp_changes->{$rep_path}->{sub_paths};
             foreach my $sub_path ( sort keys %$sub_paths ) {
                 my $info = $sub_paths->{$sub_path};
-                process_file( $dbh, $sub_path, $info, $rd->{'revision'}, $rep_path_id ) or log_error( $dbh, $rd, $@ );
+                process_file( $db, $sub_path, $info, $rd->{'revision'}, $rep_path_id ) or $db->log_rev_error( $rd, $@ );
             }
         }
     }
     
-    $dbh->commit or db_error( $dbh, "Commiting all changes for $rd->{'revision'} failed." );
+    $db->commit or $db->db_error( "Commiting all changes for $rd->{'revision'} failed." );
 
     print "rev " . $rd->{'revision'} . " done, ok\n" if $debug > 1;
 
@@ -605,5 +291,5 @@ foreach my $rd ( @$revs ) {
     
 }
 
-$dbh->commit or db_error( $dbh, "End commit failed." );
-$dbh->disconnect;
+$db->commit or $db->db_error( "End commit failed." );
+$db->disconnect;
