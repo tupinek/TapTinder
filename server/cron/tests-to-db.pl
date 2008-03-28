@@ -2,13 +2,76 @@ use strict;
 use warnings;
 
 use Carp qw(carp croak verbose);
+use FindBin qw($RealBin);
+
+use DBI;
 use File::stat;
+use File::Spec::Functions;
+
 use Data::Dumper;
 
-our $debug = $ARGV[0];
 
-sub load_data {
-    my ( $fp ) = @_;
+my $conf_fpath = catfile( $RealBin, '..', 'conf', 'dbconf.pl' );
+my $conf = require $conf_fpath;
+croak "Config loaded from '$conf_fpath' is empty.\n" unless $conf;
+
+my $project_name = 'parrot';
+my $conf_rep = $conf->{project}->{$project_name};
+
+my $results_dir = $ARGV[0] || './../../test-smoke';
+my $debug = $ARGV[1] || 10;
+
+print "Debug level: $debug\n" if $debug;
+print "\n" if $debug;
+
+my $dbh;
+my $sth_cache;
+
+$dbh = DBI->connect(
+    $conf->{db}->{dsn},
+    $conf->{db}->{user},
+    $conf->{db}->{password},
+    { RaiseError => 0, AutoCommit => 0 }
+) or die $DBI::errstr;
+
+
+sub trc {
+    my $trace = Devel::StackTrace->new;
+    return $trace->as_string;
+}
+
+sub dmp {
+    my $dd = Data::Dumper->new( [ @_ ] );
+    $dd->Indent(1);
+    $dd->Terse(1);
+    $dd->Purity(1);
+    $dd->Deepcopy(1);
+    $dd->Deparse(1);
+    return $dd->Dump;
+}
+
+sub dump_get {
+    my ( $sub_name, $ra_args, $results ) = @_;
+    print "function $sub_name, input (" . join(', ',@$ra_args) . "), result " . dmp($results);
+}
+
+
+
+sub db_error {
+    my ( $dbh, $msg ) = @_;
+    
+    $dbh->rollback;
+    $dbh->disconnect;
+    $msg = '' unless defined $msg;
+    $msg .= $dbh->errstr;
+    $msg .= "\n\n" . trc();
+    croak $msg;
+}
+
+
+sub load_tap_data {
+    my ( $fp, $use_full_yaml ) = @_;
+    $use_full_yaml = 1 unless defined $use_full_yaml;
 
     my $data;
     eval {
@@ -23,13 +86,18 @@ sub load_data {
     if ( $@ ) {
         carp $@;
         print "Using YAML ...\n";
-        eval {
-            use YAML;
-            my ( $rh, $ra, $sc ) = YAML::LoadFile( $fp );
-            $data = $rh;
-        };
-        if ( $@ ) {
-            carp $@;
+        if ( $use_full_yaml ) {
+            eval {
+                use YAML;
+                my ( $rh, $ra, $sc ) = YAML::LoadFile( $fp );
+                $data = $rh;
+            };
+            if ( $@ ) {
+                carp $@;
+                return undef;
+            }
+        }
+        else {
             return undef;
         }
     }
@@ -46,15 +114,21 @@ sub dump_header {
 
         
 my $mtimes = {};
-foreach my $fp ( glob('parrot-smoke-*.yaml') ) {
+my $glob_pattern = $results_dir.'/parrot-smoke-*.yaml';
+foreach my $fp ( glob($glob_pattern) ) {
     my $st = stat $fp;
     $mtimes->{ $st->mtime } = $fp;
-} 
+}
+if ( scalar keys %$mtimes <= 0 ) {
+    print "Not found any file with $glob_pattern. First param is path to directory with results.\n";
+    exit;
+}
+
 
 my $last_fn;
 my $loaded_revs = {};
 my $num = 0;
-foreach my $mtime ( sort keys %$mtimes ) {
+foreach my $mtime ( reverse sort keys %$mtimes ) {
     $num++;
     my $fn = $mtimes->{$mtime};
     my @lt = localtime($mtime);
@@ -63,19 +137,20 @@ foreach my $mtime ( sort keys %$mtimes ) {
     print "mtime: $time\n";
     $last_fn = $fn;
 
-    my $data = load_data($fn);
+    my $data = load_tap_data($fn,!$debug);
     if ( defined $data ) {
         dump_header( $data );
         my $rev = $data->{pconfig}->{revision};
         my $arch = $data->{pconfig}->{archname};
         if ( defined $rev && defined $arch ) {
-            $loaded_revs->{$rev} = {} unless exists $loaded_revs->{$rev};
-            if ( exists $loaded_revs->{$rev}->{$arch} ) {
-                $loaded_revs->{$rev}->{$arch}++;
-            } 
-            else {
-                $loaded_revs->{$rev}->{$arch} = 1;
+            unless ( exists $loaded_revs->{$rev}->{$arch} ) {
+                $loaded_revs->{$rev}->{$arch} = {
+                    num => 0,
+                    files => [],
+                };
             }
+            $loaded_revs->{$rev}->{$arch}->{num}++;
+            push @{$loaded_revs->{$rev}->{$arch}->{files}}, $fn;
             #print Dumper($loaded_revs);
         } else {
             print "Results file error. No archname or revisions in pconfig.\n";
@@ -86,19 +161,20 @@ foreach my $mtime ( sort keys %$mtimes ) {
 }
 print "\n";
 
-
+print "Stats:\n";
 my $arch_stat = {};
 foreach my $rev ( sort keys %$loaded_revs ) {
-    print "$rev: ";
+    print "  $rev: ";
     my $archs = $loaded_revs->{$rev};
     my $arch_num = 0;
     foreach my $arch ( sort keys %$archs ) {
         $arch_num++;
         print ", " if $arch_num > 1;
         print $arch;
-        print "(".$archs->{$arch}.")" if $archs->{$arch} > 1;
-        $arch_stat->{$arch} = 0 unless exists $arch_stat->{$arch};
-        $arch_stat->{$arch}++;
+        print "(".$archs->{$arch}->{num}.")" if $archs->{$arch}->{num} > 1;
+        $arch_stat->{$arch} = {} unless exists $arch_stat->{$arch};
+        $arch_stat->{$arch}->{$rev} = 0 unless defined $arch_stat->{$arch}->{$rev};
+        $arch_stat->{$arch}->{$rev}++;
     }
     print "\n";
 }
@@ -106,6 +182,13 @@ print "\n";
 
 
 foreach my $arch ( sort keys %$arch_stat ) {
-    print "$arch : " . $arch_stat->{$arch} . "\n";
+    my $unique_revs = scalar keys %{$arch_stat->{$arch}};
+    my $all_tests = 0;
+    foreach my $rev ( keys %{$arch_stat->{$arch}} ) {
+        $all_tests += $arch_stat->{$arch}->{$rev} 
+    }
+    print "  $arch : $unique_revs ($all_tests)\n";
 }
 
+$dbh->commit or db_error( $dbh, "End commit failed." );
+$dbh->disconnect;
