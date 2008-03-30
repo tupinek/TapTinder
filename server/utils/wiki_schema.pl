@@ -113,9 +113,9 @@ sub get_table_list {
             if ( defined $rh_sel_tables && not exists $rh_sel_tables->{$table} ) {
                 print " - skipped" if $debug > 1;
             } else {
-                $rh_sel_tables->{$table}++;
+                $rh_sel_tables->{$table}++ if defined $rh_sel_tables;
                 push @tables, $table;
-                $sel_sql .= "\n" if $sel_sql;
+                $sel_sql .= "\n\n" if $sel_sql;
                 $sel_sql .= $sql;
             }
             print "\n" if $debug > 1;
@@ -131,7 +131,7 @@ sub get_table_list {
     }
     
     $sel_sql =~ s{\r}{}g;
-    $sel_sql =~ s{\n\n+}{\n\n}g;
+    $sel_sql =~ s{\n\n\n+}{\n\n}g;
     
     if ( defined $rh_sel_tables ) {
         foreach my $table ( sort keys %$rh_sel_tables ) {
