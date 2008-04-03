@@ -299,26 +299,26 @@ if ($html) {
     }
 }
 elsif ($yaml) {
-	my $version = '0.01';
-	
+    my $version = '0.01';
+    
     eval {
         require YAML;
     };
     die "You must have YAML installed.\n\n$@"
         if $@;
 
-	my $conf_fpath = '../../client/client-conf.yaml';
-	my $project_name = 'parrot';
-	my ( $all_conf ) = YAML::LoadFile( $conf_fpath ) 
-		|| die "Can't find your config file '$conf_fpath'\n";
-	my $conf = $all_conf->{$project_name};
-	delete $conf->{client_passwd};
+    my $conf_fpath = '../../client-conf/client-conf.yaml';
+    my $project_name = 'parrot';
+    my ( $all_conf ) = YAML::LoadFile( $conf_fpath ) 
+        || die "harnessnew error: Can't find your config file '$conf_fpath'\n";
+    my $conf = $all_conf->{$project_name};
+    delete $conf->{client_passwd};
 
     my @sel_pconfig_keys = qw(
         osname archname cc build_dir cpuarch revision VERSION optimize DEVEL
     );
     
-	my $sel_pconfig;
+    my $sel_pconfig;
     foreach ( @sel_pconfig_keys ) {
         $sel_pconfig->{$_} = $PConfig{$_};
     }
@@ -339,8 +339,8 @@ elsif ($yaml) {
             'conf' => $conf,
             'results'   => \@all_results,
             'duration'  => $duration,
-            'pconfig'	=> $sel_pconfig,
-	        'harness_args' => (($args) ? $args : "N/A"),
+            'pconfig'   => $sel_pconfig,
+            'harness_args' => (($args) ? $args : "N/A"),
         );
         
         print YAML::DumpFile("taptinder-results.yaml", \%data); 
