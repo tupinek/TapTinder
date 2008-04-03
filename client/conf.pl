@@ -72,7 +72,7 @@ push @$conf, {
                 'perl ' . catfile( $RealBin, 'upload.pl' )
                 . ' parrot'
                 . ' taptinder-results.yaml'
-                . ' ' . catfile( $RealBin, 'client-conf.yaml' )
+                . ' ' . catfile( $RealBin, '..', 'client-conf', 'client-conf.yaml' )
             ,
             'mt'  => 10*60,
         },

@@ -23,7 +23,7 @@ use SVNShell qw(svnversion svnup);
 use TAPTinder::TestedRevs;
 
 use Term::ReadKey;
-ReadMode('cbreak');
+#ReadMode('cbreak');
 
 # verbose level
 #  >0 .. print errors
@@ -264,11 +264,12 @@ while ( 1 ) {
             );
             if ( $up_ok ) {
                 if ( $tmp_new_rev != $state->{src_rev} ) {
-                    if ( get_revision_to_test( $ck->{name}, $tmp_new_rev ) != $tmp_new_rev ) {
+                    $state->{svnup_done} = 1;
+                    my $recom_rev = get_revision_to_test( $ck->{name}, $state->{src_rev} );
+                    if ( $recom_rev != $tmp_new_rev ) {
                         print "HEAD revision $tmp_new_rev already tested.\n";
                         next NEXT_CONF;
                     }
-                    $state->{svnup_done} = 1;
                     $new_rev = $tmp_new_rev;
                 } else {
                     print "Revision '$to_rev' not found in repository!\n" if $ver > 3;
