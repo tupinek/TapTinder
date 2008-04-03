@@ -8,10 +8,12 @@ our $VERSION = 0.01;
 our @EXPORT = qw(get_tested_revisions get_revision_to_test revision_test_done unlink_state_file);
 
 use YAML qw(LoadFile DumpFile);
+use File::Spec::Functions;
 
 sub _get_revisions_state_fname {
     my ( $project_name ) = @_;
-    return 'client-revs-'.$project_name.'.yaml';
+    my $fn = 'client-revs-'.$project_name.'.yaml';
+    return catfile( '..', 'client-conf', $fn );
 }
 
 sub get_tested_revisions {

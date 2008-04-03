@@ -11,7 +11,7 @@ use File::Path;
 use File::Copy;
 
 use lib 'libcpan';
-use lib "$FindBin::Bin/libcpan";
+use lib "$FindBin::Bin/../libcpan";
 use Data::Dump qw(dump);
 use File::Copy::Recursive qw(dircopy);
 use YAML;
@@ -41,7 +41,7 @@ print "Working path: '" . $RealBin . "'\n" if $ver > 3;
 print "Loading config file.\n" if $ver > 2;
 
 my $fn_client_config = 'client-conf.yaml';
-my $fp_client_conf = catfile( $RealBin, $fn_client_config );
+my $fp_client_conf = catfile( $RealBin, '..', 'client-conf', $fn_client_config );
 print "Client config file path: '" . $fp_client_conf . "'\n" if $ver > 5;
 unless ( -e $fp_client_conf ) {
     croak
@@ -127,7 +127,7 @@ sub default_state {
 }
 
 
-my $fp_state = catfile( $RealBin, 'state.pl' );
+my $fp_state = catfile( $RealBin, '..', 'client-conf', 'state.pl' );
 print "State config file path: '" . $fp_state . "'\n" if $ver > 5;
 my $state;
 if ( -e $fp_state ) {
