@@ -67,7 +67,7 @@ sub svnup {
     
     # svn up for not existing revision fill server logs
     if ( !$head && $try_this_file ) {
-        my $svnup_cmd = $svn_cmd_prefix . 'svn st -u "' . $dir .'\\' . $try_this_file . '" 2>&1 |';
+        my $svnup_cmd = $svn_cmd_prefix . 'svn st -u "' . $dir .'/' . $try_this_file . '" 2>&1 |';
         if ( open( SVNUP, $svnup_cmd ) ) {
             my $svnup_log = '';
             while ( my $line = <SVNUP> ) { $svnup_log .= $line; }
