@@ -55,10 +55,17 @@ sub sleep_and_process_keypress {
     my ( $sleep_time ) = @_;
 
     my $start_time = time();
+    my $num = 0;
     while ( time() - $start_time < $sleep_time ) {
-        print "." if $ver > 3;
         process_keypress();
         sleep 1;
+        if ( $ver > 9 ) {
+            print ".";
+            if ( $num < (time() - $start_time) / 10 - 1 ) {
+                print "\n";
+                $num++;
+            }
+        }
     }
     print "\n" if $ver > 2;
     return 1;

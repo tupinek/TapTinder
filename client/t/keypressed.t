@@ -36,5 +36,7 @@ sleep_and_process_keypress( 3 );
 print "b2";
 sleep_and_process_keypress( 3 );
 
+print "c2";
+sleep_and_process_keypress( 35 );
 
 print "Normal end.\n";
