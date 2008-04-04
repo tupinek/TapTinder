@@ -26,6 +26,17 @@ sub get_tested_revisions {
     return $hashref;
 }
 
+
+=item C<get_revision_to_test($project_name, $actual_rev)>
+
+Searches tested revision numberes and return new revision number to test.
+
+Parameter $actual_rev is your project revison number and is used when no bigger
+revision number found.
+
+=cut
+
+
 sub get_revision_to_test {
     my ( $project_name, $actual_rev ) = @_;
     
@@ -41,8 +52,8 @@ sub get_revision_to_test {
 
     if ( $num == 0 ) {
         return undef unless defined $actual_rev;
-        return undef if $actual_rev <= 1;
-        return $actual_rev - 1; 
+        return undef if $actual_rev < 1;
+        return $actual_rev; 
     }
 
     my $to_test = $max;
