@@ -20,10 +20,9 @@ use lib 'lib';
 use lib "$FindBin::Bin/lib";
 use Watchdog qw(sys sys_for_watchdog);
 use SVNShell qw(svnversion svnup);
-use TAPTinder::TestedRevs;
 
-use Term::ReadKey;
-#ReadMode('cbreak');
+use TAPTinder::TestedRevs;
+use TAPTinder::KeyPress qw(process_keypress);
 
 # verbose level
 #  >0 .. print errors
@@ -33,7 +32,10 @@ use Term::ReadKey;
 #  >4
 #  >5 .. debug output
 #  >10 .. set params to devel value
+
 my $ver = $ARGV[0] ? $ARGV[0] : 2;
+$TAPTinder::KeyPress::ver = 10;
+
 
 print "Verbose level: $ver\n" if $ver > 2;
 print "Working path: '" . $RealBin . "'\n" if $ver > 3;
@@ -173,7 +175,9 @@ while ( 1 ) {
     print "Start time: $start_time\n" if $ver > 2;
 
     NEXT_CONF: foreach my $ck_num ( $conf_first..$conf_last ) {
-
+        # first keypress processing, used after each 'next NEXT_CONF;' expression
+        process_keypress();
+        
         # sleep
         $slt_num = 0 if $attempt == 0;
         print "attempt:$attempt, conf_last:$conf_last, slt_num:$slt_num\n" if $ver > 5;
@@ -181,7 +185,7 @@ while ( 1 ) {
             my $sleep_time = $slt->{first} + ( $slt->{step} * $slt_num );
             $sleep_time = $slt->{max} if $sleep_time > $slt->{max};
             print "svn up for all configurations failed, waiting for $sleep_time s ...\n" if $ver > 0;
-            sleep $sleep_time;
+            sleep_and_process_keypress( $sleep_time );
             print "\n" if $ver > 1;
             $attempt = 0;
             $slt_num++;
@@ -229,6 +233,8 @@ while ( 1 ) {
                 next NEXT_CONF;
             }
             $state->{svnup_done} = 1;
+            process_keypress();
+
         } else {
             print "Source dir found: '$ck->{src_dn}'\n" if $ver > 3;
         }
@@ -244,6 +250,7 @@ while ( 1 ) {
                 print "$ck->{name}: Bad revision number '$state->{src_rev}'. Clean src dir.\n" if $ver > 0;
                 next NEXT_CONF;
             }
+            process_keypress();
         }
 
         # svn up
@@ -297,6 +304,7 @@ while ( 1 ) {
 
             print "Src dir svn up to $to_rev done.\n" if $ver > 4;
             print "New src revision number: " . $state->{src_rev} . ".\n" if $ver > 2;
+            process_keypress();
         }
 
         # svn up done ok
@@ -324,6 +332,7 @@ while ( 1 ) {
                     print "Temp dir not found.\n" if $ver > 3;
                 }
                 $state->{rm_temp_dir_done} = 1;
+                process_keypress();
             }
         }
 
@@ -335,6 +344,7 @@ while ( 1 ) {
                 dircopy( $ck->{src_dn}, $ck->{temp_dn} ) or croak "$!\n$@";
                 print "Copy src dir to temp dir done.\n" if $ver > 2;
                 $state->{copy_src_dir_done} = 1;
+                process_keypress();
             }
         }
 
@@ -349,6 +359,7 @@ while ( 1 ) {
                     print "$ck->{name}: Running after_temp_copied hook failed." if $ver > 0;
                     next NEXT_CONF;
                 }
+                process_keypress();
             }
         }
 
@@ -375,6 +386,8 @@ while ( 1 ) {
             print "Revision number is not numeric. Probably Subversion error, see [perl #49788].";
             next NEXT_CONF;
         }
+        process_keypress();
+
 
         my $timestamp = time();
         $state->{results_path_prefix} =
@@ -387,6 +400,8 @@ while ( 1 ) {
             next NEXT_CONF;
         }
         print "Results dir: '$state->{results_path_prefix}'.\n" if $ver > 4;
+        process_keypress();
+
 
         my $cmd_first_time = 1;
         foreach my $cmd_num ( $cmd_first..$cmd_last ) {
@@ -419,6 +434,7 @@ while ( 1 ) {
                         print "$ck->{name}: Running before_cmd hook failed.\n" if $ver > 0;
                         next NEXT_CONF;
                     }
+                    process_keypress();
                 }
             }
             $state->{cmd}->{before_done} = 1;
@@ -439,6 +455,7 @@ while ( 1 ) {
                     '../',   # we are inside temp dir
                 );
                 print "Command '$cmd_name' return $cmd_rc.\n" if $ver > 4;
+                process_keypress();
             }
             $state->{cmd}->{cmd_done} = 1;
 
@@ -453,6 +470,7 @@ while ( 1 ) {
                         print "$ck->{name}: Running after_cmd hook failed.\n" if $ver > 0;
                     }
                 }
+                process_keypress();
             }
             $state->{cmd}->{after_done} = 1;
         }
@@ -462,23 +480,6 @@ while ( 1 ) {
         revision_test_done( $ck->{name}, $state->{temp_rev} );
     }
 
-    my $char = undef;
-    while ( defined ($char = ReadKey(-1)) ) { 1; }
-    if ( $char ) {
-        print "User press '$char'.\n" if $ver > 3;
-        $char = uc( $char );
-        # TODO
-        if ( $char eq 'P' ) {
-            print "User press pause key.\n" if $ver > 2;
-
-        } elsif ( $char eq 'C' ) {
-            print "User press continue key.\n" if $ver > 2;
-
-        } elsif ( $char eq 'Q' || $char eq 'E' ) {
-            print "User press exit key.\n" if $ver > 2;
-            exit;
-        }
-    }
     print "\n" if $ver > 0;
     $run_num++;
 }
