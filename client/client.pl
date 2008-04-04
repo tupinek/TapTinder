@@ -22,7 +22,6 @@ use SVNShell qw(svnversion svnup);
 
 use TAPTinder::TestedRevs;
 use TAPTinder::KeyPress qw(process_keypress sleep_and_process_keypress);
-Term::ReadKey::ReadMode('cbreak');
 
 # verbose level
 #  >0 .. print errors
@@ -34,7 +33,10 @@ Term::ReadKey::ReadMode('cbreak');
 #  >10 .. set params to devel value
 
 my $ver = $ARGV[0] ? $ARGV[0] : 2;
+
 $TAPTinder::KeyPress::ver = 10;
+Term::ReadKey::ReadMode('cbreak');
+select(STDOUT); $| = 1;
 
 
 print "Verbose level: $ver\n" if $ver > 2;
@@ -267,6 +269,14 @@ while ( 1 ) {
 
         # svn up
         my $to_rev = get_revision_to_test( $ck->{name}, $state->{src_rev} );
+        unless ( defined $to_rev ) {
+            my $sleep_time = $slt->{first} + ( $slt->{step} * $slt_num );
+            $sleep_time = $slt->{max} if $sleep_time > $slt->{max};
+            print "get_revision_to_test return undef\n" if $ver > 3;
+            print "Probably all revisions tested. Waiting for $sleep_time s ...\n" if $ver > 0;
+            sleep_and_process_keypress( $sleep_time );
+        }
+        
         if ( $ver > 8 ) {
             print "to_rev from get_revision_to_test ";
             ( defined $to_rev ) ? print $to_rev : print 'undef';
@@ -336,7 +346,7 @@ while ( 1 ) {
                         print "$ck->{name}: Remove temp dir '$ck->{temp_dn}' failed.\n" if $ver > 0;
                         my $wait_time = 10;
                         print "$ck->{name}: Waiting for ${wait_time}s.\n" if $ver > 0;
-                        sleep $wait_time;
+                        sleep_and_process_keypress( $wait_time );
                         rmtree( $ck->{temp_dn} ) or croak $!;
                     }
                     print "Remove temp dir done.\n" if $ver > 2;
