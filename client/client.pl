@@ -226,7 +226,7 @@ while ( 1 ) {
             if ( $cmd_rc ) {
                 print "$ck->{name}: svn co failed, return code: $cmd_rc\n" if $ver > 0;
                 print "$ck->{name}: svn co output: '$out'\n" if $ver > 0;
-                next;
+                next NEXT_CONF;
             }
             $state->{svnup_done} = 1;
         } else {
@@ -254,17 +254,11 @@ while ( 1 ) {
             print ", attempt $attempt, run_attempt " . $all_attempt->{$ck_num} . " \n";
         }
 
-        my $new_rev = undef;
-
         my $to_head_rev = 0;
         $to_head_rev = 1 if (not defined $to_rev) || ($all_attempt->{$ck_num} <= 2);
 
-        # if already updated
-        if ( $state->{svnup_done} || ( !$to_head_rev && $to_rev == $state->{src_rev} ) ) {
-            $new_rev = $to_rev;
-
-        # update needed
-        } else {
+        # need revision change
+        if ( $to_rev != $state->{src_rev} ) {
             $state->{svnup_done} = 0;
 
             my $to_rev_str = $to_rev;
@@ -274,36 +268,35 @@ while ( 1 ) {
             $svn_tmp_file = 'README' if $to_rev_str;
             my ( $up_ok, $o_log, $tmp_new_rev ) = svnup(
                 $ck->{src_dn},
-                $to_rev,
+                $to_rev_str,
                 $svn_tmp_file
             );
 
             if ( !$up_ok ) {
-                print "$ck->{name}: Org dir svn up to $to_rev failed:\n" if $ver > 3;
+                print "$ck->{name}: Org dir svn up to $to_rev_str failed:\n" if $ver > 3;
                 print "'$o_log'\n" if $ver > 3 && defined($o_log);
                 next NEXT_CONF;
             }
 
             if ( $tmp_new_rev == $state->{src_rev} ) {
-                print "Revision '$to_rev' not found in repository!\n" if $ver > 3;
+                print "Revision not changed after update to $to_rev_str!\n" if $ver > 3;
                 next NEXT_CONF;
             }
 
             $state->{svnup_done} = 1;
             $state->{src_rev} = $tmp_new_rev;
-
-            # check if HEAD revision wasn't tested
+            
             if ( $to_head_rev ) {
+                # check if HEAD revision was tested
                 my $to_rev_two = get_revision_to_test( $ck->{name}, $state->{src_rev} );
                 if ( $to_rev_two != $tmp_new_rev ) {
                     print "HEAD " . $state->{src_rev} . " revision $tmp_new_rev already tested.\n";
                     next NEXT_CONF;
                 }
             }
-            $new_rev = $state->{src_rev};
 
-            print "Src dir svn up to $to_rev done\n" if $ver > 4;
-            print "New src revision number: $new_rev \n" if $ver > 2;
+            print "Src dir svn up to $to_rev done.\n" if $ver > 4;
+            print "New src revision number: " . $state->{src_rev} . ".\n" if $ver > 2;
         }
 
         # svn up done ok
@@ -354,7 +347,7 @@ while ( 1 ) {
                 print "After_temp_copied hook return: $after_temp_copied_ret_code\n" if $ver > 4;
                 unless ( $after_temp_copied_ret_code ) {
                     print "$ck->{name}: Running after_temp_copied hook failed." if $ver > 0;
-                    next;
+                    next NEXT_CONF;
                 }
             }
         }
@@ -391,7 +384,7 @@ while ( 1 ) {
         ;
         unless ( mkpath( $state->{results_path_prefix} ) ) {
             print "$ck->{name}: Can't create results dir '$state->{results_path_prefix}'.\n" if $ver > 0;
-            next;
+            next NEXT_CONF;
         }
         print "Results dir: '$state->{results_path_prefix}'.\n" if $ver > 4;
 
@@ -424,7 +417,7 @@ while ( 1 ) {
                     print "Before cmd hook return: $before_ret_code\n" if $ver > 4;
                     unless ( $before_ret_code ) {
                         print "$ck->{name}: Running before_cmd hook failed.\n" if $ver > 0;
-                        next;
+                        next NEXT_CONF;
                     }
                 }
             }
