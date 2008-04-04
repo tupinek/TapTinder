@@ -22,7 +22,7 @@ use Watchdog qw(sys sys_for_watchdog);
 use SVNShell qw(svnversion svnup);
 
 use TAPTinder::TestedRevs;
-use TAPTinder::KeyPress qw(process_keypress);
+use TAPTinder::KeyPress qw(process_keypress sleep_and_process_keypress);
 
 # verbose level
 #  >0 .. print errors
