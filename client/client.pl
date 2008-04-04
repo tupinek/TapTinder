@@ -10,7 +10,6 @@ use File::Spec::Functions;
 use File::Path;
 use File::Copy;
 
-use lib 'libcpan';
 use lib "$FindBin::Bin/../libcpan";
 use Data::Dump qw(dump);
 use File::Copy::Recursive qw(dircopy);
@@ -23,6 +22,7 @@ use SVNShell qw(svnversion svnup);
 
 use TAPTinder::TestedRevs;
 use TAPTinder::KeyPress qw(process_keypress sleep_and_process_keypress);
+Term::ReadKey::ReadMode('cbreak');
 
 # verbose level
 #  >0 .. print errors
@@ -141,6 +141,18 @@ if ( -e $fp_state ) {
 }
 dump( $state ) if $ver > 6;
 print "\n" if $ver > 6;
+
+
+sub sig_handler() {
+    my ( $signal ) = @_;
+    print("Recieved signal: $signal\n");
+    Term::ReadKey::ReadMode('restore');
+    exit;
+}
+#foreach ( keys %SIG ) { $SIG{$_} = \&sig_handler; }
+$SIG{'KILL'}  = \&sig_handler;
+$SIG{'INT'}  = \&sig_handler;
+$SIG{'QUIT'} = \&sig_handler;  
 
 
 my $conf_last = $#$conf;
