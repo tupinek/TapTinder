@@ -254,18 +254,16 @@ while ( 1 ) {
         }
 
         # get revision num
-        unless ( $state->{svnup_done} ) {
-            print "Getting revision number for src dir.\n" if $ver > 3;
-            my ( $o_rev, $o_log ) = svnversion( $ck->{src_dn} );
-            croak "svn svnversion failed: $o_log" unless defined $o_rev;
-            $state->{src_rev} = $o_rev;
-            print "Src revision number: $state->{src_rev}\n" if $ver > 3;
-            if ( $state->{src_rev} !~ /^(\d+)$/ ) {
-                print "$ck->{name}: Bad revision number '$state->{src_rev}'. Clean src dir.\n" if $ver > 0;
-                next NEXT_CONF;
-            }
-            process_keypress();
+        print "Getting revision number for src dir.\n" if $ver > 3;
+        my ( $o_rev, $o_log ) = svnversion( $ck->{src_dn} );
+        croak "svn svnversion failed: $o_log" unless defined $o_rev;
+        $state->{src_rev} = $o_rev;
+        print "Src revision number: $state->{src_rev}\n" if $ver > 3;
+        if ( $state->{src_rev} !~ /^(\d+)$/ ) {
+            print "$ck->{name}: Bad revision number '$state->{src_rev}'. Clean src dir.\n" if $ver > 0;
+            next NEXT_CONF;
         }
+        process_keypress();
 
         # svn up
         my $to_rev = get_revision_to_test( $ck->{name}, $state->{src_rev} );
@@ -284,7 +282,7 @@ while ( 1 ) {
         }
 
         my $to_head_rev = 0;
-        $to_head_rev = 1 if (not defined $to_rev) || ($all_attempt->{$ck_num} <= 2);
+        $to_head_rev = 1 if $all_attempt->{$ck_num} <= 2 && !$state->{svnup_done};
 
         # need revision change
         if ( $to_rev != $state->{src_rev} ) {
@@ -490,9 +488,10 @@ while ( 1 ) {
                     print "After_cmd hook return: $after_ret_code\n" if $ver > 4;
                     unless ( $after_ret_code ) {
                         print "$ck->{name}: Running after_cmd hook failed.\n" if $ver > 0;
+                        next NEXT_CONF;
                     }
+                    process_keypress();
                 }
-                process_keypress();
             }
             $state->{cmd}->{after_done} = 1;
         }
@@ -500,7 +499,7 @@ while ( 1 ) {
         chdir( $ck->{temp_dn_back} ) or croak $!;
         print "Saving rev done for " . $state->{temp_rev} . ".\n" if $ver > 3;
         revision_test_done( $ck->{name}, $state->{temp_rev} );
-    }
+     }
 
     print "\n" if $ver > 0;
     $run_num++;
