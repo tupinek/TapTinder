@@ -1,0 +1,10 @@
+Index: languages/perl6/src/classes/Capture.pir
+===================================================================
+--- languages/perl6/src/classes/Capture.pir	(revision 26769)
++++ languages/perl6/src/classes/Capture.pir	(working copy)
+@@ -1,4 +1,4 @@
+-## $Id:$
++## $Id$
+ 
+ =head1 TITLE
+ 

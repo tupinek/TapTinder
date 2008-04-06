@@ -5,7 +5,10 @@ use warnings;
 
 use base 'Exporter';
 our $VERSION = 0.01;
-our @EXPORT_OK = qw(set_svn_cmd_prefix svnversion svninfo svnup);
+our @EXPORT_OK = qw(set_svn_cmd_prefix svnversion svninfo svnup svndiff);
+
+# TODO - escapeshellarg
+
 
 my $svn_cmd_prefix = '';
 
@@ -109,4 +112,24 @@ sub svnup {
     return ( 0, $! );
 }
 
+
+sub svndiff {
+    my ( $dir ) = @_;
+
+    my $svn_cmd =  $svn_cmd_prefix . 'svn diff ' . $dir . ' -x -u 2>&1 |';
+    unless ( open( SVNINFO, $svn_cmd ) ) {
+        return ( undef, $! );
+    }
+    my $cmd_output = '';
+    { 
+        local $/ = undef;
+        $cmd_output = <SVNINFO>; 
+    }
+    close SVNINFO;
+
+    return ( $cmd_output );
+}
+
+
 1;
+
