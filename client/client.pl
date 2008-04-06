@@ -18,7 +18,7 @@ use YAML;
 use lib 'lib';
 use lib "$FindBin::Bin/lib";
 use Watchdog qw(sys sys_for_watchdog);
-use SVNShell qw(svnversion svnup);
+use SVNShell qw(svnversion svnup svndiff);
 
 use TAPTinder::TestedRevs;
 use TAPTinder::KeyPress qw(process_keypress sleep_and_process_keypress);
@@ -253,17 +253,19 @@ while ( 1 ) {
             print "Source dir found: '$ck->{src_dn}'\n" if $ver > 3;
         }
 
-        # get revision num
-        print "Getting revision number for src dir.\n" if $ver > 3;
-        my ( $o_rev, $o_log ) = svnversion( $ck->{src_dn} );
-        croak "svn svnversion failed: $o_log" unless defined $o_rev;
-        $state->{src_rev} = $o_rev;
-        print "Src revision number: $state->{src_rev}\n" if $ver > 3;
-        if ( $state->{src_rev} !~ /^(\d+)$/ ) {
-            print "$ck->{name}: Bad revision number '$state->{src_rev}'. Clean src dir.\n" if $ver > 0;
-            next NEXT_CONF;
+        {
+            # get revision num
+            print "Getting revision number for src dir.\n" if $ver > 3;
+            my ( $o_rev, $o_log ) = svnversion( $ck->{src_dn} );
+            croak "svn svnversion failed: $o_log" unless defined $o_rev;
+            $state->{src_rev} = $o_rev;
+            print "Src revision number: $state->{src_rev}\n" if $ver > 3;
+            if ( $state->{src_rev} !~ /^(\d+)$/ ) {
+                print "$ck->{name}: Bad revision number '$state->{src_rev}'. Clean src dir.\n" if $ver > 0;
+                next NEXT_CONF;
+            }
+            process_keypress();
         }
-        process_keypress();
 
         # svn up
         my $to_rev = get_revision_to_test( $ck->{name}, $state->{src_rev} );
@@ -395,18 +397,43 @@ while ( 1 ) {
 
         chdir( $ck->{temp_dn} ) or croak $!;
 
-        my ( $o_rev, $o_log );
-        # get revision num
-        ( $o_rev, $o_log ) = svnversion( '.' );
-        croak "svn info failed: $o_log" unless defined $o_rev;
-        $state->{temp_rev} = $o_rev;
-        print "Revision number: $state->{temp_rev}\n" if $ver > 4;
-        
-        if ( $state->{temp_rev} !~ /^\d+$/ ) {
-            print "Revision number is not numeric. Probably Subversion error, see [perl #49788].";
-            next NEXT_CONF;
+        {
+            my $t_dir = '.';
+            my ( $o_rev, $o_log );
+            # get revision num
+            ( $o_rev, $o_log ) = svnversion( $t_dir );
+            croak "svn info failed: $o_log" unless defined $o_rev;
+            $state->{temp_rev} = $o_rev;
+            print "Revision number: $state->{temp_rev}\n" if $ver > 4;
+
+            if ( $state->{temp_rev} =~ /^\d+$/ ) {
+                # ok
+
+            } elsif ( $state->{temp_rev} =~ /^(\d+)M$/ ) {
+                my $numeric_part_of_rev = $1;
+                $state->{temp_rev} = $numeric_part_of_rev;
+                process_keypress();
+
+                # bypass Subversion bug, see [perl #49788]
+                use SVN::PropBug qw(diff_contains_real_change);
+                $SVN::PropBug::ver = 0;
+
+                my ( $diff, $err ) = svndiff( $t_dir );
+                print "SVN diff error: $err\n" unless defined $diff;
+                my $is_real_modification = diff_contains_real_change( $diff );
+                print "SVN::PropBug error: $@." unless defined $is_real_modification;
+                if ( $is_real_modification ) {
+                    print "Found modifications in temp directory.\n";
+                    print "Diff: $diff\n";
+                    next NEXT_CONF;
+                }
+
+            } else {
+                print "Revision number is not numeric.\n";
+                next NEXT_CONF;
+            }
+            process_keypress();
         }
-        process_keypress();
 
 
         my $timestamp = time();

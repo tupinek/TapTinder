@@ -5,6 +5,7 @@ use lib qw( lib . ../lib ../../lib );
 use SVN::PropBug qw(diff_contains_real_change);
 my $diff;
 
+$SVN::PropBug::ver = 0;
 
 if ( !$ARGV[0] ) {
     my $diff_fn;

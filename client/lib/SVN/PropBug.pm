@@ -7,6 +7,9 @@ use base 'Exporter';
 our $VERSION = 0.01;
 our @EXPORT_OK = qw(diff_contains_real_change);
 
+our $ver = 0;
+
+
 # For bypasing bug [perl #49788].
 
 # TODO - better parsing
@@ -27,22 +30,24 @@ sub diff_contains_real_change {
 
     foreach my $ln ( 0..$#lines ) {
         my $line = $lines[ $ln ];
-        printf("%3d:",$ln);
-        print $line . " - ";
-        ( defined $prev_minus_line ) ? print "PM" : print "..";
-        print " - ";
+        if ( $ver > 4 ) {
+            printf("%3d:",$ln);
+            print $line . " - ";
+            ( defined $prev_minus_line ) ? print "PM" : print "..";
+            print " - ";
+        }
 
         # skip line
         if ( $num_to_skip > 0 ) {
             $num_to_skip--;
-            print "skipped, to_skip=$num_to_skip\n";
+            print "skipped, to_skip=$num_to_skip\n" if $ver > 4;
             next;
         }
 
         # head
         if ( $pn eq 'head' ) {
             $num_to_skip = 2;
-            print "$pn\n";
+            print "$pn\n" if $ver > 4;
             $pn = 'diff';
 
             $real_change = 1 if defined $prev_minus_line;
@@ -53,7 +58,7 @@ sub diff_contains_real_change {
         # diff
         if ( $pn eq 'diff' ) {
             my $first_char = substr( $line, 0, 1 );
-            print "$pn - first char '$first_char'\n";
+            print "$pn - first char '$first_char'\n" if $ver > 4;
 
             if ( $first_char eq '+' ) {
                 if ( defined $prev_minus_line ) {
