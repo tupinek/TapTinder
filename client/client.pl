@@ -417,7 +417,6 @@ while ( 1 ) {
 
             } elsif ( $state->{temp_rev} =~ /^(\d+)M$/ ) {
                 my $numeric_part_of_rev = $1;
-                $state->{temp_rev} = $numeric_part_of_rev;
                 process_keypress();
 
                 # bypass Subversion bug, see [perl #49788]
@@ -433,6 +432,8 @@ while ( 1 ) {
                     print "Diff: $diff\n";
                     next NEXT_CONF;
                 }
+                print "Changing " .  $state->{temp_rev} . " to $numeric_part_of_rev - Subversion bug bypass.\n" if $ver > 2;
+                $state->{temp_rev} = $numeric_part_of_rev;
 
             } else {
                 print "Revision number is not numeric.\n";
