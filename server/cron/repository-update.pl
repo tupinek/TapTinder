@@ -10,7 +10,7 @@ use Devel::StackTrace;
 use SVN::Log;
 
 use lib '../lib';
-use TapTin::DB;
+use TapTinder::DB;
 
 my $conf_fpath = catfile( $RealBin, '..', 'conf', 'dbconf.pl' );
 my $conf = require $conf_fpath;
@@ -29,7 +29,7 @@ $log_dump_file = $project_name.'-replog-debugdump.pl' if $debug_logpart;
 my $log_dump_fn = catfile( $RealBin, '..', 'conf', $log_dump_file );
 
 
-my $db = TapTin::DB->new();
+my $db = TapTinder::DB->new();
 $db->debug( $debug );
 $db->connect( $conf->{db} );
 

@@ -1,4 +1,4 @@
-package TapTin::DB;
+package TapTinder::DB;
 
 use strict;
 use warnings;

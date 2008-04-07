@@ -10,7 +10,7 @@ use File::Spec::Functions;
 use File::Basename;
 
 use lib '../lib';
-use TapTin::DB;
+use TapTinder::DB;
 
 my $conf_fpath = catfile( $RealBin, '..', 'conf', 'dbconf.pl' );
 my $conf = require $conf_fpath;
@@ -27,7 +27,7 @@ print "Results path: '$results_dir'\n";
 print "\n" if $debug;
 
 
-my $db = TapTin::DB->new();
+my $db = TapTinder::DB->new();
 $db->debug( $debug );
 $db->connect( $conf->{db} );
 
