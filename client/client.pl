@@ -89,16 +89,17 @@ foreach my $c_num ( 0..$#$conf ) {
             print "  $mack: '" . $ack->{$mack} . "'\n" if !ref($ack->{$mack}) && $ver > 5;
         }
     }
-    $ck->{base_dn} = '../client-data/' unless exists $ck->{base_dn};
-    $ck->{src_dn} = $ck->{base_dn} . $ck->{name} . '-src' unless exists $ck->{src_dn};
-    $ck->{temp_dn} = $ck->{base_dn} . $ck->{name} . '-temp' unless exists $ck->{temp_dn};
-    $ck->{results_dn} = $ck->{base_dn} . $ck->{name} . '-results' unless exists $ck->{results_dn};
-    $ck->{src_add_dn} = $ck->{name} . '-src-add' unless exists $ck->{src_add_dn};
+    $ck->{base_dn} = catdir( '..', 'client-data' ) unless exists $ck->{base_dn};
+    $ck->{src_dn}     = catdir( $ck->{base_dn}, $ck->{name} . '-src' ) unless exists $ck->{src_dn};
+    $ck->{temp_dn}    = catdir( $ck->{base_dn}, $ck->{name} . '-temp' ) unless exists $ck->{temp_dn};
+    $ck->{results_dn} = catdir( $ck->{base_dn}, $ck->{name} . '-results' ) unless exists $ck->{results_dn};
 
     mkdir $ck->{results_dn} unless -d $ck->{results_dn};
 
+    $ck->{src_add_dn} = $ck->{name} . '-src-add' unless exists $ck->{src_add_dn};
+
     # todo
-    $ck->{temp_dn_back} = '../../client' unless exists $ck->{temp_dn_back};
+    $ck->{temp_dn_back} = catdir( '..', '..', 'client' ) unless exists $ck->{temp_dn_back};
 
     # todo
     $ck->{rm_temp_dir} = 1 unless exists $ck->{rm_temp_dir};
@@ -442,11 +443,11 @@ while ( 1 ) {
 
 
         my $timestamp = time();
-        $state->{results_path_prefix} =
-            $RealBin . '/'
-            . $ck->{results_dn} . '/'
-            . int($timestamp) . '-r' . $state->{temp_rev} . '/'
-        ;
+        $state->{results_path_prefix} = catdir( 
+            $RealBin,
+            $ck->{results_dn}, 
+            int($timestamp) . '-r' . $state->{temp_rev}
+        );
         unless ( mkpath( $state->{results_path_prefix} ) ) {
             print "$ck->{name}: Can't create results dir '$state->{results_path_prefix}'.\n" if $ver > 0;
             next NEXT_CONF;
