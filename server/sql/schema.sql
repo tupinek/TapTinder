@@ -166,8 +166,9 @@ CREATE TABLE trun (
     rep_path_id     INT UNSIGNED NOT NULL,
     client_id       INT UNSIGNED NOT NULL,
     conf_id         INT UNSIGNED NOT NULL,
-    num_failed      INT UNSIGNED NOT NULL,
     num_notseen     INT UNSIGNED NOT NULL,
+    num_failed      INT UNSIGNED NOT NULL,
+    num_unknown     INT UNSIGNED NOT NULL,
     num_todo        INT UNSIGNED NOT NULL,
     num_bonus       INT UNSIGNED NOT NULL,
     num_skip        INT UNSIGNED NOT NULL,
@@ -192,11 +193,13 @@ CREATE TABLE tskipall_msg (
 CREATE TABLE tfile (
     tfile_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     trun_id             INT UNSIGNED NOT NULL,
+    rep_file_id         INT UNSIGNED NOT NULL,
     all_passed          BOOLEAN NOT NULL DEFAULT 0,
     tskippall_msg_id    INT UNSIGNED DEFAULT NULL,
     hang                BOOLEAN DEFAULT 0,
     INDEX i_trun_id (trun_id),
-    CONSTRAINT `fk_tfile_trun_id` FOREIGN KEY (`trun_id`) REFERENCES `trun` (`trun_id`)
+    CONSTRAINT `fk_tfile_trun_id` FOREIGN KEY (`trun_id`) REFERENCES `trun` (`trun_id`),
+    CONSTRAINT `fk_tfile_rep_file_id` FOREIGN KEY (`rep_file_id`) REFERENCES `rep_file` (`rep_file_id`)
 ) TYPE=InnoDB;
 
 CREATE TABLE tresult (
