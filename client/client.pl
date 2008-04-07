@@ -496,10 +496,10 @@ while ( 1 ) {
             if ( $state->{cmd}->{cmd_done} ) {
                 print "SKIP: after_cmd hook.\n" if $ver > 3;
             } else {
-                my $cmd_log_fp =
-                     $state->{results_path_prefix}
-                     . ($cmd_num+1) . '-' .  $cmd_name . '.out'
-                ;
+                my $cmd_log_fp = catfile(
+                     $state->{results_path_prefix},
+                     ($cmd_num+1) . '-' .  $cmd_name . '.out'
+                );
                 # todo, .out to configure
                 my ( $cmd_rc, $out ) = sys_for_watchdog(
                     $cmd,

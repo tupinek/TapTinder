@@ -59,8 +59,8 @@ push @$conf, {
             'after'  => sub {
                 my ( $cn, $state, $ver ) = @_;
                 my $rc = copy( 
-                    'taptinder.yaml',  
-                    catfile($state->{results_path_prefix}, 'taptinder.yaml')
+                    'taptinder-results.yaml',  
+                    catfile($state->{results_path_prefix}, 'taptinder-results.yaml')
                 );
                 print 'ERROR: ' . $! unless $rc;
                 print "make smoke - after return code: $rc\n" if $ver > 1;
