@@ -7,6 +7,7 @@ use base 'Exporter';
 our $VERSION = 0.01;
 our @EXPORT_OK = qw(sys sys_for_watchdog);
 
+use Carp qw(carp croak);
 use Storable;
 use File::Spec::Functions;
 
@@ -15,11 +16,11 @@ sub sys {
 
     my $output;
     $temp_out_fn = '.out' unless $temp_out_fn;
-    open my $oldout, ">&STDOUT"     or die "Can't dup STDOUT: $!";
-    open OLDERR,     ">&", \*STDERR or die "Can't dup STDERR: $!";
+    open my $oldout, ">&STDOUT"     or carp "Can't dup STDOUT: $!";
+    open OLDERR,     ">&", \*STDERR or carp "Can't dup STDERR: $!";
 
-    open STDOUT, '>', $temp_out_fn or die "Can't redirect STDOUT to '$temp_out_fn': $! $@";
-    open STDERR, ">&STDOUT"     or die "Can't dup STDOUT: $!";
+    open STDOUT, '>', $temp_out_fn or carp "Can't redirect STDOUT to '$temp_out_fn': $! $@";
+    open STDERR, ">&STDOUT"     or carp "Can't dup STDOUT: $!";
 
     select STDERR; $| = 1;      # make unbuffered
     select STDOUT; $| = 1;      # make unbuffered
@@ -29,8 +30,8 @@ sub sys {
     close STDOUT;
     close STDERR;
 
-    open STDOUT, ">&", $oldout or die "Can't dup \$oldout: $!";
-    open STDERR, ">&OLDERR"    or die "Can't dup OLDERR: $!";
+    open STDOUT, ">&", $oldout or carp "Can't dup \$oldout: $!";
+    open STDERR, ">&OLDERR"    or carp "Can't dup OLDERR: $!";
 
     unless ( open( FH_STDOUT, "<$temp_out_fn") ) {
         carp("File $temp_out_fn not open!");
@@ -49,7 +50,7 @@ sub sys {
 sub sys_for_watchdog {
     my ( $cmd, $log_fn, $timeout, $sleep, $dir ) = @_; 
 
-    die "cmd is mandatory" unless defined $cmd;
+    carp "cmd is mandatory" unless defined $cmd;
     $log_fn = $cmd . '.log' unless defined $log_fn;
     $timeout = 5*60 unless defined $timeout;
 
@@ -68,7 +69,7 @@ sub sys_for_watchdog {
         'timeout' => $timeout,
     };
     $info->{'sleep'} = $sleep if defined $sleep;
-    store( $info, $ipc_fn ) or die "store failed\n$!\n$@";
+    store( $info, $ipc_fn ) or carp "store failed\n$!\n$@";
 
 =head todo
 =pod
