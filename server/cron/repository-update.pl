@@ -114,11 +114,22 @@ if ( ( !$debug_logpart || (not -e $log_dump_fn) )
     save_state();
 }
 
+
 my $rep_id = $db->get_rep_id( $conf_rep->{repository} );
+
+my $max_revnum_in_db = $db->get_max_rev_num( $rep_id );
+unless ( defined $max_revnum_in_db ) {
+    my $num_of_revs_found = $db->get_number_of_revs( $rep_id );
+    croak "No max rev found, but some revs exists." if $num_of_revs_found;
+    $max_revnum_in_db = 0;
+}
+print "max_revnum_in_db: $max_revnum_in_db\n" if $debug > 3;
+
 
 # userting users into user_rep table
 my $users = $db->get_rep_users( $rep_id );
 foreach my $rd ( @$revs ) {
+    next if $rd->{revision} <= $max_revnum_in_db;
     my $author = $rd->{'author'}; # can be null, will create row in rep_user
     if ( exists $users->{$author} ) {
         print "author '$author' exists in DB, user_rep_id=" . $users->{$author}->{user_rep_id} . "\n" if $debug > 3;
@@ -178,19 +189,9 @@ sub process_file {
 }
 
 
-my $max_revnum_in_db = $db->get_max_rev_num( $rep_id );
-unless ( defined $max_revnum_in_db ) {
-    my $num_of_revs_found = $db->get_number_of_revs( $rep_id );
-    croak "No max rev found, but some revs exists." if $num_of_revs_found;
-    $max_revnum_in_db = 0;
-}
-print "max_revnum_in_db: $max_revnum_in_db\n" if $debug > 3;
 
 foreach my $rd ( @$revs ) {
-    if ( $rd->{revision} <= $max_revnum_in_db ) {
-        #print "Skipping rev $rd->{revision}\n";
-        next;
-    }
+    next if $rd->{revision} <= $max_revnum_in_db;
     
     # insert rev if needed
     my $rev_id = $db->get_rev_id( $rep_id, $rd->{'revision'} );

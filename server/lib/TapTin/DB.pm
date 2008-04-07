@@ -75,6 +75,7 @@ sub disconnect {
 
 # TODO move to DB:Debug class
 sub dmp {
+    my $self = shift;
     my $dd = Data::Dumper->new( [ @_ ] );
     $dd->Indent(1);
     $dd->Terse(1);
@@ -86,7 +87,16 @@ sub dmp {
 
 sub dump_get {
     my ( $self, $sub_name, $ra_args, $results ) = @_;
-    return "function $sub_name, input (" . join(', ',@$ra_args) . "), result " . $self->dmp($results);
+    my $args_str = ' ';
+    if ( defined $ra_args && ref $ra_args eq 'ARRAY' ) {
+        my $num = 0;
+        foreach ( @$ra_args ) {
+            $args_str .= ', ' if $num;
+            $args_str .= ( defined $_ ) ? $_ : 'undef';
+            $num++;
+        }
+    }
+    return "function $sub_name, input (" . $args_str . "), result " . $self->dmp($results);
 }
 
 sub trc {
@@ -358,12 +368,12 @@ sub insert_rev {
 }
 
 
-# $sub_path, $rep_path_id, $revision
+# $sub_path, $rep_path_id, $rev_num
 sub get_rep_file_id {
     my $cname = (caller(0))[3];
     my $self = shift;
 
-    my ( $sub_path, $rep_path_id, $revision ) = @_;
+    my ( $sub_path, $rep_path_id, $rev_num ) = @_;
     unless ( defined $self->{_cache}->{$cname} ) {
         $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
             select rep_file_id
@@ -377,14 +387,14 @@ sub get_rep_file_id {
     my $result = $self->{dbh}->selectrow_hashref( 
         $self->{_cache}->{$cname},
         {},
-        $rep_path_id, $sub_path, $revision, $revision
+        $rep_path_id, $sub_path, $rev_num, $rev_num
     );
     $self->db_error() if $self->{_cache}->{$cname}->err;
     print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
-    return $result->{rev_file_id};
+    return $result->{rep_file_id};
 }
 
-# $sub_path, $rep_path_id, $revision
+# $sub_path, $rep_path_id, $rev_num
 sub insert_rep_file {
     my $cname = (caller(0))[3];
     my $self = shift;
@@ -402,12 +412,12 @@ sub insert_rep_file {
 }
 
 
-# $sub_path, $rep_path_id, $revision
+# $sub_path, $rep_path_id, $rev_num
 sub set_rep_file_deleted {
     my $cname = (caller(0))[3];
     my $self = shift;
 
-    my ( $sub_path, $rep_path_id, $revision ) = @_;
+    my ( $sub_path, $rep_path_id, $rev_num ) = @_;
     unless ( defined $self->{_cache}->{$cname} ) {
         $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
             update rep_file
@@ -419,12 +429,12 @@ sub set_rep_file_deleted {
         }) or croak $self->{dbh}->errstr;
     }
     $self->{_cache}->{$cname}->execute( 
-        $revision, $rep_path_id, $sub_path, $revision
+        $rev_num, $rep_path_id, $sub_path, $rev_num
     );
-    $self->db_error() if $self->{_cache}->{$cname}->err;
+    my $found_err = $self->{_cache}->{$cname}->err;
+    $self->db_error() if $found_err;
     my $result = $self->get_rep_file_id( $_[0], $_[1], $_[2] );
-    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
-    return $result;
+    return !$found_err;
 }
 
 
@@ -432,7 +442,7 @@ sub set_rep_file_deleted {
 sub set_rep_file_modified {
     my $cname = (caller(0))[3];
     my $self = shift;
-    my ( $sub_path, $rep_path_id, $revision ) = @_;
+    my ( $sub_path, $rep_path_id, $rev_num ) = @_;
     return 1;
 }
 
@@ -496,15 +506,54 @@ sub get_or_insert_conf {
 }
 
 
-# -
-sub get_inserted_trun_id {
+# $rev_id, $rep_path_id, $client_id, $conf_id
+sub get_max_trun_id {
     my $cname = (caller(0))[3];
     my $self = shift;
 
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            select MAX(trun_id) as max_trun_id
+              from trun
+             where rev_id = ?
+               and rep_path_id = ?
+               and client_id  = ?
+               and conf_id = ?
+        }) or croak $self->{dbh}->errstr;
+    }
+    my $result = $self->{dbh}->selectrow_hashref( $self->{_cache}->{$cname}, {}, @_ );
+    $self->db_error() if $self->{_cache}->{$cname}->err;
+    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
+    return $result->{max_trun_id};
+}
 
-    my $rows = $self->{dbh}->do("select max(trun_id) from trun");
-    $self->dmp($rows); exit;
-    #return $self->{dbh}->last_insert_id();
+# $trun_id, $stats
+sub update_trun_stats {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+    my ( $trun_id, $stats ) = @_;
+
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            update trun 
+              set num_notseen = ?,
+                  num_failed = ?,
+                  num_unknown = ?,
+                  num_todo = ?,
+                  num_bonus = ?,
+                  num_skip = ?,
+                  num_ok = ?
+            where trun_id = ?
+        }) or croak $self->{dbh}->errstr;
+    }
+
+    my @in = @$stats;
+    push @in, $trun_id;
+
+    $self->{_cache}->{$cname}->execute( @in );
+    my $found_err = $self->{_cache}->{$cname}->err;
+    print $self->dump_get( $cname, \@in, $found_err ) if $self->{debug};
+    return !$found_err;
 }
 
 
@@ -519,11 +568,237 @@ sub insert_trun_base {
         }) or croak $self->{dbh}->errstr;
     }
     $self->{_cache}->{$cname}->execute( @_ );
-    my $result = $self->get_inserted_trun_id();
+    my $found_err = $self->{_cache}->{$cname}->err;
+    my $result = undef;
+
+    # TODO 
+    #$result = $self->{dbh}->last_insert_id(undef,undef,undef,undef) unless $found_err;
+    $result = $self->get_max_trun_id(@_) unless $found_err;
+
     print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
-    $self->db_error() if $self->{_cache}->{$cname}->err;
+    $self->db_error() if $found_err;
     return $result;
-    
 }
+
+
+# TODO
+# next 3 subs are created from in get_conf_id, insert_conf_id 
+#   and get_or_insert_conf ( s{conf}{tskipall_msg}gm )
+
+# $hash
+sub get_tskipall_msg_id {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+
+    my ( $hash ) = @_;
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            select tskipall_msg_id
+              from tskipall_msg
+             where hash = ?
+        }) or croak $self->{dbh}->errstr;
+    }
+    my $result = $self->{dbh}->selectrow_hashref( 
+        $self->{_cache}->{$cname},
+        {},
+        $hash
+    );
+    $self->db_error() if $self->{_cache}->{$cname}->err;
+    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
+    return $result->{tskipall_msg_id};
+}
+
+# $hash, $tskipall_msg
+sub insert_tskipall_msg {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            insert into tskipall_msg ( hash, msg ) values ( ?, ? )
+        }) or croak $self->{dbh}->errstr;
+    }
+    $self->{_cache}->{$cname}->execute( @_ );
+    $self->db_error() if $self->{_cache}->{$cname}->err;
+    my $result = $self->get_tskipall_msg_id( $_[0] );
+    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
+    return $result;
+}
+
+# $tskipall_msg
+sub get_or_insert_tskipall_msg {
+    my $self = shift;
+    my $hash = $self->str_args_md5( @_ );
+    my $tskipall_msg_id = $self->get_tskipall_msg_id($hash);
+    return $tskipall_msg_id if defined $tskipall_msg_id;
+    return $self->insert_tskipall_msg( $hash, @_ );
+}
+
+
+sub get_inserted_tfile_id {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+
+    return $self->{dbh}->last_insert_id(undef,undef,undef,undef);
+    #my $rows = $self->{dbh}->do("select max(trun_id) from trun");
+    #$self->dmp($rows); exit;
+}
+
+# $trun_id, $rep_file_id
+sub get_tfile_id {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+
+    my ( $sub_path, $rep_path_id, $rev_num ) = @_;
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            select tfile_id
+              from tfile
+             where trun_id = ?
+               and rep_file_id = ?
+        }) or croak $self->{dbh}->errstr;
+    }
+    my $result = $self->{dbh}->selectrow_hashref( $self->{_cache}->{$cname}, {}, @_ );
+    $self->db_error() if $self->{_cache}->{$cname}->err;
+    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
+    return $result->{tfile_id};
+}
+
+
+# $trun_id, $rep_file_id, $all_passed, $skip_all_msg, $hang
+sub insert_tfile {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+    my $skip_all_msg = $_[3];
+
+    my $tskipall_msg_id = undef;
+    if ( $skip_all_msg ) {
+        my $tskipall_msg_id = $self->get_or_insert_tskipall_msg( $skip_all_msg );
+        return undef unless $tskipall_msg_id;
+    }
+
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            insert into tfile ( trun_id, rep_file_id, all_passed, tskippall_msg_id, hang ) values ( ?, ?, ?, ?, ? )
+        }) or croak $self->{dbh}->errstr;
+    }
+    $self->{_cache}->{$cname}->execute( @_ );
+    my $found_err = $self->{_cache}->{$cname}->err;
+    my $result = undef;
+
+    # TODO 
+    #$result = $self->{dbh}->last_insert_id(undef,undef,undef,undef) unless $found_err;
+    $result = $self->get_tfile_id( $_[0], $_[1] ) unless $found_err;
+
+    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
+    $self->db_error() if $found_err;
+    return $result;
+}
+
+
+# $rep_file_id, $test_num
+sub get_rep_test_id {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+
+    my ( $sub_path, $rep_path_id, $rev_num ) = @_;
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            select rep_test_id
+              from rep_test
+             where rep_file_id = ?
+               and number = ?
+        }) or croak $self->{dbh}->errstr;
+    }
+    my $result = $self->{dbh}->selectrow_hashref( $self->{_cache}->{$cname}, {}, @_ );
+    $self->db_error() if $self->{_cache}->{$cname}->err;
+    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
+    return $result->{rep_test_id};
+}
+
+
+# $rep_file_id, $test_num, $test_name
+sub insert_rep_test {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            insert into rep_test ( rep_file_id, number, name, has_another_name ) values ( ?, ?, ?, 0 )
+        }) or croak $self->{dbh}->errstr;
+    }
+    $self->{_cache}->{$cname}->execute( @_ );
+    $self->db_error() if $self->{_cache}->{$cname}->err;
+    my $result = $self->get_rep_test_id( $_[0], $_[1] );
+    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
+    return $result;
+}
+
+
+# $rep_file_id, $test_num, $test_name
+sub prepare_and_get_rep_test_id {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+    my ( $rep_file_id, $test_num, $test_name ) = @_;
+
+    # TODO rep_test.has_another_name
+    my $rep_test_id = $self->get_rep_test_id( $rep_file_id, $test_num );
+    $rep_test_id = $self->insert_rep_test( $rep_file_id, $test_num, $test_name ) unless $rep_test_id;
+    return $rep_test_id;
+}
+
+
+
+# $trun_id, $rep_test_id
+sub get_ttest_id {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+
+    my ( $sub_path, $rep_path_id, $rev_num ) = @_;
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            select ttest_id
+              from ttest
+             where trun_id = ?
+               and rep_test_id = ?
+        }) or croak $self->{dbh}->errstr;
+    }
+    my $result = $self->{dbh}->selectrow_hashref( $self->{_cache}->{$cname}, {}, @_ );
+    $self->db_error() if $self->{_cache}->{$cname}->err;
+    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
+    return $result->{ttest_id};
+}
+
+
+# $trun_id, $rep_test_id, $tresult_id
+sub insert_ttest {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            insert into ttest ( trun_id, rep_test_id, tresult_id ) values ( ?, ?, ? )
+        }) or croak $self->{dbh}->errstr;
+    }
+    $self->{_cache}->{$cname}->execute( @_ );
+    $self->db_error() if $self->{_cache}->{$cname}->err;
+    my $result = $self->get_ttest_id( $_[0], $_[1] );
+    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
+    return $result;
+}
+
+
+# $trun_id, $rep_file_id, $test_num, $test_name, $tresult_id
+sub prepare_others_and_insert_ttest {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+    my ( $trun_id, $rep_file_id, $test_num, $test_name, $tresult_id ) = @_;
+    
+    my $rep_test_id = $self->prepare_and_get_rep_test_id( $rep_file_id, $test_num, $test_name );
+    return 0 unless $rep_test_id;
+    
+    return $self->insert_ttest( $trun_id, $rep_test_id, $tresult_id );
+}
+
 
 1;

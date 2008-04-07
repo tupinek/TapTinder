@@ -59,7 +59,6 @@ sub load_tap_data {
         #$data = $yaml->[0];
         use YAML::Syck;
         $data = LoadFile( $fp );
-        delete $data->{results};
     };
 
     if ( $@ ) {
@@ -80,6 +79,7 @@ sub load_tap_data {
             return undef;
         }
     }
+    #delete $data->{results};
     return $data;
 }
 
@@ -96,6 +96,89 @@ sub dump_header {
 sub is_valid_user {
     my ( $client_id, $archname, $cc, $cpuarch, $osname ) = @_;
     print "Valid client conf.\n";
+    return 1;
+}
+
+
+# logic for test (detail) result to tresult.tresult_id
+sub get_test_result_id {
+    my ( $test ) = @_;
+
+    # 0 .. not seen (not ok) -- empty result info
+    return 0 unless defined $test;
+    
+    if ( $test->{actual_ok} == 1 ) {
+        # 4 .. bonus (ok) -- actual_ok == 1 && (type == 'todo' || type == 'skip' )
+        if ( $test->{type} eq 'todo' || $test->{type} eq 'skip' ) {
+            return 4;
+        }
+        if ( $test->{type} ne '' ) {
+            print "Unknown result state: actual_ok=1, type='" . $test->{type} . "'.\n";
+        }
+        # 6 .. ok (ok) -- actual_ok == 1 && type != 'todo' && type != 'skip' ( other types, reason, ... ignored )
+        return 6
+    }
+    
+    # 3 .. todo (not ok || ok) -- actual_ok == 0 && type == 'todo'
+    return 3 if $test->{type} eq 'todo';
+
+    # 5 .. skip (ok) -- actual_ok == 0 && type == 'skip'
+    return 3 if $test->{type} eq 'skip';
+    
+    # 1 .. failed (not ok) -- actual_ok == 0 && type == ''
+    return 1 if $test->{type} eq '';
+    
+    # 2 .. unknown (not ok) -- actual_ok == 0 && type != 'todo' && type != 'skip'
+    return 2;
+}
+
+
+sub process_test_raw_results {
+    my ( $db, $stats, $trun_id, $rev_num, $rep_path_id, $all_results ) = @_;
+
+    my $ret;
+    TEST_RESULT: foreach my $res_num ( 0..$#$all_results ) {
+        my $result = $all_results->[ $res_num ];
+        print dmp( $result );
+
+        my $test_details = $result->{details};
+        # skiping files withnout details
+        # probably not exist in repository, e.g. parrot rev: 26769 test_file: t/codingstd/cppcomments.t
+        next TEST_RESULT unless defined $test_details;
+
+        my $file_path = $result->{test_file};
+        my $rep_file_id = $db->get_rep_file_id( 
+            $file_path, # $sub_path
+            $rep_path_id,
+            $rev_num
+        );
+        unless ( defined $rep_file_id ) {
+            carp( "Rep file not found for ( $file_path, $rep_path_id, $rev_num )." );
+            return 0;
+        }
+        
+        my $all_passed = ( $result->{max} == $result->{seen} && $result->{max} == $result->{ok} );
+        my $skip_all_msg = $result->{skip_all};
+        my $hang = 0;
+
+        $ret = $db->insert_tfile( $trun_id, $rep_file_id, $all_passed, $skip_all_msg, $hang );
+        return 0 unless defined $ret;
+
+        foreach my $test_num ( 0..$#$test_details ) {
+            my $test = $test_details->[ $test_num ];
+            my $tresult_id = get_test_result_id( $test );
+            $stats->[ $tresult_id ]++;
+
+            print "test name: '" . $test->{name} . "', tresult_id: $tresult_id\n";
+            # skip ok
+            if ( $tresult_id != 6 ) {
+                $ret = $db->prepare_others_and_insert_ttest( $trun_id, $rep_file_id, $test_num, $test->{name}, $tresult_id );
+                return 0 unless $ret;
+            }
+            #return 0; # debug - roolback
+        }
+    }
+
     return 1;
 }
 
@@ -138,9 +221,15 @@ sub process_test_results {
     my $trun_id = $db->insert_trun_base(
         $rev_id, $rep_path_id, $client_id, $conf_id
     );
+    return 0 unless defined $trun_id;
     print "trun_id: $trun_id\n";
 
-    return 1;
+    my $stats = [];
+    my $results = $data->{results};
+    my $ret = process_test_raw_results( $db, $stats, $trun_id, $rev_num, $rep_path_id, $results );
+    return 0 unless $ret;
+    
+    return $db->update_trun_stats( $trun_id, $stats );
 }
 
         
@@ -169,7 +258,7 @@ foreach my $mtime ( reverse sort keys %$mtimes ) {
     print "mtime: $time\n";
     $last_fn = $fn;
 
-    my $data = load_tap_data($fn,!$debug);
+    my $data = load_tap_data( $fn, 1 );
     if ( defined $data ) {
         dump_header( $data );
         my $rev = $data->{pconfig}->{revision};
