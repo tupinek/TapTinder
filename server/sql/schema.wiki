@@ -81,7 +81,7 @@ Project repository. Each project can has only one active repository.
 * project_id
 * active
 * name
-* path
+* path - unique
 * url
 * info
 <source lang=sql>
@@ -119,6 +119,7 @@ CREATE TABLE user_rep (
 
 ==== rev ====
 Revision info.
+* rep_id -- cache for rev_rep_path.rep_path_id -> rep_path.rep_id
 * rev_id
 * rev_num
 * date
@@ -128,8 +129,8 @@ Revision info.
 <source lang=sql>
 CREATE TABLE rev (
     rev_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    rep_id          INT UNSIGNED NOT NULL,
     rev_num         INT UNSIGNED NOT NULL,
-    rep_id          INT UNSIGNED DEFAULT NULL,
     author_id       INT UNSIGNED NOT NULL,
     date            DATETIME NOT NULL,
     msg             TEXT,
@@ -274,17 +275,18 @@ CREATE TABLE conf (
     devel           VARCHAR(255) DEFAULT NULL,
     `optimize`      VARCHAR(255) DEFAULT NULL,
     alias_conf_id   INT UNSIGNED DEFAULT NULL,
-    INDEX i_hash (hash),
-    CONSTRAINT `fk_conf_alias_conf_id` FOREIGN KEY (`conf_id`) REFERENCES `conf` (`conf_id`)
+    INDEX i_hash (hash)
+    /*CONSTRAINT `fk_conf_alias_conf_id` FOREIGN KEY (`conf_id`) REFERENCES `conf` (`conf_id`)*/
 ) TYPE=InnoDB;
 </source>
 
 ==== trun ====
 Test run info and test run statistics (cache).
 * trun_id
+* rep_path_id
+* rev_id
 * client_id
 * conf_id
-* rev_id
 * num_failed -- cache
 * num_notseen -- cache
 * num_todo -- cache
@@ -294,17 +296,22 @@ Test run info and test run statistics (cache).
 <source lang=sql>
 CREATE TABLE trun (
     trun_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    rev_id          INT UNSIGNED NOT NULL,
+    rep_path_id     INT UNSIGNED NOT NULL,
     client_id       INT UNSIGNED NOT NULL,
     conf_id         INT UNSIGNED NOT NULL,
-    rev_id          INT UNSIGNED NOT NULL,
     num_failed      INT UNSIGNED NOT NULL,
     num_notseen     INT UNSIGNED NOT NULL,
     num_todo        INT UNSIGNED NOT NULL,
     num_bonus       INT UNSIGNED NOT NULL,
     num_skip        INT UNSIGNED NOT NULL,
     num_ok          INT UNSIGNED NOT NULL,
+    INDEX i_rev_id (rev_id),
+    INDEX i_rep_path_id (rep_path_id),
     INDEX i_client_id (client_id),
     INDEX i_conf_id (conf_id),
+    CONSTRAINT `fk_trun_rev_id` FOREIGN KEY (`rev_id`) REFERENCES `rev` (`rev_id`),
+    CONSTRAINT `fk_trun_rep_path_id` FOREIGN KEY (`rep_path_id`) REFERENCES `rep_path` (`rep_path_id`),
     CONSTRAINT `fk_trun_client_id` FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`),
     CONSTRAINT `fk_trun_conf_id` FOREIGN KEY (`conf_id`) REFERENCES `conf` (`conf_id`)
 ) TYPE=InnoDB;

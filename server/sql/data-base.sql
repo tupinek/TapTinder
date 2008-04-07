@@ -35,6 +35,11 @@ VALUES (
 '2', 'pc-jurosz', '1', substring(MD5(RAND()), -8), NULL, NOW(), NULL , '147.229.5.124', 'i386', 'MSWin32', 'MSWin32-x86-multi-thread', '1', NULL
 ); 
 
+INSERT INTO `client` ( `client_id` , `name` , `user_id` , `passwd` , `info` , `created` , `last_login` , `ip` , `cpuarch` , `osname` , `archname` , `active` , `prev_client_id` )
+VALUES (
+'3', 'shreck1', '1', substring(MD5(RAND()), -8), NULL, NOW(), NULL , '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', '1', NULL
+); 
+
 
 INSERT INTO `project` ( `project_id` , `name` , `url` , `info` )
 VALUES (

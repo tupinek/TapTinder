@@ -1,6 +1,7 @@
 #! perl
 
 # server> perl utils/wiki_schema.pl sql/schema.wiki 1 > sql/schema.sql
+# server> perl utils/wiki_schema.pl sql/schema.wiki 0 trun > temp/table-trun.sql
 
 use strict;
 use warnings;
