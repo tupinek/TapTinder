@@ -5,6 +5,7 @@ use warnings;
 
 use Carp qw(carp croak verbose);
 use FindBin qw($RealBin);
+use Digest::MD5 qw(md5);
 
 use DBI;
 
@@ -85,7 +86,7 @@ sub dmp {
 
 sub dump_get {
     my ( $self, $sub_name, $ra_args, $results ) = @_;
-    print "function $sub_name, input (" . join(', ',@$ra_args) . "), result " . $self->dmp($results);
+    return "function $sub_name, input (" . join(', ',@$ra_args) . "), result " . $self->dmp($results);
 }
 
 sub trc {
@@ -122,7 +123,7 @@ sub db_error {
 }
 
 
-# $repository, $project_name
+# repository $path
 sub get_rep_id {
     my $cname = (caller(0))[3];
     my $self = shift;
@@ -130,11 +131,9 @@ sub get_rep_id {
     unless ( defined $self->{_cache}->{$cname} ) {
         $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
             select rep_id
-              from rep, project 
+              from rep
              where rep.path = ? 
                and rep.active = 1
-               and project.project_id = rep.project_id
-               and project.name = ?
         }) or croak $self->{dbh}->errstr;
     }
     my $result = $self->{dbh}->selectrow_hashref( $self->{_cache}->{$cname}, {}, @_ );
@@ -282,7 +281,7 @@ sub insert_rev_rep_path {
 
 
 
-# $rev_num
+# $rep_id, $rev_num
 sub get_rev_id {
     my $cname = (caller(0))[3];
     my $self = shift;
@@ -291,13 +290,14 @@ sub get_rev_id {
         $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
             select rev_id
               from rev
-             where rev_num = ?
+             where rep_id = ?
+               and rev_num = ?
         }) or croak $self->{dbh}->errstr;
     }
     my $result = $self->{dbh}->selectrow_hashref( 
         $self->{_cache}->{$cname},
         {},
-        $_[0]
+        @_
     );
     $self->db_error() if $self->{_cache}->{$cname}->err;
     print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
@@ -311,27 +311,43 @@ sub get_max_rev_num {
 
     unless ( defined $self->{_cache}->{$cname} ) {
         $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
-            select max(rev.rev_num) as max
-              from rep_path, rev_rep_path, rev
-             where rep_path.rep_id = ?
-               and rev_rep_path.rep_path_id = rep_path.rep_path_id
-               and rev.rep_id = rev_rep_path.rev_id
+            select MAX(rev_num) as max_rev_num
+              from rev
+             where rep_id = ?
         }) or croak $self->{dbh}->errstr;
     }
-    my $result = $self->{dbh}->selectrow_hashref( $self->{_cache}->{$cname}, @_ );
+    my $result = $self->{dbh}->selectrow_hashref( $self->{_cache}->{$cname}, {}, @_ );
     $self->db_error() if $self->{_cache}->{$cname}->err;
     print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
-    return $result->{max};
+    return $result->{max_rev_num};
 }
 
-# $rev_num, $date, $rep_user_id (author_id), $msg
+# $rep_id
+sub get_number_of_revs {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            select count(1) as number_of_revs
+              from rev
+             where rep_id = ?
+        }) or croak $self->{dbh}->errstr;
+    }
+    my $result = $self->{dbh}->selectrow_hashref( $self->{_cache}->{$cname}, {}, @_ );
+    $self->db_error() if $self->{_cache}->{$cname}->err;
+    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
+    return $result->{number_of_revs};
+}
+
+# $rep_id, $rev_num, $date, $rep_user_id (author_id), $msg
 sub insert_rev {
     my $cname = (caller(0))[3];
     my $self = shift;
 
     unless ( defined $self->{_cache}->{$cname} ) {
         $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
-            insert into rev ( rev_num, author_id, date, msg ) values ( ?, ?, ?, ? )
+            insert into rev ( rep_id, rev_num, author_id, date, msg ) values ( ?, ?, ?, ?, ? )
         }) or croak $self->{dbh}->errstr;
     }
     $self->{_cache}->{$cname}->execute( @_ );
@@ -412,16 +428,102 @@ sub set_rep_file_deleted {
 }
 
 
-
+# TODO
 sub set_rep_file_modified {
     my $cname = (caller(0))[3];
     my $self = shift;
     my ( $sub_path, $rep_path_id, $revision ) = @_;
-
     return 1;
 }
 
 
+sub str_args_md5 {
+    my $self = shift;
+    my $str = '';
+    $str .= $_ foreach @_;
+    return md5($str);
+}
 
+
+# $hash
+sub get_conf_id {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+
+    my ( $hash ) = @_;
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            select conf_id
+              from conf
+             where hash = ?
+        }) or croak $self->{dbh}->errstr;
+    }
+    my $result = $self->{dbh}->selectrow_hashref( 
+        $self->{_cache}->{$cname},
+        {},
+        $hash
+    );
+    $self->db_error() if $self->{_cache}->{$cname}->err;
+    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
+    return $result->{conf_id};
+}
+
+
+# $hash, $cc, $harness_args, $devel, $optimize
+sub insert_conf {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            insert into conf ( hash, cc, harness_args, devel, `optimize` ) values ( ?, ?, ?, ?, ? )
+        }) or croak $self->{dbh}->errstr;
+    }
+    $self->{_cache}->{$cname}->execute( @_ );
+    $self->db_error() if $self->{_cache}->{$cname}->err;
+    my $result = $self->get_conf_id( $_[0] );
+    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
+    return $result;
+}
+
+
+sub get_or_insert_conf {
+    my $self = shift;
+    my $hash = $self->str_args_md5( @_ );
+    my $conf_id = $self->get_conf_id($hash);
+    return $conf_id if defined $conf_id;
+    return $self->insert_conf( $hash, @_ );
+}
+
+
+# -
+sub get_inserted_trun_id {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+
+
+    my $rows = $self->{dbh}->do("select max(trun_id) from trun");
+    $self->dmp($rows); exit;
+    #return $self->{dbh}->last_insert_id();
+}
+
+
+# $rev_id, $rep_path_id, $client_id, $conf_id
+sub insert_trun_base {
+    my $cname = (caller(0))[3];
+    my $self = shift;
+
+    unless ( defined $self->{_cache}->{$cname} ) {
+        $self->{_cache}->{$cname} = $self->{dbh}->prepare(qq{
+            insert into trun ( rev_id, rep_path_id, client_id, conf_id ) values ( ?, ?, ?, ? )
+        }) or croak $self->{dbh}->errstr;
+    }
+    $self->{_cache}->{$cname}->execute( @_ );
+    my $result = $self->get_inserted_trun_id();
+    print $self->dump_get( $cname, \@_, $result ) if $self->{debug};
+    $self->db_error() if $self->{_cache}->{$cname}->err;
+    return $result;
+    
+}
 
 1;

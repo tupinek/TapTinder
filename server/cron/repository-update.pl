@@ -114,7 +114,7 @@ if ( ( !$debug_logpart || (not -e $log_dump_fn) )
     save_state();
 }
 
-my $rep_id = $db->get_rep_id( $conf_rep->{repository}, $project_name );
+my $rep_id = $db->get_rep_id( $conf_rep->{repository} );
 
 # userting users into user_rep table
 my $users = $db->get_rep_users( $rep_id );
@@ -136,11 +136,13 @@ foreach my $rd ( @$revs ) {
 $db->commit or $db->db_error( "Commiting users failed." );
 $users = $db->get_rep_users( $rep_id );
 
-# /trunk, /braches/BRANCHNAME, /tags/TAGNAME
+# input:  /trunk, /braches/BRANCHNAME, /tags/TAGNAME
+# output: trunk/, braches/BRANCHNAME/, tags/TAGNAME/
 sub split_rep_path {
     my ( $project_name, $path ) = @_;
     
-    if ( my ( $base, $oth ) = $path =~ m{^(/trunk|/branches/[^\/]+|/tags/[^\/]+)(.*?)$} ) {
+    if ( my ( $base, $oth ) = $path =~ m{^/(trunk|branches/[^\/]+|tags/[^\/]+)\/?(.*?)$} ) {
+        $base .= '/' unless substr($base,-1,1) eq '/';
         return ( $base, $oth );
     }
     return ( undef, undef );
@@ -175,10 +177,14 @@ sub process_file {
     return 1;
 }
 
-# todo, doesn't work
+
 my $max_revnum_in_db = $db->get_max_rev_num( $rep_id );
+unless ( defined $max_revnum_in_db ) {
+    my $num_of_revs_found = $db->get_number_of_revs( $rep_id );
+    croak "No max rev found, but some revs exists." if $num_of_revs_found;
+    $max_revnum_in_db = 0;
+}
 print "max_revnum_in_db: $max_revnum_in_db\n" if $debug > 3;
-$max_revnum_in_db = 0 unless defined $max_revnum_in_db;
 
 foreach my $rd ( @$revs ) {
     if ( $rd->{revision} <= $max_revnum_in_db ) {
@@ -187,12 +193,13 @@ foreach my $rd ( @$revs ) {
     }
     
     # insert rev if needed
-    my $rev_id = $db->get_rev_id( $rd->{'revision'} );
+    my $rev_id = $db->get_rev_id( $rep_id, $rd->{'revision'} );
     unless ( defined $rev_id ) {
         my $date_ts = svntime_to_dbtime( $rd->{date} );
         $db->log_rev_error( $rd, "Time parser error datestr '$rd->{date}'." ) unless defined $date_ts;
         my $author_rep_user_id = $users->{ $rd->{'author'} }->{user_rep_id};
         $rev_id = $db->insert_rev( 
+            $rep_id,
             $rd->{'revision'},
             $author_rep_user_id,
             $date_ts,
@@ -244,7 +251,7 @@ foreach my $rd ( @$revs ) {
         print "rep_path: $rep_path, sub_path: $sub_path\n" if $debug > 4;
     }
     
-    print dmp( $rp_changes );
+    #print dmp( $rp_changes );
     #$db->rollback; die;
 
     my @rp_keys = keys %$rp_changes;

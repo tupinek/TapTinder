@@ -4,12 +4,13 @@ use warnings;
 use Carp qw(carp croak verbose);
 use FindBin qw($RealBin);
 
-use DBI;
+use Data::Dumper;
 use File::stat;
 use File::Spec::Functions;
+use File::Basename;
 
-use Data::Dumper;
-
+use lib '../lib';
+use TapTin::DB;
 
 my $conf_fpath = catfile( $RealBin, '..', 'conf', 'dbconf.pl' );
 my $conf = require $conf_fpath;
@@ -22,17 +23,13 @@ my $results_dir = $ARGV[0] || './../../test-smoke';
 my $debug = $ARGV[1] || 10;
 
 print "Debug level: $debug\n" if $debug;
+print "Results path: '$results_dir'\n";
 print "\n" if $debug;
 
-my $dbh;
-my $sth_cache;
 
-$dbh = DBI->connect(
-    $conf->{db}->{dsn},
-    $conf->{db}->{user},
-    $conf->{db}->{password},
-    { RaiseError => 0, AutoCommit => 0 }
-) or die $DBI::errstr;
+my $db = TapTin::DB->new();
+$db->debug( $debug );
+$db->connect( $conf->{db} );
 
 
 sub trc {
@@ -48,24 +45,6 @@ sub dmp {
     $dd->Deepcopy(1);
     $dd->Deparse(1);
     return $dd->Dump;
-}
-
-sub dump_get {
-    my ( $sub_name, $ra_args, $results ) = @_;
-    print "function $sub_name, input (" . join(', ',@$ra_args) . "), result " . dmp($results);
-}
-
-
-
-sub db_error {
-    my ( $dbh, $msg ) = @_;
-    
-    $dbh->rollback;
-    $dbh->disconnect;
-    $msg = '' unless defined $msg;
-    $msg .= $dbh->errstr;
-    $msg .= "\n\n" . trc();
-    croak $msg;
 }
 
 
@@ -112,6 +91,58 @@ sub dump_header {
     #print Dumper( $data );
 }
 
+
+# TODO  
+sub is_valid_user {
+    my ( $client_id, $archname, $cc, $cpuarch, $osname ) = @_;
+    print "Valid client conf.\n";
+    return 1;
+}
+
+
+sub process_test_results {
+    my ( $db, $data, $fn ) = @_;
+
+    my $client_id = $data->{conf}->{client_id};
+
+    my $rev_num = $data->{pconfig}->{revision};
+
+    # TODO
+    # $data->{duration}
+
+    # TODO
+    my $is_valid_user = is_valid_user( 
+        $client_id,
+        $data->{pconfig}->{archname},
+        $data->{pconfig}->{cpuarch},
+        $data->{pconfig}->{osname},
+    );
+    $is_valid_user || return 0;
+
+    
+    my $conf_id = $db->get_or_insert_conf(
+        $data->{pconfig}->{cc},
+        $data->{harness_args},
+        $data->{pconfig}->{DEVEL},
+        $data->{pconfig}->{optimize}
+    );
+
+
+    my $rep_id = $db->get_rep_id( $data->{conf}->{repository} );
+    return 0 unless $rep_id;
+    my $rev_id = $db->get_rev_id( $rep_id, $rev_num );
+    return 0 unless $rev_id;
+    my $rep_path_id = $db->get_rep_path_id( $rep_id, $data->{conf}->{repository_path} );
+    return 0 unless $rep_path_id;
+
+    my $trun_id = $db->insert_trun_base(
+        $rev_id, $rep_path_id, $client_id, $conf_id
+    );
+    print "trun_id: $trun_id\n";
+
+    return 1;
+}
+
         
 my $mtimes = {};
 my $glob_pattern = $results_dir.'/parrot-smoke-*.yaml';
@@ -131,9 +162,10 @@ my $num = 0;
 foreach my $mtime ( reverse sort keys %$mtimes ) {
     $num++;
     my $fn = $mtimes->{$mtime};
+    my $fn_basename = basename( $fn );
     my @lt = localtime($mtime);
     my $time = sprintf("%04d-%02d-%02d %02d-%02d-%02d",($lt[5] + 1900),($lt[4] + 1),$lt[3],$lt[2], $lt[1], $lt[0] );
-    print "file: $fn\n";
+    print "file: $fn_basename\n";
     print "mtime: $time\n";
     $last_fn = $fn;
 
@@ -149,6 +181,12 @@ foreach my $mtime ( reverse sort keys %$mtimes ) {
                     files => [],
                 };
             }
+            my $ret = process_test_results( $db, $data, $fn_basename );
+            if ( $ret ) {
+                $db->commit();
+            } else {
+                $db->rollback();
+            }
             $loaded_revs->{$rev}->{$arch}->{num}++;
             push @{$loaded_revs->{$rev}->{$arch}->{files}}, $fn;
             #print Dumper($loaded_revs);
@@ -157,7 +195,7 @@ foreach my $mtime ( reverse sort keys %$mtimes ) {
         }
     }
     print "\n\n";
-    last if $num >= 3 && $debug;
+    last if $num >= 1 && $debug;
 }
 print "\n";
 
@@ -190,5 +228,5 @@ foreach my $arch ( sort keys %$arch_stat ) {
     print "  $arch : $unique_revs ($all_tests)\n";
 }
 
-$dbh->commit or db_error( $dbh, "End commit failed." );
-$dbh->disconnect;
+$db->commit or $db->db_error( "End commit failed." );
+$db->disconnect;
