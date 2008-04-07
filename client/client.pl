@@ -175,6 +175,8 @@ my $slt = {
     'max'   => 20.0*$slt_koef,
 };
 
+my $undo_func = undef;
+
 #$slt = { 'first' => 3, 'step' => 1, 'max' => 7, }; # debug attempts
 
 print "\n" if $ver > 0;
@@ -187,11 +189,10 @@ while ( 1 ) {
     ;
     print "Run number: " . ( $run_num + 1 ) . "\n" if $ver > 2;
     print "Start time: $start_time\n" if $ver > 2;
+    process_keypress();
 
-    NEXT_CONF: foreach my $ck_num ( $conf_first..$conf_last ) {
-        # first keypress processing, used after each 'next NEXT_CONF;' expression
-        process_keypress();
-        
+    # see also continue block
+    NEXT_CONF: foreach my $ck_num ( $conf_first..$conf_last ) {       
         # sleep
         $slt_num = 0 if $attempt == 0;
         print "attempt:$attempt, conf_last:$conf_last, slt_num:$slt_num\n" if $ver > 5;
@@ -396,6 +397,10 @@ while ( 1 ) {
         }
 
         chdir( $ck->{temp_dn} ) or croak $!;
+        $undo_func = sub {
+            chdir( $ck->{temp_dn_back} ) or croak $!;
+            return 1;
+        };
 
         {
             my $t_dir = '.';
@@ -523,11 +528,22 @@ while ( 1 ) {
             $state->{cmd}->{after_done} = 1;
         }
 
-        chdir( $ck->{temp_dn_back} ) or croak $!;
         print "Saving rev done for " . $state->{temp_rev} . ".\n" if $ver > 3;
         revision_test_done( $ck->{name}, $state->{temp_rev} );
-     }
+
+     # called after each 'next NEXT_CONF;' line and after next line
+     } continue {
+
+        if ( defined $undo_func ) {
+            my $ret = $undo_func->();
+            $undo_func = undef;
+            print "Undo return $ret: " . $@ . "\n";
+        }
+        process_keypress();
+    }
+         
 
     print "\n" if $ver > 0;
     $run_num++;
-}
+
+} # while ( 1 ) {
