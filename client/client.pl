@@ -529,6 +529,13 @@ while ( 1 ) {
             }
             $state->{cmd}->{after_done} = 1;
         }
+        
+        # duplicate code, see continue block
+        if ( defined $undo_func ) {
+            my $ret = $undo_func->();
+            $undo_func = undef;
+            print "Undo return $ret: " . $@ . "\n";
+        }
 
         print "Saving rev done for " . $state->{temp_rev} . ".\n" if $ver > 3;
         revision_test_done( $ck->{name}, $state->{temp_rev} );
