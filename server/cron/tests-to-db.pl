@@ -20,7 +20,7 @@ my $project_name = 'parrot';
 my $conf_rep = $conf->{project}->{$project_name};
 
 my $results_dir = $ARGV[0] || './../../test-smoke';
-my $debug = $ARGV[1] || 10;
+my $debug = $ARGV[1] || 0;
 
 print "Debug level: $debug\n" if $debug;
 print "Results path: '$results_dir'\n";
@@ -63,7 +63,7 @@ sub load_tap_data {
 
     if ( $@ ) {
         carp $@;
-        print "Using YAML ...\n";
+        print "Using YAML ...\n" if $debug;
         if ( $use_full_yaml ) {
             eval {
                 use YAML;
@@ -95,36 +95,40 @@ sub dump_header {
 # TODO  
 sub is_valid_user {
     my ( $client_id, $archname, $cc, $cpuarch, $osname ) = @_;
-    print "Valid client conf.\n";
+    print "Valid client conf.\n" if $debug;
     return 1;
 }
 
 
 # logic for test (detail) result to tresult.tresult_id
 sub get_test_result_id {
-    my ( $test ) = @_;
+    my ( $test, $trun_id, $rep_file_id, $test_num ) = @_;
 
     # 0 .. not seen (not ok) -- empty result info
     return 0 unless defined $test;
     
+    # 5 ... skip -- type == 'skip'
+    return 5 if $test->{type} eq 'skip';
+
     if ( $test->{actual_ok} == 1 ) {
-        # 4 .. bonus (ok) -- actual_ok == 1 && (type == 'todo' || type == 'skip' )
-        if ( $test->{type} eq 'todo' || $test->{type} eq 'skip' ) {
-            return 4;
-        }
+        # 4 .. bonus (ok) -- actual_ok == 1 && type == 'todo'
+        return 4 if $test->{type} eq 'todo';
+
+        # unknown with actual_ok == 1 -> ok
         if ( $test->{type} ne '' ) {
-            print "Unknown result state: actual_ok=1, type='" . $test->{type} . "'.\n";
+            print
+                "Unknown result state: actual_ok=1, type='" . $test->{type} . "'"
+                . " trun_id:$trun_id, rep_file_id:$rep_file_id, test_num:$test_num.\n"
+            ;
         }
+
         # 6 .. ok (ok) -- actual_ok == 1 && type != 'todo' && type != 'skip' ( other types, reason, ... ignored )
-        return 6
+        return 6;
     }
     
     # 3 .. todo (not ok || ok) -- actual_ok == 0 && type == 'todo'
     return 3 if $test->{type} eq 'todo';
 
-    # 5 .. skip (ok) -- actual_ok == 0 && type == 'skip'
-    return 3 if $test->{type} eq 'skip';
-    
     # 1 .. failed (not ok) -- actual_ok == 0 && type == ''
     return 1 if $test->{type} eq '';
     
@@ -139,12 +143,15 @@ sub process_test_raw_results {
     my $ret;
     TEST_RESULT: foreach my $res_num ( 0..$#$all_results ) {
         my $result = $all_results->[ $res_num ];
-        print dmp( $result );
+        #print dmp( $result ) if $debug > 5;
 
         my $test_details = $result->{details};
         # skiping files withnout details
         # probably not exist in repository, e.g. parrot rev: 26769 test_file: t/codingstd/cppcomments.t
-        next TEST_RESULT unless defined $test_details;
+        unless ( defined $test_details ) {
+            print "Details for test_file '" . $result->{test_file} . "' not found.";
+            next TEST_RESULT;
+        }
 
         my $file_path = $result->{test_file};
         my $rep_file_id = $db->get_rep_file_id( 
@@ -166,15 +173,25 @@ sub process_test_raw_results {
 
         foreach my $test_num ( 0..$#$test_details ) {
             my $test = $test_details->[ $test_num ];
-            my $tresult_id = get_test_result_id( $test );
+            my $tresult_id = get_test_result_id( $test, $trun_id, $rep_file_id, $test_num );
             $stats->[ $tresult_id ]++;
 
-            print "test name: '" . $test->{name} . "', tresult_id: $tresult_id\n";
-            # skip ok
+            if ( 0 && $tresult_id != 6 ) {
+                print "test name: '" . $test->{name} . "', tresult_id: $tresult_id\n";
+                print dmp( $test );
+                print "\n";
+            }
+
+            # insert rep_test
+            my $rep_test_id = $db->prepare_and_get_rep_test_id( $rep_file_id, $test_num, $test->{name} );
+            return 0 unless $rep_test_id;
+
+            # not insert ok test results
             if ( $tresult_id != 6 ) {
-                $ret = $db->prepare_others_and_insert_ttest( $trun_id, $rep_file_id, $test_num, $test->{name}, $tresult_id );
+                $ret = $db->insert_ttest( $trun_id, $rep_test_id, $tresult_id );
                 return 0 unless $ret;
             }
+                
             #return 0; # debug - roolback
         }
     }
@@ -202,21 +219,32 @@ sub process_test_results {
     );
     $is_valid_user || return 0;
 
-    
-    my $conf_id = $db->get_or_insert_conf(
-        $data->{pconfig}->{cc},
-        $data->{harness_args},
-        $data->{pconfig}->{DEVEL},
-        $data->{pconfig}->{optimize}
-    );
-
-
     my $rep_id = $db->get_rep_id( $data->{conf}->{repository} );
     return 0 unless $rep_id;
     my $rev_id = $db->get_rev_id( $rep_id, $rev_num );
     return 0 unless $rev_id;
     my $rep_path_id = $db->get_rep_path_id( $rep_id, $data->{conf}->{repository_path} );
     return 0 unless $rep_path_id;
+
+    my @conf_params = (
+        $data->{pconfig}->{cc},
+        $data->{harness_args},
+        $data->{pconfig}->{DEVEL},
+        $data->{pconfig}->{optimize}
+    );
+    my $hash = $db->str_args_md5( @conf_params );
+    my $conf_id = $db->get_conf_id( $hash );
+    unless ( defined $conf_id ) {
+        $conf_id = $db->insert_conf( $hash, @conf_params );
+        return 0 unless $conf_id;
+
+    } else {
+        my $trun_id = $db->get_max_trun_id( $rev_id, $rep_path_id, $client_id, $conf_id );
+        if ( $trun_id ) {
+            print "trun for $rev_id, $rep_path_id, $client_id, $conf_id already found in DB.";
+            return 0;
+        }
+    }
 
     my $trun_id = $db->insert_trun_base(
         $rev_id, $rep_path_id, $client_id, $conf_id
@@ -284,7 +312,7 @@ foreach my $mtime ( reverse sort keys %$mtimes ) {
         }
     }
     print "\n\n";
-    last if $num >= 1 && $debug;
+    #last if $num >= 10 && $debug;
 }
 print "\n";
 
