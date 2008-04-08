@@ -289,7 +289,7 @@ while ( 1 ) {
         $to_head_rev = 1 if $all_attempt->{$ck_num} <= 2 && !$state->{svnup_done};
 
         # need revision change
-        if ( $to_rev != $state->{src_rev} ) {
+        if ( $to_rev != $state->{src_rev} || $to_head_rev ) {
             $state->{svnup_done} = 0;
 
             my $to_rev_str = $to_rev;
