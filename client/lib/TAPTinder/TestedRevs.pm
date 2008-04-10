@@ -60,7 +60,7 @@ sub get_revision_to_test {
     while ( exists $tested_revs->{$to_test} && $to_test > 0 ) {
         $to_test--;
     }
-    return undef if $max - $to_test >= 1000;
+    return undef if $max - $to_test >= 500;
     return undef if $to_test == 0;
     return $to_test;
 }
