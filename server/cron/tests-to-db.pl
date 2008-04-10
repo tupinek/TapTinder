@@ -19,7 +19,7 @@ croak "Config loaded from '$conf_fpath' is empty.\n" unless $conf;
 my $project_name = 'parrot';
 my $conf_rep = $conf->{project}->{$project_name};
 
-my $results_dir = $ARGV[0] || './../../test-smoke';
+my $results_dir = $ARGV[0] || './../../temp/test-smoke';
 my $debug = $ARGV[1] || 0;
 
 print "Debug level: $debug\n" if $debug;
@@ -63,7 +63,7 @@ sub load_tap_data {
 
     if ( $@ ) {
         carp $@;
-        print "Using YAML ...\n" if $debug;
+        print "Using YAML ...\n";
         if ( $use_full_yaml ) {
             eval {
                 use YAML;
