@@ -172,6 +172,42 @@ sub cf_num_diff_and_ahref {
     return $html;
 }
 
+sub cf_tresult_diff {
+    my $dbcolname = shift;
+    my $for_trun_id = shift;
+    my ( $row_num, $prow, $row ) = @_;
+    
+    my $trun_id = $prow->[ cnum( $dbcolname ) ];
+    if ( $trun_id != $for_trun_id ) {
+        return "<td>&nbsp;</td>\n";
+    }
+    
+    return "<td>" . $prow->[ cnum( 'res.title') ] . "</td>\n";
+
+
+    my $rownum = cnum( $dbcolname );
+    my $pval = $prow->[ $rownum ];
+    my $val  = $row->[ $rownum ];
+    
+    my $html = '<td';
+    my $worse = 1;
+    $worse = 0 if (not defined $val) || (not defined $pval) || $pval <= $val;
+    my $changed = 0;
+    $changed = 1 if (defined $val) && (defined $pval) && $pval != $val;
+
+    my $class = ( 'ok', 'err' )[$worse];
+    $html .= qq{ class="$class"};
+    $html .= '>';
+    $html .= $pval;
+
+    if ( $changed ) {
+        $html .= "&nbsp;";
+        my $trun_id1 = $prow->[ cnum('trun.trun_id') ];
+        my $trun_id2 = $row->[ cnum('trun.trun_id') ];
+    }
+    $html .= "</td>\n";
+    return $html;
+}
 
 sub checkbox {
     my ( $row_num, $prow, $row, $class ) = @_;
@@ -204,10 +240,8 @@ sub table_row {
                 $html .= $val->( $num, @_ );
 
             } elsif ( ref $val eq 'ARRAY' ) {
-                no strict 'refs';
-                $html .= &{$val->[0]}( $val->[1], $val->[2], @_ );
+                $html .= $val->[0]->( $val->[1], $val->[2], @_ );
                 $table_row_num++;
-                use strict 'refs';
 
             } else {
                 $html .= "<td>";
@@ -215,6 +249,8 @@ sub table_row {
                 $html .= "</td>\n";
                 $table_row_num++;
             }
+        } else {
+            $html .= "<td>&nbsp;</td>\n";
         }
     }
     $html .= "</tr>\n";
@@ -239,42 +275,59 @@ sub print_dump {
 }
 
 
+
 sub do_show_ttest {
     require $RealBin . 'templ/head.pl';
 
+    my $tresult_id = $par->{tresult_id} || 0;
+    my $trun_id1 = $par->{trun_id1};
+    my $trun_id2 = $par->{trun_id2};
+
+    my $rev_num1 = $db->get_trun_rev_num( $trun_id1 );
+    my $rev_num2 = $db->get_trun_rev_num( $trun_id2 );
+    
+    # show lower rev_num col first
+    if ( $rev_num1 > $rev_num2 ) {
+        ( $trun_id1, $trun_id2 ) = ( $trun_id2, $trun_id1 );
+        ( $rev_num1, $rev_num2 ) = ( $rev_num2, $rev_num1 );
+    }
+    
+    my $trun_id_to_rev_num = {
+        $trun_id1 => $rev_num1,
+        $trun_id2 => $rev_num2,
+    };
+    
+    
     my $raw_view_def = [
-        'Revision', 'rev.rev_num',
+        'id',  'rt.rep_test_id',
         'Test file', 'rf.sub_path',
         'Num', 'rt.number',      
         'Name', 'rt.name',
-        'Result', 'res.title',
+        $rev_num1, [ \&cf_tresult_diff, 'trun.trun_id', $trun_id1 ],
+        $rev_num2, [ \&cf_tresult_diff, 'trun.trun_id', $trun_id2 ],
+        undef,  'res.title',
+        undef,  'trun.trun_id',
+        undef,  'res.title',
     ];
     $view_def = prepare_view_def( $raw_view_def );
     
     #print_dump( [ $cols_sql, $view_def ] );
 
-    # TODO    
-    my $rep_id = 1;
-    my $max_rev_num = $db->get_max_rev_num( $rep_id );
     
     # TODO, rep_path_id
     my $sth = $db->{dbh}->prepare( qq{
         select $view_def->{colsql}
-          from ttest, rep_test rt, rep_file rf, trun, rev, tresult res
+          from ttest, rep_test rt, rep_file rf, trun, tresult res
          where ( ttest.trun_id = ? or ttest.trun_id = ? )
            and ttest.tresult_id = ?
            and rt.rep_test_id = ttest.rep_test_id
            and rf.rep_file_id = rt.rep_file_id
            and trun.trun_id = ttest.trun_id
-           and rev.rev_id = trun.rev_id
            and res.tresult_id = ttest.tresult_id
          order by rf.sub_path, rt.number
     } );
     return db_error() if $db->{dbh}->err;
 
-    my $tresult_id = $par->{tresult_id} || 0;
-    my $trun_id1 = $par->{trun_id1};
-    my $trun_id2 = $par->{trun_id2};
 
     my @bv = ( $trun_id1, $trun_id2, $tresult_id );
     $sth->execute(@bv);
@@ -287,7 +340,7 @@ sub do_show_ttest {
         print table_row_names( $view_def ) if $row_num % 25 == 0;
         #print_dump( $row );
         if ( defined $prev_row ) {
-            print table_row( $row_num, $prev_row, $row );
+            print table_row( $row_num, $prev_row, $row, 1 );
         }
         $prev_row = [ @$row ];
         $row_num++;
@@ -296,7 +349,7 @@ sub do_show_ttest {
     if ( $db->{dbh}->err ) {
         return db_error();
     } else {
-        print table_row( $row_num, $prev_row, $row );
+        print table_row( $row_num, $prev_row, $row, 1 );
     }
     print table_foot();
 
@@ -314,14 +367,15 @@ sub do_show {
     };
     
     my $raw_view_def = [
-        '',         [ 'checkbox', 'trun.trun_id' ],
+        '',         [ \&checkbox, 'trun.trun_id' ],
         'Revision', 'rev.rev_num',      
+        'Author', 'ur.rep_login',      
         'Archname', 'client.archname',  
-        'Not seen', [ 'cf_num_diff_and_ahref', 'trun.num_notseen', 0 ],
-        'Failed',   [ 'cf_num_diff_and_ahref', 'trun.num_failed',  1 ],
-        'Unknown',  [ 'cf_num_diff_and_ahref', 'trun.num_unknown', 2 ],
+        'Not seen', [ \&cf_num_diff_and_ahref, 'trun.num_notseen', 0 ],
+        'Failed',   [ \&cf_num_diff_and_ahref, 'trun.num_failed',  1 ],
+        'Unknown',  [ \&cf_num_diff_and_ahref, 'trun.num_unknown', 2 ],
         'Todo',     'trun.num_todo',
-        'Bonus',    [ 'cf_num_diff_and_ahref', 'trun.num_bonus' ],
+        'Bonus',    [ \&cf_num_diff_and_ahref, 'trun.num_bonus' ],
         'Skip',     'trun.num_skip',
         'Ok',       'trun.num_ok',
         'Details',  \&sub_details,
@@ -337,12 +391,13 @@ sub do_show {
     # TODO, rep_path_id
     my $sth = $db->{dbh}->prepare( qq{
         select $view_def->{colsql}
-          from trun, rev, client
+          from trun, rev, client, user_rep ur
          where trun.rep_path_id = 1
            and trun.rev_id = rev.rev_id
            and client.client_id = trun.client_id
            and rev.rev_num >= ?
            and rev.rev_num <= ?
+           and ur.user_rep_id = rev.author_id
          order by rev.rev_num desc
     } );
     return db_error() if $db->{dbh}->err;
