@@ -2,10 +2,6 @@
 
 use strict;
 use warnings;
-
-package TapTinder::Apache;
-
-use strict;
 #use warnings FATAL => 'all';
 
 use CGI qw/:standard :cgi-lib/;
@@ -449,5 +445,3 @@ sub do_show {
 $db = get_db();
 $par = Vars();
 start();
-  
-1;

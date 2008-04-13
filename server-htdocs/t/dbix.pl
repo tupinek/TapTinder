@@ -2,24 +2,18 @@
 
 use strict;
 use warnings;
-
-package TapTinder::Apache;
-
-use strict;
 #use warnings FATAL => 'all';
 
 use CGI qw/:standard :cgi-lib/;
 use CGI::Carp qw(fatalsToBrowser);
 
-use Time::HiRes qw(time sleep);
-use Data::Dumper;
-
-use lib qw(../server/lib);
+use lib qw(../../server/lib);
 
 use DBIx::Class;
 use TapTinder::DB::Schema;
 
 our $RealBin = '/home2/web/perl6/taptinder-dev/server-htdocs/';
+
 our $db;
 our $par;
 our $view_def;
@@ -40,11 +34,6 @@ sub get_db {
     return $db;
 }
 
-sub print_dump {
-    print "<pre>\n";
-    print Dumper( @_ );
-    print "</pre>\n";
-}
 
 sub start {
     return do_show() if !$par->{ac} || $par->{ac} eq 'show';
@@ -76,5 +65,3 @@ sub do_show {
 $db = get_db();
 $par = Vars();
 start();
-  
-1;
