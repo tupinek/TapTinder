@@ -269,27 +269,29 @@ while ( 1 ) {
             process_keypress();
         }
 
-        # svn up
-        my $to_rev = get_revision_to_test( $ck->{name}, $state->{src_rev} );
-        unless ( defined $to_rev ) {
-            my $sleep_time = $slt->{first} + ( $slt->{step} * $slt_num );
-            $sleep_time = $slt->{max} if $sleep_time > $slt->{max};
-            print "get_revision_to_test return undef\n" if $ver > 3;
-            print "Probably all revisions tested. Waiting for $sleep_time s ...\n" if $ver > 0;
-            sleep_and_process_keypress( $sleep_time );
+        my $to_head_rev = 0;
+        my $to_rev = undef;
+        if ( $all_attempt->{$ck_num} <= 2 && !$state->{svnup_done} ) {
+            $to_head_rev = 1
+        } else {
+            $to_rev = get_revision_to_test( $ck->{name}, $state->{src_rev} );
+            process_keypress();
+            unless ( defined $to_rev ) {
+                $to_head_rev = 1;
+                print "get_revision_to_test return undef\n" if $ver > 3;
+                print "Probably all revisions tested. Trying HEAD.\n" if $ver > 0;
+            }
         }
         
         if ( $ver > 8 ) {
-            print "to_rev from get_revision_to_test ";
+            print "to_head_rev $to_head_rev, to_rev ";
             ( defined $to_rev ) ? print $to_rev : print 'undef';
             print ", attempt $attempt, run_attempt " . $all_attempt->{$ck_num} . " \n";
         }
 
-        my $to_head_rev = 0;
-        $to_head_rev = 1 if $all_attempt->{$ck_num} <= 2 && !$state->{svnup_done};
 
         # need revision change
-        if ( $to_rev != $state->{src_rev} || $to_head_rev ) {
+        if ( $to_head_rev || $to_rev != $state->{src_rev} ) {
             $state->{svnup_done} = 0;
 
             my $to_rev_str = $to_rev;
