@@ -3,6 +3,7 @@
 <!-- perl utils\wiki_schema.pl sql\schema.wiki 1 > sql\schema.sql -->
 <!-- PARSE PART DBCREATE BEGIN -->
 <source lang=sql>
+-- schema version: 0.03
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 </source>
@@ -14,7 +15,9 @@ User info.
 * user_id
 * login
 * passwd
-* ...
+* active - 0 means historical data
+* created - account creation date
+* last_login - date
 <source lang=sql>
 CREATE TABLE user (
     user_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
@@ -32,13 +35,15 @@ Client (computer) info.
 * client_id
 * user_id
 * name
-* info
 * passwd
+* info
 * ip
 * cpuarch
 * osname
 * archname
 * active
+* created
+* last_login
 * prev_client_id
 <source lang=sql>
 CREATE TABLE client (
@@ -47,16 +52,16 @@ CREATE TABLE client (
     name            VARCHAR(20) DEFAULT NULL,
     passwd          VARCHAR(20) NOT NULL,
     info            TEXT DEFAULT NULL,
-    created         DATETIME NOT NULL,
-    last_login      DATETIME DEFAULT NULL,
     ip              VARCHAR(15) DEFAULT NULL,
     cpuarch         VARCHAR(50) DEFAULT NULL,
     osname          VARCHAR(50) DEFAULT NULL,
     archname        VARCHAR(255) DEFAULT NULL,
     active          BOOLEAN NOT NULL DEFAULT 1,
+    created         DATETIME NOT NULL,
+    last_login      DATETIME DEFAULT NULL,
     prev_client_id  INT UNSIGNED DEFAULT NULL,
-    CONSTRAINT `fk_client_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`),
-    CONSTRAINT `fk_client_prev_client_id` FOREIGN KEY (`prev_client_id`) REFERENCES `client` (`client_id`)
+    CONSTRAINT fk_client_user_id FOREIGN KEY (user_id) REFERENCES user (user_id),
+    CONSTRAINT fk_client_prev_client_id FOREIGN KEY (prev_client_id) REFERENCES client (client_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -79,53 +84,52 @@ CREATE TABLE project (
 Project repository. Each project can has only one active repository.
 * rep_id
 * project_id
-* active
 * name
 * path - unique
 * url
 * info
+* active
 <source lang=sql>
 CREATE TABLE rep (
     rep_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     project_id  INT UNSIGNED NOT NULL,
-    active      BOOLEAN NOT NULL DEFAULT 1,
     name        VARCHAR(255) NOT NULL,
     path        VARCHAR(255) NOT NULL,
     url         VARCHAR(255) DEFAULT NULL,
     info        TEXT DEFAULT NULL,
-    CONSTRAINT `fk_rep_project_id` FOREIGN KEY (`project_id`) REFERENCES `project` (`project_id`)
+    active      BOOLEAN NOT NULL DEFAULT 1,
+    CONSTRAINT fk_rep_project_id FOREIGN KEY (project_id) REFERENCES project (project_id)
 ) TYPE=InnoDB;
 </source>
 
-==== user_rep ====
-Relation between user and repository.
-* user_rep_id
+==== rep_author ====
+Repository authors. Some authors are also users.
+* rep_author_id
 * rep_id
 * rep_login - can be null, see parrot rev 1346 created by cvs2svn
-* user_id
+* user_id - some authors has TapTinder user_id too.
 <source lang=sql>
-CREATE TABLE user_rep (
-    user_rep_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+CREATE TABLE rep_author (
+    rep_author_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     rep_id          INT UNSIGNED NOT NULL,
     rep_login       VARCHAR(255) DEFAULT NULL,
     user_id         INT UNSIGNED DEFAULT NULL,
     INDEX i_rep_id (rep_id),
     INDEX i_rep_login (rep_login),
     INDEX i_user_id (user_id),
-    CONSTRAINT `fk_user_rep_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`),
-    CONSTRAINT `fk_user_rep_rep_id` FOREIGN KEY (`rep_id`) REFERENCES `rep` (`rep_id`)
+    CONSTRAINT fk_user_rep_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
+    CONSTRAINT fk_user_rep_user_id FOREIGN KEY (user_id) REFERENCES user (user_id)
 ) TYPE=InnoDB;
 </source>
 
 ==== rev ====
 Revision info.
-* rep_id -- cache for rev_rep_path.rep_path_id -> rep_path.rep_id
 * rev_id
+* rep_id -- cache for rev_rep_path.rep_path_id -> rep_path.rep_id
 * rev_num
-* date
 * author_id
+* date
 * msg
-* ...
 <source lang=sql>
 CREATE TABLE rev (
     rev_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
@@ -134,9 +138,10 @@ CREATE TABLE rev (
     author_id       INT UNSIGNED NOT NULL,
     date            DATETIME NOT NULL,
     msg             TEXT,
+    INDEX i_rep_id (rep_id),
     INDEX i_rev_num (rev_num),
-    CONSTRAINT `fk_rev_rep_id` FOREIGN KEY (`rep_id`) REFERENCES `rep` (`rep_id`),
-    CONSTRAINT `fk_rev_rep_author_id` FOREIGN KEY (`author_id`) REFERENCES `user_rep` (`user_rep_id`)
+    CONSTRAINT fk_rev_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
+    CONSTRAINT fk_rev_rep_author_id FOREIGN KEY (author_id) REFERENCES rep_author (rep_author_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -145,18 +150,25 @@ Repository path (trunk/, branch/pdd17pmc/, ...).
 * rep_path_id
 * rep_id
 * path
+* rev_num_from
+* rev_num_to
 <source lang=sql>
 CREATE TABLE rep_path (
     rep_path_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     rep_id          INT UNSIGNED NOT NULL,
     path            VARCHAR(255) NOT NULL,
+    rev_num_from    INT UNSIGNED NOT NULL,
+    rev_num_to      INT UNSIGNED DEFAULT NULL,
     INDEX i_rep_id (rep_id),
-    CONSTRAINT `fk_rep_path_rep_id` FOREIGN KEY (`rep_id`) REFERENCES `rep` (`rep_id`)
+    INDEX i_path (path),
+    INDEX i_rev_num_from (rev_num_from),
+    INDEX i_rev_num_to (rev_num_to),
+    CONSTRAINT fk_rep_path_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id)
 ) TYPE=InnoDB;
 </source>
 
 ==== rev_rep_path ====
-Revision to repository path map (M:N).
+Revision info to repository path map (M:N).
 * rev_id
 * rep_path_id
 <source lang=sql>
@@ -164,8 +176,8 @@ CREATE TABLE rev_rep_path (
     rev_id              INT UNSIGNED NOT NULL,
     rep_path_id         INT UNSIGNED NOT NULL,
     INDEX i_rev_id_rep_path_id (rev_id, rep_path_id),
-    CONSTRAINT `fk_rev_rep_path_rev_id` FOREIGN KEY (`rev_id`) REFERENCES `rev` (`rev_id`),
-    CONSTRAINT `fk_rev_rep_path_rep_path_id` FOREIGN KEY (`rep_path_id`) REFERENCES `rep_path` (`rep_path_id`)
+    CONSTRAINT fk_rev_rep_path_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
+    CONSTRAINT fk_rev_rep_path_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -186,19 +198,20 @@ CREATE TABLE rep_file (
     INDEX i_rep_path_id (rep_path_id),
     INDEX i_rev_num_from (rev_num_from),
     INDEX i_rev_num_to (rev_num_to),
-    CONSTRAINT `fk_rep_file_rep_path_id` FOREIGN KEY (`rep_path_id`) REFERENCES `rep_path` (`rep_path_id`)
+    CONSTRAINT fk_rep_file_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id)
 ) TYPE=InnoDB;
 </source>
 
-==== change ====
-* change_id
-* short
+==== rep_change_type ====
+Change types and info.
+* rep_change_type_id
+* abbr
 * info
 <source lang=sql>
-CREATE TABLE `change` (
-    change_id       INT UNSIGNED NOT NULL PRIMARY KEY, 
-    abbr            VARCHAR(1) NOT NULL,
-    info            VARCHAR(10) NOT NULL,
+CREATE TABLE rep_change_type (
+    rep_change_type_id  INT UNSIGNED NOT NULL PRIMARY KEY, 
+    abbr                VARCHAR(1) NOT NULL,
+    info                VARCHAR(10) NOT NULL,
     INDEX i_abbr (abbr)
 ) TYPE=InnoDB;
 </source>
@@ -206,22 +219,23 @@ CREATE TABLE `change` (
 ==== rep_file_change ====
 * rev_id
 * rep_file_id
-* change_id
+* change_type_id
 <source lang=sql>
 CREATE TABLE rep_file_change (
     rev_id              INT UNSIGNED NOT NULL,
     rep_file_id         INT UNSIGNED NOT NULL,
-    change_id           INT UNSIGNED NOT NULL,
+    change_type_id      INT UNSIGNED NOT NULL,
     INDEX i_rev_id_rep_file_id (rev_id, rep_file_id),
-    CONSTRAINT `fk_rep_file_change_rev_id` FOREIGN KEY (`rev_id`) REFERENCES `rev` (`rev_id`),
-    CONSTRAINT `fk_rep_file_change_rep_file_id` FOREIGN KEY (`rep_file_id`) REFERENCES `rep_file` (`rep_file_id`),
-    CONSTRAINT `fk_rep_file_change_change_id` FOREIGN KEY (`change_id`) REFERENCES `change` (`change_id`)
+    CONSTRAINT fk_rep_file_change_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
+    CONSTRAINT fk_rep_file_change_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id),
+    CONSTRAINT fk_rep_file_change_change_type_id FOREIGN KEY (change_type_id) REFERENCES rep_change_type (rep_change_type_id)
 ) TYPE=InnoDB;
 </source>
 
 ==== rep_file_change_from ====
 * rev_id
 * rep_file_id
+* from_rev_id
 * from_rep_file_id
 <source lang=sql>
 CREATE TABLE rep_file_change_from (
@@ -230,20 +244,20 @@ CREATE TABLE rep_file_change_from (
     from_rev_id         INT UNSIGNED DEFAULT NULL,
     from_rep_file_id    INT UNSIGNED DEFAULT NULL,
     INDEX i_rev_id_rep_file_id (rev_id, rep_file_id),
-    CONSTRAINT `fk_rep_file_change_from_rev_id` FOREIGN KEY (`rev_id`) REFERENCES `rev` (`rev_id`),
-    CONSTRAINT `fk_rep_file_change_from_rep_file_id` FOREIGN KEY (`rep_file_id`) REFERENCES `rep_file` (`rep_file_id`),
-    CONSTRAINT `fk_rep_file_change_from_from_rev_id` FOREIGN KEY (`from_rev_id`) REFERENCES `rev` (`rev_id`),
-    CONSTRAINT `fk_rep_file_change_from_from_rep_file_id` FOREIGN KEY (`from_rep_file_id`) REFERENCES `rep_file` (`rep_file_id`)
+    CONSTRAINT fk_rep_file_change_from_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
+    CONSTRAINT fk_rep_file_change_from_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id),
+    CONSTRAINT fk_rep_file_change_from_from_rev_id FOREIGN KEY (from_rev_id) REFERENCES rev (rev_id),
+    CONSTRAINT fk_rep_file_change_from_from_rep_file_id FOREIGN KEY (from_rep_file_id) REFERENCES rep_file (rep_file_id)
 ) TYPE=InnoDB;
 </source>
 
 ==== rep_test ====
-Number and name of the test. Each rep_file can contains many tests.
+Number and name of the test. Each rep_file can contains many tests. Rep file gets new id after each file change.
 * rep_test_id
 * rep_file_id
 * number -- this test number in rep_file
-* name -- first inserted, name of the test (if any)
-* has_another_name -- if another name was found
+* name -- first inserted, name of the test (if any and not empty)
+* has_another_name -- 1 if another name was found
 <source lang=sql>
 CREATE TABLE rep_test (
     rep_test_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -252,7 +266,8 @@ CREATE TABLE rep_test (
     name                VARCHAR(255) NOT NULL,
     has_another_name    BOOLEAN NOT NULL DEFAULT 0,
     INDEX i_rep_file_id (rep_file_id),
-    CONSTRAINT `fk_rep_test_rep_file_id` FOREIGN KEY (`rep_file_id`) REFERENCES `rep_file` (`rep_file_id`)
+    INDEX i_rep_file_id_number (rep_file_id, number),
+    CONSTRAINT fk_rep_test_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -275,7 +290,7 @@ CREATE TABLE conf (
     `optimize`      VARCHAR(255) DEFAULT NULL,
     alias_conf_id   INT UNSIGNED DEFAULT NULL,
     INDEX i_hash (hash)
-    /*CONSTRAINT `fk_conf_alias_conf_id` FOREIGN KEY (`conf_id`) REFERENCES `conf` (`conf_id`)*/
+    /*CONSTRAINT fk_conf_alias_conf_id FOREIGN KEY (conf_id) REFERENCES conf (conf_id)*/
 ) TYPE=InnoDB;
 </source>
 
@@ -311,10 +326,10 @@ CREATE TABLE trun (
     INDEX i_rep_path_id (rep_path_id),
     INDEX i_client_id (client_id),
     INDEX i_conf_id (conf_id),
-    CONSTRAINT `fk_trun_rev_id` FOREIGN KEY (`rev_id`) REFERENCES `rev` (`rev_id`),
-    CONSTRAINT `fk_trun_rep_path_id` FOREIGN KEY (`rep_path_id`) REFERENCES `rep_path` (`rep_path_id`),
-    CONSTRAINT `fk_trun_client_id` FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`),
-    CONSTRAINT `fk_trun_conf_id` FOREIGN KEY (`conf_id`) REFERENCES `conf` (`conf_id`)
+    CONSTRAINT fk_trun_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
+    CONSTRAINT fk_trun_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
+    CONSTRAINT fk_trun_client_id FOREIGN KEY (client_id) REFERENCES client (client_id),
+    CONSTRAINT fk_trun_conf_id FOREIGN KEY (conf_id) REFERENCES conf (conf_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -349,21 +364,22 @@ CREATE TABLE tfile (
     tskippall_msg_id    INT UNSIGNED DEFAULT NULL,
     hang                BOOLEAN DEFAULT 0,
     INDEX i_trun_id (trun_id),
-    CONSTRAINT `fk_tfile_trun_id` FOREIGN KEY (`trun_id`) REFERENCES `trun` (`trun_id`),
-    CONSTRAINT `fk_tfile_rep_file_id` FOREIGN KEY (`rep_file_id`) REFERENCES `rep_file` (`rep_file_id`)
+    CONSTRAINT fk_tfile_trun_id FOREIGN KEY (trun_id) REFERENCES trun (trun_id),
+    CONSTRAINT fk_tfile_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id),
+    CONSTRAINT fk_tfile_tskippall_msg_id FOREIGN KEY (tskippall_msg_id) REFERENCES tskippall_msg (tskippall_msg_id)
 ) TYPE=InnoDB;
 </source>
 
-==== tresult ====
+==== trest ====
 Test result info. Probably 0 .. not seen, 1 .. failed, 2 .. unknown, 3 .. todo, 4 .. bonus (unexpectedly succeeded), 5 .. skip, 6 .. ok
 * tresult_id
 * title
 * info
 <source lang=sql>
-CREATE TABLE tresult (
-    tresult_id      INT UNSIGNED NOT NULL PRIMARY KEY,
-    title           VARCHAR(10),
-    info            VARCHAR(255)
+CREATE TABLE trest (
+    trest_id    INT UNSIGNED NOT NULL PRIMARY KEY,
+    title       VARCHAR(10),
+    info        VARCHAR(255)
 ) TYPE=InnoDB;
 </source>
 
@@ -372,25 +388,25 @@ Test results for each test (test case, subtest) submitted in trun.
 * ttest_id
 * trun_id
 * rep_test_id
-* tresult_id
+* trest_id
 <source lang=sql>
 CREATE TABLE ttest (
-    ttest_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    trun_id             INT UNSIGNED NOT NULL,
-    rep_test_id         INT UNSIGNED NOT NULL,
-    tresult_id          INT UNSIGNED NOT NULL,
+    ttest_id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    trun_id         INT UNSIGNED NOT NULL,
+    rep_test_id     INT UNSIGNED NOT NULL,
+    trest_id        INT UNSIGNED NOT NULL,
     INDEX i_rep_test_id (rep_test_id),
     INDEX i_trun_id (trun_id),
-    INDEX i_tresult_id (tresult_id),
-    CONSTRAINT `fk_ttest_trun_id` FOREIGN KEY (`trun_id`) REFERENCES `trun` (`trun_id`),
-    CONSTRAINT `fk_ttest_rep_test_id` FOREIGN KEY (`rep_test_id`) REFERENCES `rep_test` (`rep_test_id`),
-    CONSTRAINT `fk_ttest_tresult_id` FOREIGN KEY (`tresult_id`) REFERENCES `tresult` (`tresult_id`)
+    INDEX i_trest_id (trest_id),
+    CONSTRAINT fk_ttest_trun_id FOREIGN KEY (trun_id) REFERENCES trun (trun_id),
+    CONSTRAINT fk_ttest_rep_test_id FOREIGN KEY (rep_test_id) REFERENCES rep_test (rep_test_id),
+    CONSTRAINT fk_ttest_trest_id FOREIGN KEY (trest_id) REFERENCES trest (trest_id)
 ) TYPE=InnoDB;
 </source>
 
 ==== tdiag_msg ====
 Diagnostic messages.
-* tdiag_id
+* tdiag_msg_id
 * ttest_id
 * msg
 * hash
@@ -402,7 +418,7 @@ CREATE TABLE tdiag_msg (
     hash            VARCHAR(50) NOT NULL,
     INDEX i_ttest_id (ttest_id),
     INDEX i_hash (hash),
-    CONSTRAINT `fk_tdiag_msg_ttest_id` FOREIGN KEY (`ttest_id`) REFERENCES `ttest` (`ttest_id`)
+    CONSTRAINT fk_tdiag_msg_ttest_id FOREIGN KEY (ttest_id) REFERENCES ttest (ttest_id)
 ) TYPE=InnoDB;
 </source>
 

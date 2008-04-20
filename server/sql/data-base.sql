@@ -4,12 +4,13 @@ SET FOREIGN_KEY_CHECKS=0;
 
 -- delete data inserted below
 delete from user; delete from client; delete from project; 
-delete from rep; delete from tresult;
+delete from rep; delete from trest;
 
 -- delete data from imported by cron/repository-update.pl
-delete from user_rep; delete from rep_path; delete from rev; 
+delete from rep_author; delete from rep_path; delete from rev; 
 delete from rep_file;
 
+-- TODO
 -- delete submited tests
 delete from rep_test; delete from conf; delete from trun; 
 delete from tskipall_msg; delete from tfile; delete from ttest;
@@ -53,7 +54,7 @@ VALUES (
 );
 
 
-INSERT INTO `tresult` ( `tresult_id` , `title` , `info` )
+INSERT INTO `trest` ( `trest_id` , `title` , `info` )
 VALUES (
 '0', 'not seen', NULL
 ), (
@@ -71,7 +72,7 @@ VALUES (
 );
 
 
-INSERT INTO `change` ( `change_id` , `abbr` , `info` )
+INSERT INTO `rep_change_type` ( `rep_change_type_id` , `abbr` , `info` )
 VALUES (
 '1', 'A', 'added'
 ), (
