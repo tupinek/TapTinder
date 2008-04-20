@@ -19,7 +19,7 @@ croak "Config loaded from '$conf_fpath' is empty.\n" unless $conf;
 my $project_name = 'parrot';
 my $conf_rep = $conf->{project}->{$project_name};
 
-my $log_dump_refresh = $ARGV[0] || $conf_rep->{log_dump_refresh};
+my $log_dump_refresh = $ARGV[0] || $conf_rep->{log_dump_refresh} || 150;
 my $debug = $ARGV[1] || 0;
 my $debug_logpart = $ARGV[2] || 0;
 
@@ -125,30 +125,53 @@ unless ( defined $max_revnum_in_db ) {
 }
 print "max_revnum_in_db: $max_revnum_in_db\n" if $debug > 3;
 
+# debug
+my $this_rev_nums_only;
+$this_rev_nums_only = {
+     9619 => 1, # D /branhces/debian 
+    22647 => 1, # D /branches/autogcc
+    22648 => 1, # D /tags/autogcc-22642
 
-# userting users into user_rep table
-my $users = $db->get_rep_users( $rep_id );
+     1853 => 1, # A /branches/PERL6
+    23145 => 1, # D /branches/PERL6
+};
+$this_rev_nums_only = undef;
+if ( defined $this_rev_nums_only ) {
+    print "Using only defined rev numbers.\n";
+    my $new_revs = [];
+    foreach my $rd ( @$revs ) {
+        if ( defined $this_rev_nums_only && $this_rev_nums_only->{ $rd->{revision} } ) {
+            push @$new_revs, $rd;
+        }
+    }
+    $revs = $new_revs;
+}
+
+
+# inserting authors into rep_author table
+my $authors = $db->get_rep_authors( $rep_id );
 foreach my $rd ( @$revs ) {
     next if $rd->{revision} <= $max_revnum_in_db;
-    my $author = $rd->{'author'}; # can be null, will create row in rep_user
-    if ( exists $users->{$author} ) {
-        print "author '$author' exists in DB, user_rep_id=" . $users->{$author}->{user_rep_id} . "\n" if $debug > 3;
+    my $author = $rd->{'author'}; # can be null, will create row in rep_author
+    if ( exists $authors->{$author} ) {
+        print "author '$author' exists in DB, rep_author_id=" . $authors->{$author}->{rep_author_id} . "\n" if $debug > 3;
     }
     else {
         print "author '$author' not exists in DB, inserting\n" if $debug > 1;
-        my $user_rep_id = $db->insert_rep_user( $rep_id, $author );
+        my $rep_author_id = $db->insert_rep_author( $rep_id, $author );
         # temporary data, probably different keys than in data loaded from DB
-        $users->{$author} = {
-            user_rep_id => $user_rep_id,
+        $authors->{$author} = {
+            rep_author_id => $rep_author_id,
             rep_login => $author,
         }
     }
 }
-$db->commit or $db->db_error( "Commiting users failed." );
-$users = $db->get_rep_users( $rep_id );
+$db->commit or $db->db_error( "Commiting authors failed." );
+$authors = $db->get_rep_authors( $rep_id );
 
-# input:  /trunk, /braches/BRANCHNAME, /tags/TAGNAME
-# output: trunk/, braches/BRANCHNAME/, tags/TAGNAME/
+
+# input:  /trunk/filepath/filename,      /braches/BRANCHNAME,            /tags/TAGNAME
+# output: ( trunk/, filepath/filename ), ( braches/BRANCHNAME/, undef ), ( tags/TAGNAME/, undef )
 sub split_rep_path {
     my ( $project_name, $path ) = @_;
     
@@ -198,11 +221,11 @@ foreach my $rd ( @$revs ) {
     unless ( defined $rev_id ) {
         my $date_ts = svntime_to_dbtime( $rd->{date} );
         $db->log_rev_error( $rd, "Time parser error datestr '$rd->{date}'." ) unless defined $date_ts;
-        my $author_rep_user_id = $users->{ $rd->{'author'} }->{user_rep_id};
+        my $rep_author_id = $authors->{ $rd->{'author'} }->{rep_author_id};
         $rev_id = $db->insert_rev( 
             $rep_id,
             $rd->{'revision'},
-            $author_rep_user_id,
+            $rep_author_id,
             $date_ts,
             $rd->{'message'}
         );
@@ -216,10 +239,6 @@ foreach my $rd ( @$revs ) {
         my $path_info = $rd->{'paths'}->{$path};
         my $action = $path_info->{'action'};
         # rep_path -> rev -> rep_file
-
-        if ( $action eq 'D' ) {
-            #next;
-        }
 
         if ( $path eq '/' || $path eq '/tags' || $path eq '/branches' ) {
             carp "Skipping path '$path'.\n";
@@ -235,9 +254,9 @@ foreach my $rd ( @$revs ) {
             };
 
             # get or insert rep_path
-            my $rep_path_id = $db->get_rep_path_id( $rep_id, $rep_path );
+            my $rep_path_id = $db->get_rep_path_id( $rep_id, $rep_path, $rd->{'revision'} );
             unless ( defined $rep_path_id ) {
-                $rep_path_id = $db->insert_rep_path( $rep_id, $rep_path );
+                $rep_path_id = $db->insert_rep_path( $rep_id, $rep_path, $rd->{'revision'} );
             }
 
             # insert rev_rep_path unless exists
@@ -247,6 +266,12 @@ foreach my $rd ( @$revs ) {
 
             $rp_changes->{$rep_path}->{rep_path_id} = $rep_path_id;
         }
+        
+        if ( $sub_path eq '' && $action eq 'D' ) {
+            # delete rep_path
+            $db->set_rep_path_deleted( $rep_id, $rep_path, $rd->{'revision'}-1 );
+        }
+        
         # store ref to path info
         $rp_changes->{$rep_path}->{sub_paths}->{$sub_path} = $rd->{'paths'}->{$path};
         print "rep_path: $rep_path, sub_path: $sub_path\n" if $debug > 4;

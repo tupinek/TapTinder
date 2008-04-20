@@ -17,7 +17,7 @@ use Devel::StackTrace;
 
 sub db_error {
     my ( $self, $msg ) = @_;
-    
+
     my $html = '';
     $html .= $msg if $msg;
     $html .= $self->{dbh}->errstr;
@@ -42,7 +42,7 @@ sub get_trun_rev_num {
     my $result = $self->{dbh}->selectrow_hashref( $sth, {}, @_ );
     $self->db_error() if $self->{dbh}->err;
 
-    print $self->dump_get( (caller(0))[3], \@_, $result ) if $self->{debug};
+    print $self->dump_get( \@_, $result ) if $self->{debug};
     return $result->{rev_num};
 }
 
