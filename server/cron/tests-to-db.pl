@@ -19,7 +19,7 @@ croak "Config loaded from '$conf_fpath' is empty.\n" unless $conf;
 my $project_name = 'parrot';
 my $conf_rep = $conf->{project}->{$project_name};
 
-my $results_dir = $ARGV[0] || './../../temp/test-smoke';
+my $results_dir = $ARGV[0] || './../../../temp/test-smoke';
 my $debug = $ARGV[1] || 0;
 
 print "Debug level: $debug\n" if $debug;
@@ -94,8 +94,8 @@ sub dump_header {
 
 # TODO  
 sub is_valid_user {
-    my ( $client_id, $archname, $cc, $cpuarch, $osname ) = @_;
-    print "Valid client conf.\n" if $debug;
+    my ( $machine_id, $archname, $cc, $cpuarch, $osname ) = @_;
+    print "Valid machine conf.\n" if $debug;
     return 1;
 }
 
@@ -203,7 +203,10 @@ sub process_test_raw_results {
 sub process_test_results {
     my ( $db, $data, $fn ) = @_;
 
-    my $client_id = $data->{conf}->{client_id};
+    my $machine_id = 
+        $data->{conf}->{machine_id}
+        || $data->{conf}->{client_id}
+    ;
 
     my $rev_num = $data->{pconfig}->{revision};
 
@@ -212,7 +215,7 @@ sub process_test_results {
 
     # TODO
     my $is_valid_user = is_valid_user( 
-        $client_id,
+        $machine_id,
         $data->{pconfig}->{archname},
         $data->{pconfig}->{cpuarch},
         $data->{pconfig}->{osname},
@@ -223,31 +226,46 @@ sub process_test_results {
     return 0 unless $rep_id;
     my $rev_id = $db->get_rev_id( $rep_id, $rev_num );
     return 0 unless $rev_id;
-    my $rep_path_id = $db->get_rep_path_id( $rep_id, $data->{conf}->{repository_path} );
+    my $rep_path_id = $db->get_rep_path_id( $rep_id, $data->{conf}->{repository_path}, $rev_num );
     return 0 unless $rep_path_id;
 
-    my @conf_params = (
+    my @build_conf_params = (
         $data->{pconfig}->{cc},
-        $data->{harness_args},
         $data->{pconfig}->{DEVEL},
         $data->{pconfig}->{optimize}
     );
-    my $hash = $db->str_args_md5( @conf_params );
-    my $conf_id = $db->get_conf_id( $hash );
-    unless ( defined $conf_id ) {
-        $conf_id = $db->insert_conf( $hash, @conf_params );
-        return 0 unless $conf_id;
+    my @trun_conf_params = (
+        $data->{harness_args},
+    );
+
+    my $build_conf_id = $db->get_or_insert_build_conf( @build_conf_params );
+    return 0 unless defined $build_conf_id;
+
+    # TODO
+    my $start_time = undef;
+    my $build_duration = undef;
+    my $build_id = $db->get_or_insert_build( 
+        $rep_path_id, $rev_id, $machine_id, $build_conf_id, $start_time,
+        $build_duration
+    );
+    return 0 unless defined $build_id;
+
+    my $trun_conf_hash = $db->str_args_md5( @trun_conf_params );
+    my $trun_conf_id = $db->get_trun_conf_id( $trun_conf_hash );
+    unless ( defined $trun_conf_id ) {
+        $trun_conf_id = $db->insert_trun_conf( $trun_conf_hash, @trun_conf_params );
+        return 0 unless $trun_conf_id;
 
     } else {
-        my $trun_id = $db->get_max_trun_id( $rev_id, $rep_path_id, $client_id, $conf_id );
+        my $trun_id = $db->get_max_trun_id( $build_id, $trun_conf_id );
         if ( $trun_id ) {
-            print "trun for $rev_id, $rep_path_id, $client_id, $conf_id already found in DB.";
+            print "trun for $build_id, $trun_conf_id already found in DB.";
             return 0;
         }
     }
 
     my $trun_id = $db->insert_trun_base(
-        $rev_id, $rep_path_id, $client_id, $conf_id
+        $build_id, $trun_conf_id
     );
     return 0 unless defined $trun_id;
     print "trun_id: $trun_id\n";
@@ -312,7 +330,10 @@ foreach my $mtime ( reverse sort keys %$mtimes ) {
         }
     }
     print "\n\n";
-    #last if $num >= 10 && $debug;
+    if ( $num >= 1 && $debug ) {
+        print "Debug forced end after $num runs.\n";
+        last;
+    }
 }
 print "\n";
 

@@ -125,7 +125,7 @@ unless ( defined $max_revnum_in_db ) {
 }
 print "max_revnum_in_db: $max_revnum_in_db\n" if $debug > 3;
 
-# debug
+# debug - probably disabled below
 my $this_rev_nums_only;
 $this_rev_nums_only = {
      9619 => 1, # D /branhces/debian 
@@ -135,7 +135,8 @@ $this_rev_nums_only = {
      1853 => 1, # A /branches/PERL6
     23145 => 1, # D /branches/PERL6
 };
-$this_rev_nums_only = undef;
+$this_rev_nums_only = undef; # disable debug
+
 if ( defined $this_rev_nums_only ) {
     print "Using only defined rev numbers.\n";
     my $new_revs = [];
@@ -190,7 +191,7 @@ sub svntime_to_dbtime {
 
 
 sub process_file {
-    my ( $db, $sub_path, $info, $revision, $rep_path_id ) = @_;
+    my ( $db, $sub_path, $info, $revision, $rep_path_id, $rev_id ) = @_;
 
     my $action = $info->{action};
 
@@ -201,7 +202,7 @@ sub process_file {
         $db->set_rep_file_deleted( $sub_path, $rep_path_id, $revision );
     }
     elsif ( $action eq 'M' ) {
-        $db->set_rep_file_modified( $sub_path, $rep_path_id, $revision );
+        $db->set_rep_file_modified( $sub_path, $rep_path_id, $revision, $rev_id );
     }
     else {
         $@ = "Uknown file svn action '$action'.";
@@ -215,16 +216,16 @@ sub process_file {
 
 foreach my $rd ( @$revs ) {
     next if $rd->{revision} <= $max_revnum_in_db;
-    
+    my $rev_num = $rd->{'revision'};
     # insert rev if needed
-    my $rev_id = $db->get_rev_id( $rep_id, $rd->{'revision'} );
+    my $rev_id = $db->get_rev_id( $rep_id, $rev_num );
     unless ( defined $rev_id ) {
         my $date_ts = svntime_to_dbtime( $rd->{date} );
         $db->log_rev_error( $rd, "Time parser error datestr '$rd->{date}'." ) unless defined $date_ts;
         my $rep_author_id = $authors->{ $rd->{'author'} }->{rep_author_id};
         $rev_id = $db->insert_rev( 
             $rep_id,
-            $rd->{'revision'},
+            $rev_num,
             $rep_author_id,
             $date_ts,
             $rd->{'message'}
@@ -241,7 +242,7 @@ foreach my $rd ( @$revs ) {
         # rep_path -> rev -> rep_file
 
         if ( $path eq '/' || $path eq '/tags' || $path eq '/branches' ) {
-            carp "Skipping path '$path'.\n";
+            carp "Skipping path '$path' (rev $rev_num, action $action).\n";
             next;
         }
 
@@ -254,9 +255,11 @@ foreach my $rd ( @$revs ) {
             };
 
             # get or insert rep_path
-            my $rep_path_id = $db->get_rep_path_id( $rep_id, $rep_path, $rd->{'revision'} );
+            my $rep_path_id = $db->get_rep_path_id( $rep_id, $rep_path, $rev_num );
             unless ( defined $rep_path_id ) {
-                $rep_path_id = $db->insert_rep_path( $rep_id, $rep_path, $rd->{'revision'} );
+                $rep_path_id = $db->insert_rep_path(
+                    $rep_id, $rep_path, $rev_num
+                );
             }
 
             # insert rev_rep_path unless exists
@@ -267,9 +270,10 @@ foreach my $rd ( @$revs ) {
             $rp_changes->{$rep_path}->{rep_path_id} = $rep_path_id;
         }
         
+        # set deleted for $rep_path
         if ( $sub_path eq '' && $action eq 'D' ) {
             # delete rep_path
-            $db->set_rep_path_deleted( $rep_id, $rep_path, $rd->{'revision'}-1 );
+            $db->set_rep_path_deleted( $rep_id, $rep_path, $rev_num );
         }
         
         # store ref to path info
@@ -284,23 +288,23 @@ foreach my $rd ( @$revs ) {
     if ( scalar @rp_keys > 0 ) {
         foreach my $rep_path ( @rp_keys ) {
             my $rep_path_id = $rp_changes->{$rep_path}->{rep_path_id};
-            #$db->commit or $db->db_error( "Commiting rev_num $rd->{'revision'} failed." );
+            #$db->commit or $db->db_error( "Commiting rev_num $rev_num failed." );
 
             my $sub_paths = $rp_changes->{$rep_path}->{sub_paths};
             foreach my $sub_path ( sort keys %$sub_paths ) {
                 my $info = $sub_paths->{$sub_path};
-                process_file( $db, $sub_path, $info, $rd->{'revision'}, $rep_path_id ) or $db->log_rev_error( $rd, $@ );
+                process_file( $db, $sub_path, $info, $rev_num, $rep_path_id, $rev_id ) or $db->log_rev_error( $rd, $@ );
             }
         }
     }
     
-    $db->commit or $db->db_error( "Commiting all changes for $rd->{'revision'} failed." );
+    $db->commit or $db->db_error( "Commiting all changes for $rev_num failed." );
 
-    print "rev " . $rd->{'revision'} . " done, ok\n" if $debug > 1;
+    print "rev " . $rev_num . " done, ok\n" if $debug > 1;
 
     if ( $debug > 9 ) {
         print dmp($rd) if $debug > 9;
-        print "rev:" . $rd->{'revision'};
+        print "rev: $rev_num";
         print ", autor: " . $rd->{'author'};
         print ", date: " . $rd->{'date'};
         print "\n";

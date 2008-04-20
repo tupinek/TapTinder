@@ -13,7 +13,9 @@ use Data::Dumper;
 use lib qw(../server/lib);
 use TapTinder::DB::Show;
 
-our $RealBin = '/home2/web/perl6/docroot-tt/';
+use FindBin qw/$RealBin/;
+$RealBin .= '/';
+
 our $db;
 our $par;
 our $view_def;
@@ -162,13 +164,13 @@ sub cf_num_diff_and_ahref {
         $html .= "&nbsp;";
         my $trun_id1 = $prow->[ cnum('trun.trun_id') ];
         my $trun_id2 = $row->[ cnum('trun.trun_id') ];
-        $html .= qq{<a href="?ac=ttest&amp;trun_id1=$trun_id1&amp;trun_id2=$trun_id2&amp;tresult_id=$param">..</a>};
+        $html .= qq{<a href="?ac=ttest&amp;trun_id1=$trun_id1&amp;trun_id2=$trun_id2&amp;trest_id=$param">..</a>};
     }
     $html .= "</td>\n";
     return $html;
 }
 
-sub cf_tresult_diff {
+sub cf_trest_diff {
     my $dbcolname = shift;
     my $for_trun_id = shift;
     my ( $row_num, $prow, $row ) = @_;
@@ -275,7 +277,7 @@ sub print_dump {
 sub do_show_ttest {
     require $RealBin . 'templ/head.pl';
 
-    my $tresult_id = $par->{tresult_id} || 0;
+    my $trest_id = $par->{trest_id} || 0;
     my $trun_id1 = $par->{trun_id1};
     my $trun_id2 = $par->{trun_id2};
 
@@ -299,8 +301,8 @@ sub do_show_ttest {
         'Test file', 'rf.sub_path',
         'Num', 'rt.number',      
         'Name', 'rt.name',
-        $rev_num1, [ \&cf_tresult_diff, 'trun.trun_id', $trun_id1 ],
-        $rev_num2, [ \&cf_tresult_diff, 'trun.trun_id', $trun_id2 ],
+        $rev_num1, [ \&cf_trest_diff, 'trun.trun_id', $trun_id1 ],
+        $rev_num2, [ \&cf_trest_diff, 'trun.trun_id', $trun_id2 ],
         undef,  'res.title',
         undef,  'trun.trun_id',
         undef,  'res.title',
@@ -313,19 +315,19 @@ sub do_show_ttest {
     # TODO, rep_path_id
     my $sth = $db->{dbh}->prepare( qq{
         select $view_def->{colsql}
-          from ttest, rep_test rt, rep_file rf, trun, tresult res
+          from ttest, rep_test rt, rep_file rf, trun, trest res
          where ( ttest.trun_id = ? or ttest.trun_id = ? )
-           and ttest.tresult_id = ?
+           and ttest.trest_id = ?
            and rt.rep_test_id = ttest.rep_test_id
            and rf.rep_file_id = rt.rep_file_id
            and trun.trun_id = ttest.trun_id
-           and res.tresult_id = ttest.tresult_id
+           and res.trest_id = ttest.trest_id
          order by rf.sub_path, rt.number
     } );
     return db_error() if $db->{dbh}->err;
 
 
-    my @bv = ( $trun_id1, $trun_id2, $tresult_id );
+    my @bv = ( $trun_id1, $trun_id2, $trest_id );
     $sth->execute(@bv);
     return db_error() if $db->{dbh}->err;
 
@@ -364,14 +366,14 @@ sub do_show {
     
     my $raw_view_def = [
         '',         [ \&checkbox, 'trun.trun_id' ],
-        'Revision', 'rev.rev_num',      
-        'Author', 'ur.rep_login',      
-        'Archname', 'client.archname',  
+        'Revision', 'rev.rev_num',
+        'Author',   'rep_author.rep_login',      
+        'Archname', 'machine.archname',
         'Not seen', [ \&cf_num_diff_and_ahref, 'trun.num_notseen', 0 ],
         'Failed',   [ \&cf_num_diff_and_ahref, 'trun.num_failed',  1 ],
         'Unknown',  [ \&cf_num_diff_and_ahref, 'trun.num_unknown', 2 ],
         'Todo',     'trun.num_todo',
-        'Bonus',    [ \&cf_num_diff_and_ahref, 'trun.num_bonus' ],
+        'Bonus',    [ \&cf_num_diff_and_ahref, 'trun.num_bonus', 4 ],
         'Skip',     'trun.num_skip',
         'Ok',       'trun.num_ok',
         'Details',  \&sub_details,
@@ -387,13 +389,14 @@ sub do_show {
     # TODO, rep_path_id
     my $sth = $db->{dbh}->prepare( qq{
         select $view_def->{colsql}
-          from trun, rev, client, user_rep ur
-         where trun.rep_path_id = 1
-           and trun.rev_id = rev.rev_id
-           and client.client_id = trun.client_id
+          from build, trun, rev, machine, rep_author
+         where build.rep_path_id = 1
+           and rev.rev_id = build.rev_id
            and rev.rev_num >= ?
            and rev.rev_num <= ?
-           and ur.user_rep_id = rev.author_id
+           and trun.build_id = build.build_id
+           and machine.machine_id = build.machine_id
+           and rep_author.rep_author_id = rev.author_id
          order by rev.rev_num desc
     } );
     return db_error() if $db->{dbh}->err;
@@ -441,6 +444,18 @@ sub do_show {
     require $RealBin . 'templ/foot.pl';
     return 1;
 }
+
+
+sub test {
+    require $RealBin . 'templ/head.pl';
+    print "<pre>";
+    print $RealBin;
+    print "</pre>";
+    require $RealBin . 'templ/foot.pl';
+    return 1;
+}
+#test(); exit;
+
 
 $db = get_db();
 $par = Vars();

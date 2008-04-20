@@ -15,6 +15,8 @@ User info.
 * user_id
 * login
 * passwd
+* first_name
+* last_name
 * active - 0 means historical data
 * created - account creation date
 * last_login - date
@@ -23,6 +25,8 @@ CREATE TABLE user (
     user_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     login       VARCHAR(20) NOT NULL,
     passwd      VARCHAR(20) NOT NULL,
+    first_name  VARCHAR(255) NOT NULL DEFAULT '',
+    last_name   VARCHAR(255) NOT NULL DEFAULT '',
     active      BOOLEAN NOT NULL DEFAULT 1,
     created     DATETIME NOT NULL,
     last_login  DATETIME DEFAULT NULL,
@@ -30,9 +34,9 @@ CREATE TABLE user (
 ) TYPE=InnoDB;
 </source>
 
-==== client ====
-Client (computer) info.
-* client_id
+==== machine ====
+machine (computer) info.
+* machine_id
 * user_id
 * name
 * passwd
@@ -44,10 +48,10 @@ Client (computer) info.
 * active
 * created
 * last_login
-* prev_client_id
+* prev_machine_id
 <source lang=sql>
-CREATE TABLE client (
-    client_id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+CREATE TABLE machine (
+    machine_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     user_id         INT UNSIGNED NOT NULL,
     name            VARCHAR(20) DEFAULT NULL,
     passwd          VARCHAR(20) NOT NULL,
@@ -59,9 +63,40 @@ CREATE TABLE client (
     active          BOOLEAN NOT NULL DEFAULT 1,
     created         DATETIME NOT NULL,
     last_login      DATETIME DEFAULT NULL,
-    prev_client_id  INT UNSIGNED DEFAULT NULL,
-    CONSTRAINT fk_client_user_id FOREIGN KEY (user_id) REFERENCES user (user_id),
-    CONSTRAINT fk_client_prev_client_id FOREIGN KEY (prev_client_id) REFERENCES client (client_id)
+    prev_machine_id INT UNSIGNED DEFAULT NULL,
+    CONSTRAINT fk_machine_user_id FOREIGN KEY (user_id) REFERENCES user (user_id),
+    CONSTRAINT fk_machine_prev_machine_id FOREIGN KEY (prev_machine_id) REFERENCES machine (machine_id)
+) TYPE=InnoDB;
+</source>
+
+==== machine_group ====
+Group of machines with same HW, SW or both configuration.
+* machine_group_id
+* name
+* has_same_hw
+* has_same_sw
+* info
+<source lang=sql>
+CREATE TABLE machine_group (
+    machine_group_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    name                VARCHAR(20) DEFAULT NULL,
+    has_same_hw         BOOLEAN NOT NULL DEFAULT 0,
+    has_same_sw         BOOLEAN NOT NULL DEFAULT 0,
+    info                TEXT DEFAULT NULL
+) TYPE=InnoDB;
+</source>
+
+==== machine_in_group ====
+Map between machines and group of machines.
+* group_id
+* machine_id
+<source lang=sql>
+CREATE TABLE machine_in_group (
+    group_id    INT UNSIGNED NOT NULL,
+    machine_id  INT UNSIGNED NOT NULL,
+    INDEX i_group_id_machine_id (group_id, machine_id),
+    CONSTRAINT fk_machine_in_group_group_id FOREIGN KEY (group_id) REFERENCES machine_group (machine_group_id),
+    CONSTRAINT fk_machine_in_group_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -85,7 +120,7 @@ Project repository. Each project can has only one active repository.
 * rep_id
 * project_id
 * name
-* path - unique
+* path
 * url
 * info
 * active
@@ -98,7 +133,8 @@ CREATE TABLE rep (
     url         VARCHAR(255) DEFAULT NULL,
     info        TEXT DEFAULT NULL,
     active      BOOLEAN NOT NULL DEFAULT 1,
-    CONSTRAINT fk_rep_project_id FOREIGN KEY (project_id) REFERENCES project (project_id)
+    CONSTRAINT fk_rep_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),
+    UNIQUE KEY unique_rep_id_path (rep_id, path)
 ) TYPE=InnoDB;
 </source>
 
@@ -182,12 +218,12 @@ CREATE TABLE rev_rep_path (
 </source>
 
 ==== rep_file ====
-Files (probably tests files only) in repository path.
+Files in repository path.
 * rep_file_id
 * rep_path_id
 * sub_path
-* rev_num_from
-* rev_num_to
+* rev_num_from - revision where this file was added
+* rev_num_to - revision number where this file was last seen (file was deleted in rev_to+1 revision)
 <source lang=sql>
 CREATE TABLE rep_file (
     rep_file_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
@@ -218,13 +254,17 @@ CREATE TABLE rep_change_type (
 
 ==== rep_file_change ====
 * rev_id
+* rev_num - cache for rev.rev_num
 * rep_file_id
 * change_type_id
 <source lang=sql>
 CREATE TABLE rep_file_change (
     rev_id              INT UNSIGNED NOT NULL,
+    rev_num             INT UNSIGNED NOT NULL,
     rep_file_id         INT UNSIGNED NOT NULL,
     change_type_id      INT UNSIGNED NOT NULL,
+    INDEX i_rev_id (rev_id),
+    INDEX i_rev_num (rev_num),
     INDEX i_rev_id_rep_file_id (rev_id, rep_file_id),
     CONSTRAINT fk_rep_file_change_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
     CONSTRAINT fk_rep_file_change_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id),
@@ -271,36 +311,93 @@ CREATE TABLE rep_test (
 ) TYPE=InnoDB;
 </source>
 
-==== conf ====
-Test run configurations. With md5 hash and alias_conf_id (reference to onother conf_id with the same semantics, but onother syntax).
+==== machine_session ====
+machine session. Time of last activity.
+* machine_session_id
+* machine_id
+* last_activity_time
+<source lang=sql>
+CREATE TABLE machine_session (
+    machine_session_id  INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    machine_id          INT UNSIGNED NOT NULL,
+    last_activity_time  DATETIME NOT NULL,
+    INDEX i_machine_id (machine_id),
+    CONSTRAINT fk_machine_session_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id)
+) TYPE=InnoDB;
+</source>
+
+
+==== build_conf ====
+Build configurations.
 * conf_id
 * hash
 * cc
-* harness_args
 * devel
 * optimize
-* alias_conf_id
+* alias_conf_id - another conf with the same semantics, but different syntax
 <source lang=sql>
-CREATE TABLE conf (
-    conf_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+CREATE TABLE build_conf (
+    build_conf_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
     hash            VARCHAR(50) NOT NULL,
     cc              VARCHAR(255) DEFAULT NULL,
-    harness_args    VARCHAR(255) DEFAULT NULL,
     devel           VARCHAR(255) DEFAULT NULL,
     `optimize`      VARCHAR(255) DEFAULT NULL,
     alias_conf_id   INT UNSIGNED DEFAULT NULL,
     INDEX i_hash (hash)
-    /*CONSTRAINT fk_conf_alias_conf_id FOREIGN KEY (conf_id) REFERENCES conf (conf_id)*/
+    /*CONSTRAINT fk_conf_alias_conf_id FOREIGN KEY (conf_id) REFERENCES build_conf (build_conf_id)*/
+) TYPE=InnoDB;
+</source>
+
+==== trun_conf ====
+Test run configurations.
+* trun_conf_id
+* hash
+* harness_args
+* alias_conf_id - another conf with the same semantics, but different syntax
+<source lang=sql>
+CREATE TABLE trun_conf (
+    trun_conf_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    hash            VARCHAR(50) NOT NULL,
+    harness_args    VARCHAR(255) DEFAULT NULL,
+    alias_conf_id   INT UNSIGNED DEFAULT NULL,
+    INDEX i_hash (hash)
+    /*CONSTRAINT fk_conf_alias_conf_id FOREIGN KEY (conf_id) REFERENCES trun_conf (trun_conf_id)*/
+) TYPE=InnoDB;
+</source>
+
+==== build ====
+* build_id
+* rep_path_id
+* rev_id
+* machine_id
+* conf_id - build configuration id
+* start_time
+* build_time
+<source lang=sql>
+CREATE TABLE build (
+    build_id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    rev_id          INT UNSIGNED NOT NULL,
+    rep_path_id     INT UNSIGNED NOT NULL,
+    conf_id         INT UNSIGNED NOT NULL,
+    machine_id      INT UNSIGNED NOT NULL,
+    start_time      DATETIME,
+    build_duration  INT UNSIGNED,
+    INDEX i_rev_id (rev_id),
+    INDEX i_rep_path_id (rep_path_id),
+    INDEX i_machine_id (machine_id),
+    INDEX i_conf_id (conf_id),
+    CONSTRAINT fk_build_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
+    CONSTRAINT fk_build_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
+    CONSTRAINT fk_build_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id),
+    CONSTRAINT fk_build_conf_id FOREIGN KEY (conf_id) REFERENCES build_conf (build_conf_id)
 ) TYPE=InnoDB;
 </source>
 
 ==== trun ====
 Test run info and test run statistics (cache).
 * trun_id
-* rep_path_id
-* rev_id
-* client_id
-* conf_id
+* build_id
+* conf_id - test configuration id
 * num_notseen -- cache
 * num_failed -- cache
 * num_unknown -- cache
@@ -311,9 +408,7 @@ Test run info and test run statistics (cache).
 <source lang=sql>
 CREATE TABLE trun (
     trun_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    rev_id          INT UNSIGNED NOT NULL,
-    rep_path_id     INT UNSIGNED NOT NULL,
-    client_id       INT UNSIGNED NOT NULL,
+    build_id        INT UNSIGNED NOT NULL,
     conf_id         INT UNSIGNED NOT NULL,
     num_notseen     INT UNSIGNED NOT NULL,
     num_failed      INT UNSIGNED NOT NULL,
@@ -322,14 +417,10 @@ CREATE TABLE trun (
     num_bonus       INT UNSIGNED NOT NULL,
     num_skip        INT UNSIGNED NOT NULL,
     num_ok          INT UNSIGNED NOT NULL,
-    INDEX i_rev_id (rev_id),
-    INDEX i_rep_path_id (rep_path_id),
-    INDEX i_client_id (client_id),
+    INDEX i_build_id (build_id),
     INDEX i_conf_id (conf_id),
-    CONSTRAINT fk_trun_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
-    CONSTRAINT fk_trun_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
-    CONSTRAINT fk_trun_client_id FOREIGN KEY (client_id) REFERENCES client (client_id),
-    CONSTRAINT fk_trun_conf_id FOREIGN KEY (conf_id) REFERENCES conf (conf_id)
+    CONSTRAINT fk_trun_build_id FOREIGN KEY (build_id) REFERENCES build (build_id),
+    CONSTRAINT fk_trun_conf_id FOREIGN KEY (conf_id) REFERENCES trun_conf (trun_conf_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -365,8 +456,8 @@ CREATE TABLE tfile (
     hang                BOOLEAN DEFAULT 0,
     INDEX i_trun_id (trun_id),
     CONSTRAINT fk_tfile_trun_id FOREIGN KEY (trun_id) REFERENCES trun (trun_id),
-    CONSTRAINT fk_tfile_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id),
-    CONSTRAINT fk_tfile_tskippall_msg_id FOREIGN KEY (tskippall_msg_id) REFERENCES tskippall_msg (tskippall_msg_id)
+    CONSTRAINT fk_tfile_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id)
+    /*CONSTRAINT fk_tfile_tskippall_msg_id FOREIGN KEY (tskippall_msg_id) REFERENCES tskippall_msg (tskippall_msg_id)*/
 ) TYPE=InnoDB;
 </source>
 
@@ -419,6 +510,35 @@ CREATE TABLE tdiag_msg (
     INDEX i_ttest_id (ttest_id),
     INDEX i_hash (hash),
     CONSTRAINT fk_tdiag_msg_ttest_id FOREIGN KEY (ttest_id) REFERENCES ttest (ttest_id)
+) TYPE=InnoDB;
+</source>
+
+==== param_type ====
+Types of parameters.
+* param_type_id
+* name
+* info
+<source lang=sql>
+CREATE TABLE param_type (
+    param_type_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    name            VARCHAR(20) NOT NULL,
+    info            TEXT,
+    INDEX i_name (name)
+) TYPE=InnoDB;
+</source>
+
+==== param ====
+Parameters values.
+* param_id
+* param_type_id
+* value
+<source lang=sql>
+CREATE TABLE param (
+    param_id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    param_type_id   INT UNSIGNED NOT NULL,
+    value           VARCHAR(255) DEFAULT NULL,
+    INDEX i_name (param_type_id),
+    CONSTRAINT fk_param_param_type_id FOREIGN KEY (param_type_id) REFERENCES param_type (param_type_id)
 ) TYPE=InnoDB;
 </source>
 

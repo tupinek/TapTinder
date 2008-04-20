@@ -265,7 +265,7 @@ sub set_rep_path_deleted {
     $self->db_error() if $self->{dbh}->err;
 
     $sth->execute(
-        $rev_num, $rep_id, $rep_path, $rev_num
+        $rev_num-1, $rep_id, $rep_path, $rev_num-1
     );
     my $found_err = $self->{dbh}->err;
     $self->db_error() if $found_err;
@@ -383,6 +383,21 @@ sub insert_rev {
 }
 
 
+# $rev_id, $rev_num, $rep_file_id, $rep_change_type_id
+sub insert_rep_file_change {
+    my $self = shift;
+
+    my $sth = $self->{dbh}->prepare_cached(qq{
+        insert into rep_file_change ( rev_id, rev_num, rep_file_id, change_type_id ) values ( ?, ?, ?, ? )
+    });
+    $self->db_error() if $self->{dbh}->err;
+
+    my $found_err = $self->{dbh}->err;
+    $self->db_error() if $found_err;
+    return !$found_err;
+}
+
+
 # $sub_path, $rep_path_id, $rev_num
 sub get_rep_file_id {
     my $self = shift;
@@ -441,25 +456,25 @@ sub set_rep_file_deleted {
     $self->db_error() if $self->{dbh}->err;
 
     $sth->execute(
-        $rev_num, $rep_path_id, $sub_path, $rev_num
+        $rev_num-1, $rep_path_id, $sub_path, $rev_num-1
     );
     my $found_err = $self->{dbh}->err;
     $self->db_error() if $found_err;
-    my $result = $self->get_rep_file_id( @_ );
     return !$found_err;
 }
 
 
-# $sub_path, $rep_path_id, $rev_num
+# $sub_path, $rep_path_id, $rev_num, $rev_id
 sub set_rep_file_modified {
     my $self = shift;
-    my ( $sub_path, $rep_path_id, $rev_num ) = @_;
+    my ( $sub_path, $rep_path_id, $rev_num, $rev_id ) = @_;
 
-    my $ok1 = 
-        $self->set_rep_file_deleted( $sub_path, $rep_path_id, $rev_num-1  )
-        && $self->insert_rep_file( $sub_path, $rep_path_id, $rev_num  )
-    ;
-    return 1;
+    my $rep_file_id = $self->get_rep_file_id( $sub_path, $rep_path_id, $rev_num );
+    return 0 unless $rep_file_id;
+
+    # M (modified) - rep_change_type_id = 2
+    my $ok1 = $self->insert_rep_file_change( $rev_id, $rev_num, $rep_file_id, 2 );
+    return $ok1;
 }
 
 
@@ -472,13 +487,13 @@ sub str_args_md5 {
 
 
 # $hash
-sub get_conf_id {
+sub get_build_conf_id {
     my $self = shift;
     my ( $hash ) = @_;
 
     my $sth = $self->{dbh}->prepare_cached(qq{
-        select conf_id
-          from conf
+        select build_conf_id
+          from build_conf
          where hash = ?
     });
     $self->db_error() if $self->{dbh}->err;
@@ -490,46 +505,170 @@ sub get_conf_id {
     );
     $self->db_error() if $self->{dbh}->err;
     print $self->dump_get( \@_, $result ) if $self->{debug};
-    return $result->{conf_id};
+    return $result->{build_conf_id};
 }
 
 
-# $hash, $cc, $harness_args, $devel, $optimize
-sub insert_conf {
+# $hash, $cc, $devel, $optimize
+sub insert_build_conf {
     my $self = shift;
 
     my $sth = $self->{dbh}->prepare_cached(qq{
-        insert into conf ( hash, cc, harness_args, devel, `optimize` ) values ( ?, ?, ?, ?, ? )
+        insert into build_conf ( hash, cc, devel, `optimize` ) values ( ?, ?, ?, ? )
     });
     $self->db_error() if $self->{dbh}->err;
 
     $sth->execute( @_ );
     $self->db_error() if $self->{dbh}->err;
-    my $result = $self->get_conf_id( $_[0] );
+    my $result = $self->get_build_conf_id( $_[0] );
     print $self->dump_get( \@_, $result ) if $self->{debug};
     return $result;
 }
 
 
-sub get_or_insert_conf {
+sub get_or_insert_build_conf {
     my $self = shift;
     my $hash = $self->str_args_md5( @_ );
-    my $conf_id = $self->get_conf_id($hash);
-    return $conf_id if defined $conf_id;
-    return $self->insert_conf( $hash, @_ );
+    my $build_conf_id = $self->get_build_conf_id($hash);
+    return $build_conf_id if defined $build_conf_id;
+    return $self->insert_build_conf( $hash, @_ );
 }
 
 
-# $rev_id, $rep_path_id, $client_id, $conf_id
+
+# $rep_path_id, $rev_id, $machine_id, $build_conf_id
+# TODO $start_time, $duration
+sub get_build_id {
+    my $self = shift;
+
+    my $sth = $self->{dbh}->prepare_cached(qq{
+        select build_id
+          from build
+         where rep_path_id = ?
+           and rev_id = ?
+           and machine_id = ?
+           and conf_id = ?
+    });
+    $self->db_error() if $self->{dbh}->err;
+
+    my $result = $self->{dbh}->selectrow_hashref( $sth, {}, $_[0], $_[1], $_[2], $_[3] );
+    $self->db_error() if $self->{dbh}->err;
+    print $self->dump_get( \@_, $result ) if $self->{debug};
+    return $result->{build_id};
+}
+
+# $rep_path_id, $rev_id, $machine_id, $build_conf_id, $start_time,
+# $build_duration
+sub insert_build {
+    my $self = shift;
+
+    my $sth = $self->{dbh}->prepare_cached(qq{
+        insert into build ( 
+            rep_path_id, rev_id, machine_id, conf_id, start_time, 
+            build_duration 
+        ) values ( 
+            ?, ?, ?, ?, ?,
+            ?
+        )
+    });
+    $self->db_error() if $self->{dbh}->err;
+
+    $sth->execute( @_ );
+    $self->db_error() if $self->{dbh}->err;
+    my $result = $self->get_build_id( @_ );
+    print $self->dump_get( \@_, $result ) if $self->{debug};
+    return $result;
+}
+
+# $rep_path_id, $rev_id, $machine_id, $build_conf_id, $start_time,
+# $build_duration
+sub get_or_insert_build {
+    my $self = shift;
+    my $build_id = $self->get_build_id( @_ );
+    return $build_id if defined $build_id;
+    return $self->insert_build( @_ );
+}
+
+
+# $rev_id, $rep_path_id, $machine_id, $conf_id
+sub get_max_build_id {
+    my $self = shift;
+
+    my $sth = $self->{dbh}->prepare_cached(qq{
+        select MAX(build_id) as max_build_id
+          from build
+         where rev_id = ?
+           and rep_path_id = ?
+           and machine_id  = ?
+           and conf_id = ?
+    });
+    $self->db_error() if $self->{dbh}->err;
+
+    my $result = $self->{dbh}->selectrow_hashref( $sth, {}, @_ );
+    $self->db_error() if $self->{dbh}->err;
+    print $self->dump_get( \@_, $result ) if $self->{debug};
+    return $result->{max_build_id};
+}
+
+
+
+# $hash
+sub get_trun_conf_id {
+    my $self = shift;
+    my ( $hash ) = @_;
+
+    my $sth = $self->{dbh}->prepare_cached(qq{
+        select trun_conf_id
+          from trun_conf
+         where hash = ?
+    });
+    $self->db_error() if $self->{dbh}->err;
+
+    my $result = $self->{dbh}->selectrow_hashref(
+        $sth,
+        {},
+        $hash
+    );
+    $self->db_error() if $self->{dbh}->err;
+    print $self->dump_get( \@_, $result ) if $self->{debug};
+    return $result->{trun_conf_id};
+}
+
+
+# $hash, $harness_args
+sub insert_trun_conf {
+    my $self = shift;
+
+    my $sth = $self->{dbh}->prepare_cached(qq{
+        insert into trun_conf ( hash, harness_args ) values ( ?, ? )
+    });
+    $self->db_error() if $self->{dbh}->err;
+
+    $sth->execute( @_ );
+    $self->db_error() if $self->{dbh}->err;
+    my $result = $self->get_trun_conf_id( $_[0] );
+    print $self->dump_get( \@_, $result ) if $self->{debug};
+    return $result;
+}
+
+
+sub get_or_insert_trun_conf {
+    my $self = shift;
+    my $hash = $self->str_args_md5( @_ );
+    my $trun_conf_id = $self->get_trun_conf_id($hash);
+    return $trun_conf_id if defined $trun_conf_id;
+    return $self->insert_trun_conf( $hash, @_ );
+}
+
+
+# $build_id, $trun_conf_id
 sub get_max_trun_id {
     my $self = shift;
 
     my $sth = $self->{dbh}->prepare_cached(qq{
         select MAX(trun_id) as max_trun_id
           from trun
-         where rev_id = ?
-           and rep_path_id = ?
-           and client_id  = ?
+         where build_id = ?
            and conf_id = ?
     });
     $self->db_error() if $self->{dbh}->err;
@@ -539,6 +678,7 @@ sub get_max_trun_id {
     print $self->dump_get( \@_, $result ) if $self->{debug};
     return $result->{max_trun_id};
 }
+
 
 # $trun_id, $stats
 sub update_trun_stats {
@@ -569,12 +709,12 @@ sub update_trun_stats {
 }
 
 
-# $rev_id, $rep_path_id, $client_id, $conf_id
+# $build_id, $trun_conf_id
 sub insert_trun_base {
     my $self = shift;
 
     my $sth = $self->{dbh}->prepare_cached(qq{
-        insert into trun ( rev_id, rep_path_id, client_id, conf_id ) values ( ?, ?, ?, ? )
+        insert into trun ( build_id, conf_id ) values ( ?, ? )
     });
     $self->db_error() if $self->{dbh}->err;
 
