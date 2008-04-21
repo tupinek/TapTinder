@@ -24,12 +24,14 @@ delete from rep_file_change;
 delete from rep_file_change_from;
 
 -- delete submited tests
-delete from rep_test;
-delete from conf;
+delete from build;
+delete from build_conf;
 delete from trun; 
-delete from tskipall_msg;
+delete from trun_conf;
+delete from rep_test;
 delete from tfile;
 delete from ttest;
+delete from tskipall_msg;
 delete from tdiag_msg;
 
 
