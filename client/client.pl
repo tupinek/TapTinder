@@ -155,7 +155,7 @@ sub sig_handler() {
 #foreach ( keys %SIG ) { $SIG{$_} = \&sig_handler; }
 $SIG{'KILL'}  = \&sig_handler;
 $SIG{'INT'}  = \&sig_handler;
-$SIG{'QUIT'} = \&sig_handler;  
+$SIG{'QUIT'} = \&sig_handler;
 
 
 my $conf_last = $#$conf;
@@ -168,7 +168,7 @@ my $attempt = 0;
 my $all_attempt = {};
 my $slt_num = 0;
 
-my $slt_koef = 60;
+my $slt_koef = 30;
 $slt_koef = 1 if $ver >= 11;
 my $slt = {
     'first' =>  2.5*$slt_koef,
@@ -193,7 +193,7 @@ while ( 1 ) {
     process_keypress();
 
     # see also continue block
-    NEXT_CONF: foreach my $ck_num ( $conf_first..$conf_last ) {       
+    NEXT_CONF: foreach my $ck_num ( $conf_first..$conf_last ) {
         # sleep
         $slt_num = 0 if $attempt == 0;
         print "attempt:$attempt, conf_last:$conf_last, slt_num:$slt_num\n" if $ver > 5;
@@ -282,7 +282,7 @@ while ( 1 ) {
                 print "Probably all revisions tested. Trying HEAD.\n" if $ver > 0;
             }
         }
-        
+
         if ( $ver > 8 ) {
             print "to_head_rev $to_head_rev, to_rev ";
             ( defined $to_rev ) ? print $to_rev : print 'undef';
@@ -318,12 +318,12 @@ while ( 1 ) {
 
             $state->{svnup_done} = 1;
             $state->{src_rev} = $tmp_new_rev;
-            
+
             if ( $to_head_rev ) {
                 # check if HEAD revision was tested
                 my $to_rev_two = get_revision_to_test( $ck->{name}, $state->{src_rev} );
-                if ( $to_rev_two != $tmp_new_rev ) {
-                    print "HEAD " . $state->{src_rev} . " revision $tmp_new_rev already tested.\n";
+                if ( not defined $to_rev_two || $to_rev_two != $state->{src_rev} ) {
+                    print "HEAD revision " . $state->{src_rev} . " already tested.\n";
                     next NEXT_CONF;
                 }
             }
@@ -446,9 +446,9 @@ while ( 1 ) {
 
 
         my $timestamp = time();
-        $state->{results_path_prefix} = catdir( 
+        $state->{results_path_prefix} = catdir(
             $RealBin,
-            $ck->{results_dn}, 
+            $ck->{results_dn},
             int($timestamp) . '-r' . $state->{temp_rev}
         );
         unless ( mkpath( $state->{results_path_prefix} ) ) {
@@ -531,7 +531,7 @@ while ( 1 ) {
             }
             $state->{cmd}->{after_done} = 1;
         }
-        
+
         # duplicate code, see continue block
         if ( defined $undo_func ) {
             my $ret = $undo_func->();
@@ -552,7 +552,7 @@ while ( 1 ) {
         }
         process_keypress();
     }
-         
+
 
     print "\n" if $ver > 0;
     $run_num++;
