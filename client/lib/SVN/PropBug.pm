@@ -17,14 +17,14 @@ our $ver = 0;
 # for full parsing use Text::Diff::Parser
 sub diff_contains_real_change {
     my ( $diff ) = @_;
-    
+
     return 1 unless $diff;
-    
+
     my @lines = split( /\n/, $diff );
 
     my $num_to_skip = 4; # skip first 4 lines
     my $pn = 'diff'; # part name
-    
+
     my $prev_minus_line = undef;
     my $real_change = 0;
 
@@ -54,7 +54,7 @@ sub diff_contains_real_change {
             $prev_minus_line = undef;
             next;
         }
-        
+
         # diff
         if ( $pn eq 'diff' ) {
             my $first_char = substr( $line, 0, 1 );
@@ -64,14 +64,17 @@ sub diff_contains_real_change {
                 if ( defined $prev_minus_line ) {
                     # $Id:$ -> $Id$, $Author:$ -> $Author$
                     my $fixed_prev_line = $prev_minus_line;
-                    $fixed_prev_line =~ s{\$(id|author):\$}{\$$1\$}ig;
+                    $fixed_prev_line =~ s{\$(id|author):\s*\$}{\$$1\$}ig;
                     #print "----> ". $fixed_prev_line;
-                    $real_change = 1 if substr($fixed_prev_line,1) ne substr($line,1);
+                    if ( substr($fixed_prev_line,1) ne substr($line,1) ) {
+                        $real_change = 1;
+                        print "<<REAL CHANGE FOUND>>\n" if $ver > 4;
+                    }
                 }
                 $prev_minus_line = undef;
                 next;
             }
-            
+
             $real_change = 1 if defined $prev_minus_line;
             $prev_minus_line = undef;
 
@@ -107,7 +110,7 @@ sub diff_contains_real_change {
             $@ = "Unknown diff first char, line $ln.";
             next;
         }
-        
+
         $@ = "Unknown part found, line $ln.";
         return undef;
     }

@@ -11,9 +11,9 @@ if ( !$ARGV[0] ) {
     my $diff_fn;
     $diff_fn = ( defined $ARGV[1] ) ? $ARGV[1] : 't/svnbug-testdiff.txt';
     die $! unless open( SVNDIFF, '<', $diff_fn );
-    { 
+    {
         local $/ = undef;
-        $diff = <SVNDIFF>; 
+        $diff = <SVNDIFF>;
     }
     close SVNDIFF;
 

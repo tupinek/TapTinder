@@ -1,10 +1,33 @@
-Index: languages/perl6/src/classes/Capture.pir
+Diff: Index: t/steps/gen_call_list-01.t
 ===================================================================
---- languages/perl6/src/classes/Capture.pir	(revision 26769)
-+++ languages/perl6/src/classes/Capture.pir	(working copy)
+--- t/steps/gen_call_list-01.t  (revision 27376)
++++ t/steps/gen_call_list-01.t  (working copy)
+@@ -1,6 +1,6 @@
+ #! perl
+ # Copyright (C) 2007-2008, The Perl Foundation.
+-# $Id: $
++# $Id$
+ # gen_call_list-01.t
+
+ use strict;
+Index: config/gen/call_list.pm
+===================================================================
+--- config/gen/call_list.pm     (revision 27376)
++++ config/gen/call_list.pm     (working copy)
+@@ -1,5 +1,5 @@
+ # Copyright (C) 2008, The Perl Foundation.
+-# $Id: $
++# $Id$
+
+ =head1 NAME
+
+Index: languages/perl6/src/classes/Subset.pir
+===================================================================
+--- languages/perl6/src/classes/Subset.pir      (revision 27376)
++++ languages/perl6/src/classes/Subset.pir      (working copy)
 @@ -1,4 +1,4 @@
 -## $Id:$
 +## $Id$
- 
+
  =head1 TITLE
- 
+
