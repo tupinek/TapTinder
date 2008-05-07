@@ -1,14 +1,19 @@
 echo -n "updating sql/schema.sql - "
-perl utils/wiki_schema.pl sql/schema.wiki > temp/schema.sql && cat temp/schema.sql > temp/all.sql && type sql/data-base.sql >> temp/all.sql && echo done
+perl utils/wiki_schema.pl sql/schema.wiki > temp/schema.sql && cat temp/schema.sql > temp/all.sql && cat sql/data-base.sql >> temp/all.sql && echo done
 
 echo -n "updating temp/sel-tables.sql - "
-perl utils/wiki_schema.pl sql/schema.wiki 0 0 trun > temp/sel-tables.sql && echo done
+perl utils/wiki_schema.pl sql/schema.wiki 0 0 0 trun > temp/sel-tables.sql && echo done
+
 
 echo -n "creating temp/schema-raw-create.sql - "
-perl utils/wiki_schema.pl sql/schema.wiki 0 1 > temp/schema-raw-create.sql && echo done
+perl utils/wiki_schema.pl sql/schema.wiki 0 1 0 > temp/schema-raw-create.sql && echo done
 
 echo -n "updating TapTinder::DB::Schema.pm - "
 perl utils/sqlt-taptinder.pl dbix temp/schema-raw-create.sql 0 && echo done
 
+
+echo -n "creating temp/schema-raw-create-comments.sql - "
+perl utils/wiki_schema.pl sql/schema.wiki 0 1 1 > temp/schema-raw-create-comments.sql && echo done
+
 echo -n "updating temp/schema.png - "
-perl utils/sqlt-taptinder.pl graph temp/schema-raw-create.sql 0 && echo done
+perl utils/sqlt-taptinder.pl graph temp/schema-raw-create-comments.sql 0 && echo done

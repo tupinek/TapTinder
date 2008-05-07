@@ -4,14 +4,14 @@ use warnings;
 use SQL::Translator;
 
 my $to = $ARGV[0] || 'dbix';
-my $input_file = './temp/schema-raw-create.sql' || $ARGV[1];
+my $input_file = $ARGV[1] || './temp/schema-raw-create.sql';
 my $debug = $ARGV[2] || 0;
 
 print "to: $to, input '$input_file', debug: $debug\n" if $debug;
 
 # package - DBIx::Class - .pm
 if ( $to eq 'dbix' || $to eq 'ALL' ) {
-    my $translator = SQL::Translator->new( 
+    my $translator = SQL::Translator->new(
         filename  => $input_file,
         parser    => 'MySQL',
         producer  => 'DBIx::Class::File',
@@ -28,7 +28,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
 
 # graph - GraphViz - .png
 } elsif ( $to eq 'graph' || $to eq 'ALL' ) {
-    my $translator = SQL::Translator->new( 
+    my $translator = SQL::Translator->new(
         filename  => $input_file,
         parser => 'MySQL',
         producer => 'GraphViz',
@@ -52,12 +52,12 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         },
     ) or die SQL::Translator->error;
     $translator->translate;
-    
+
 
 # TODO - use AutoDia?
 # dia - DiaUml - .xml
 } elsif ( $to eq 'dia' ) { # || $to eq 'ALL'
-    my $translator = SQL::Translator->new( 
+    my $translator = SQL::Translator->new(
         filename       => $input_file,
         from           => 'MySQL',
         to             => 'DiaUml',
@@ -65,4 +65,3 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
 }
 
 
-  

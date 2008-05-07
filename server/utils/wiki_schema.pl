@@ -16,7 +16,7 @@ sub slurp_file {
     return <$fh>;
 }
 
-                       
+
 sub get_sources {
     my ( $text, $part_name, $rh_source_types, $debug ) = @_;
 
@@ -29,7 +29,7 @@ sub get_sources {
 
     PARSER: {
         if ( $text =~ /\G( \<\!\-\-\s*PARSE\s+PART\s+(\S+?)\s+(BEGIN|END)\s*\-\-\> )/gscx )
-        { 
+        {
             my $full_c = $1;
             my $type = $2;
             my $begin_end = $3;
@@ -68,7 +68,7 @@ sub get_sources {
         if ( $text =~ /\G( [^\<]+ )/gscx || $text =~ /\G( . )/gscx ) {
             my $full_c = $1;
             print "line_num: $line_num\n" if $debug > 1;
-            
+
             if ( $part_level && @source_level > 0 ) {
                 #print $full_c if $debug > 1;
                 if ( exists $rh_source_types->{ $source_level[-1] } ) {
@@ -83,12 +83,12 @@ sub get_sources {
                     print "  SKIPPED\n" if $debug > 1;
                 }
             }
-            
+
             $line_num += ($full_c =~ tr/\n//);
             redo PARSER;
         }
     }
-    
+
     print "\n\n" if $debug > 1;
     return $res_text;
 }
@@ -107,7 +107,7 @@ sub get_table_list {
     my @tables = ();
     PARSER: {
         if ( $text =~ /\G( CREATE \s+ TABLE \s+ `?(\S+?)`?\s+(.*?)\; )/gscx )
-        { 
+        {
             my $sql = $1;
             my $table = $2;
             print "$table" if $debug > 1;
@@ -130,10 +130,10 @@ sub get_table_list {
             redo PARSER;
         }
     }
-    
+
     $sel_sql =~ s{\r}{}g;
     $sel_sql =~ s{\n\n\n+}{\n\n}g;
-    
+
     if ( defined $rh_sel_tables ) {
         foreach my $table ( sort keys %$rh_sel_tables ) {
             my $num_found = $rh_sel_tables->{$table};
@@ -144,7 +144,7 @@ sub get_table_list {
             }
         }
     }
-    
+
     return ( \@tables, $sel_sql );
 }
 
@@ -169,6 +169,9 @@ my $conf = {};
 $conf->{raw_create} = shift @ARGV;
 $conf->{raw_create} = 0 unless defined $conf->{raw_create};
 
+$conf->{raw_create_add_comments} = shift @ARGV;
+$conf->{raw_create_add_comments} = 0 unless defined $conf->{raw_create_add_comments};
+
 my @sel_tables = @ARGV;
 
 
@@ -177,7 +180,11 @@ my $create_sql = get_sources( $content, 'DBCREATE', { 'sql' => 1, }, $debug );
 
 if ( $conf->{raw_create} ) {
     my $raw_sql = $create_sql;
-    $raw_sql =~ s{\/\*.*?\*\/}{}igs;
+    if ( $conf->{raw_create_add_comments} ) {
+        $raw_sql =~ s{\/\*\s*(.*?)\s*\*\/}{,\n  $1}igs;
+    } else {
+        $raw_sql =~ s{\/\*\s*(.*?)\s*\*\/}{}igs;
+    }
     $raw_sql =~ s{^.*?(CREATE.*)$}{$1}is;
     $raw_sql =~ s{^(.*CREATE[^\;]+;).*?$}{$1}is; # hmm
     print "$raw_sql\n";

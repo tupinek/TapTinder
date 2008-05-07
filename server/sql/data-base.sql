@@ -5,8 +5,7 @@ SET FOREIGN_KEY_CHECKS=0;
 -- delete data inserted below
 delete from user;
 delete from machine;
-delete from machine_group;
-delete from machine_in_group;
+delete from farm;
 delete from project; 
 delete from rep;
 delete from trest;
@@ -24,6 +23,7 @@ delete from rep_file_change;
 delete from rep_file_change_from;
 
 -- delete submited tests
+delete from msession;
 delete from build;
 delete from build_conf;
 delete from trun; 
@@ -54,52 +54,36 @@ VALUES (
 );
 
 
-INSERT INTO machine ( machine_id, name, user_id, passwd, info, created, last_login, ip, cpuarch, osname, archname, active, prev_machine_id )
+INSERT INTO machine ( machine_id, name, user_id, passwd, info, created, last_login, ip, cpuarch, osname, archname, active, prev_machine_id, farm_id )
 VALUES (
-1, 'dbtest', 1, substring(MD5(RAND()), -8), NULL, NOW(), NULL, '147.229.2.84', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL
+1, 'dbtest', 1, substring(MD5(RAND()), -8), NULL, NOW(), NULL, '147.229.2.84', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, NULL
 );
 
 
-INSERT INTO machine ( machine_id, name, user_id, passwd, info, created, last_login, ip, cpuarch, osname, archname, active, prev_machine_id )
+INSERT INTO machine ( machine_id, name, user_id, passwd, info, created, last_login, ip, cpuarch, osname, archname, active, prev_machine_id, farm_id )
 VALUES (
-2, 'pc-jurosz', 1, substring(MD5(RAND()), -8), NULL, NOW(), NULL, '147.229.5.124', 'i386', 'MSWin32', 'MSWin32-x86-multi-thread', 1, NULL
+2, 'pc-jurosz', 1, substring(MD5(RAND()), -8), NULL, NOW(), NULL, '147.229.5.124', 'i386', 'MSWin32', 'MSWin32-x86-multi-thread', 1, NULL, NULL
 ); 
 
-INSERT INTO machine ( machine_id, name, user_id, passwd, info, created, last_login, ip, cpuarch, osname, archname, active, prev_machine_id )
+INSERT INTO machine ( machine_id, name, user_id, passwd, info, created, last_login, ip, cpuarch, osname, archname, active, prev_machine_id, farm_id )
 VALUES (
-3, 'shreck1', 1, substring(MD5(RAND()), -8), NULL, NOW(), NULL, '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL
+3, 'shreck1', 1, substring(MD5(RAND()), -8), NULL, NOW(), NULL, '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, 1
 ); 
 
-INSERT INTO machine ( machine_id, name, user_id, passwd, info, created, last_login, ip, cpuarch, osname, archname, active, prev_machine_id )
+INSERT INTO machine ( machine_id, name, user_id, passwd, info, created, last_login, ip, cpuarch, osname, archname, active, prev_machine_id, farm_id )
 VALUES (
-4, 'shreck2', 1, substring(MD5(RAND()), -8), NULL, NOW(), NULL, '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL
+4, 'shreck2', 1, substring(MD5(RAND()), -8), NULL, NOW(), NULL, '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, 1
 ); 
 
-INSERT INTO machine ( machine_id, name, user_id, passwd, info, created, last_login, ip, cpuarch, osname, archname, active, prev_machine_id )
+INSERT INTO machine ( machine_id, name, user_id, passwd, info, created, last_login, ip, cpuarch, osname, archname, active, prev_machine_id, farm_id )
 VALUES (
-5, 'shreck3', 1, substring(MD5(RAND()), -8), NULL, NOW(), NULL, '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL
+5, 'shreck3', 1, substring(MD5(RAND()), -8), NULL, NOW(), NULL, '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, 1
 ); 
 
 
-INSERT INTO machine_group ( machine_group_id, name, has_same_hw, has_same_sw, info )
+INSERT INTO farm ( farm_id, name, has_same_hw, has_same_sw, info )
 VALUES (
 1, 'vutbr.cz web cluster', 1, 1, 'some computer power is always availible'
-); 
-
-
-INSERT INTO machine_in_group ( group_id, machine_id )
-VALUES (
-1, 3
-); 
-
-INSERT INTO machine_in_group ( group_id, machine_id )
-VALUES (
-1, 4
-); 
-
-INSERT INTO machine_in_group ( group_id, machine_id )
-VALUES (
-1, 5
 ); 
 
 

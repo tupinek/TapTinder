@@ -258,37 +258,6 @@ __PACKAGE__->add_columns(
 );
 
 
-package TapTinder::DB::Schema::machine_in_group;
-use base 'DBIx::Class';
-use strict;
-use warnings;
-
-__PACKAGE__->load_components(qw/ Core/);
-__PACKAGE__->table('machine_in_group');
-
-
-__PACKAGE__->add_columns(
-    'group_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'group_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'machine_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'machine_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-);
-
-
 package TapTinder::DB::Schema::tskipall_msg;
 use base 'DBIx::Class';
 use strict;
@@ -579,6 +548,65 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('param_id');
 
 
+package TapTinder::DB::Schema::msession;
+use base 'DBIx::Class';
+use strict;
+use warnings;
+
+__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->table('msession');
+
+
+__PACKAGE__->add_columns(
+    'msession_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'msession_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'machine_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'machine_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'key' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'key',
+      'is_nullable' => 0,
+      'size' => '25'
+    },
+    'pid' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'pid',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'last_activity_time' => {
+      'data_type' => 'DATETIME',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'last_activity_time',
+      'is_nullable' => 0,
+      'size' => 0
+    },
+);
+__PACKAGE__->set_primary_key('msession_id');
+
+
 package TapTinder::DB::Schema::machine;
 use base 'DBIx::Class';
 use strict;
@@ -703,6 +731,15 @@ __PACKAGE__->add_columns(
       'default_value' => 'NULL',
       'is_foreign_key' => 1,
       'name' => 'prev_machine_id',
+      'is_nullable' => 1,
+      'size' => '11'
+    },
+    'farm_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'farm_id',
       'is_nullable' => 1,
       'size' => '11'
     },
@@ -927,22 +964,99 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('tdiag_msg_id');
 
 
-package TapTinder::DB::Schema::machine_group;
+package TapTinder::DB::Schema::build;
 use base 'DBIx::Class';
 use strict;
 use warnings;
 
 __PACKAGE__->load_components(qw/ Core/);
-__PACKAGE__->table('machine_group');
+__PACKAGE__->table('build');
 
 
 __PACKAGE__->add_columns(
-    'machine_group_id' => {
+    'build_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 1,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'machine_group_id',
+      'name' => 'build_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'msession_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'msession_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'rev_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'rev_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'rep_path_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'rep_path_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'conf_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'conf_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'start_time' => {
+      'data_type' => 'DATETIME',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'start_time',
+      'is_nullable' => 1,
+      'size' => 0
+    },
+    'build_duration' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'build_duration',
+      'is_nullable' => 1,
+      'size' => '11'
+    },
+);
+__PACKAGE__->set_primary_key('build_id');
+
+
+package TapTinder::DB::Schema::farm;
+use base 'DBIx::Class';
+use strict;
+use warnings;
+
+__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->table('farm');
+
+
+__PACKAGE__->add_columns(
+    'farm_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'farm_id',
       'is_nullable' => 0,
       'size' => '11'
     },
@@ -983,125 +1097,7 @@ __PACKAGE__->add_columns(
       'size' => '65535'
     },
 );
-__PACKAGE__->set_primary_key('machine_group_id');
-
-
-package TapTinder::DB::Schema::build;
-use base 'DBIx::Class';
-use strict;
-use warnings;
-
-__PACKAGE__->load_components(qw/ Core/);
-__PACKAGE__->table('build');
-
-
-__PACKAGE__->add_columns(
-    'build_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 1,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'build_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'rev_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'rev_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'rep_path_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'rep_path_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'conf_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'conf_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'machine_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'machine_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'start_time' => {
-      'data_type' => 'DATETIME',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'start_time',
-      'is_nullable' => 1,
-      'size' => 0
-    },
-    'build_duration' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'build_duration',
-      'is_nullable' => 1,
-      'size' => '11'
-    },
-);
-__PACKAGE__->set_primary_key('build_id');
-
-
-package TapTinder::DB::Schema::machine_session;
-use base 'DBIx::Class';
-use strict;
-use warnings;
-
-__PACKAGE__->load_components(qw/ Core/);
-__PACKAGE__->table('machine_session');
-
-
-__PACKAGE__->add_columns(
-    'machine_session_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 1,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'machine_session_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'machine_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'machine_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'last_activity_time' => {
-      'data_type' => 'DATETIME',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'last_activity_time',
-      'is_nullable' => 0,
-      'size' => 0
-    },
-);
-__PACKAGE__->set_primary_key('machine_session_id');
+__PACKAGE__->set_primary_key('farm_id');
 
 
 package TapTinder::DB::Schema::rep_author;
@@ -1413,12 +1409,12 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => 0
     },
-    'tskippall_msg_id' => {
+    'tskipall_msg_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => 'NULL',
       'is_foreign_key' => 0,
-      'name' => 'tskippall_msg_id',
+      'name' => 'tskipall_msg_id',
       'is_nullable' => 1,
       'size' => '11'
     },
@@ -1601,13 +1597,6 @@ __PACKAGE__->belongs_to('rep_file_id', 'TapTinder::DB::Schema::rep_file');
 __PACKAGE__->belongs_to('change_type_id', 'TapTinder::DB::Schema::rep_change_type');
 
 
-package TapTinder::DB::Schema::machine_in_group;
-
-__PACKAGE__->belongs_to('group_id', 'TapTinder::DB::Schema::machine_group');
-
-__PACKAGE__->belongs_to('machine_id', 'TapTinder::DB::Schema::machine');
-
-
 package TapTinder::DB::Schema::trun_conf;
 
 __PACKAGE__->has_many('get_trun', 'TapTinder::DB::Schema::trun', 'conf_id');
@@ -1633,6 +1622,12 @@ package TapTinder::DB::Schema::param;
 __PACKAGE__->belongs_to('param_type_id', 'TapTinder::DB::Schema::param_type');
 
 
+package TapTinder::DB::Schema::msession;
+
+__PACKAGE__->belongs_to('machine_id', 'TapTinder::DB::Schema::machine');
+
+__PACKAGE__->has_many('get_build', 'TapTinder::DB::Schema::build', 'msession_id');
+
 package TapTinder::DB::Schema::machine;
 
 __PACKAGE__->belongs_to('user_id', 'TapTinder::DB::Schema::user');
@@ -1640,9 +1635,7 @@ __PACKAGE__->belongs_to('user_id', 'TapTinder::DB::Schema::user');
 __PACKAGE__->belongs_to('prev_machine_id', 'TapTinder::DB::Schema::machine');
 
 __PACKAGE__->has_many('get_machine', 'TapTinder::DB::Schema::machine', 'prev_machine_id');
-__PACKAGE__->has_many('get_machine_in_group', 'TapTinder::DB::Schema::machine_in_group', 'machine_id');
-__PACKAGE__->has_many('get_machine_session', 'TapTinder::DB::Schema::machine_session', 'machine_id');
-__PACKAGE__->has_many('get_build', 'TapTinder::DB::Schema::build', 'machine_id');
+__PACKAGE__->has_many('get_msession', 'TapTinder::DB::Schema::msession', 'machine_id');
 
 package TapTinder::DB::Schema::build_conf;
 
@@ -1674,26 +1667,17 @@ package TapTinder::DB::Schema::tdiag_msg;
 __PACKAGE__->belongs_to('ttest_id', 'TapTinder::DB::Schema::ttest');
 
 
-package TapTinder::DB::Schema::machine_group;
-
-__PACKAGE__->has_many('get_machine_in_group', 'TapTinder::DB::Schema::machine_in_group', 'group_id');
-
 package TapTinder::DB::Schema::build;
+
+__PACKAGE__->belongs_to('msession_id', 'TapTinder::DB::Schema::msession');
 
 __PACKAGE__->belongs_to('rev_id', 'TapTinder::DB::Schema::rev');
 
 __PACKAGE__->belongs_to('rep_path_id', 'TapTinder::DB::Schema::rep_path');
 
-__PACKAGE__->belongs_to('machine_id', 'TapTinder::DB::Schema::machine');
-
 __PACKAGE__->belongs_to('conf_id', 'TapTinder::DB::Schema::build_conf');
 
 __PACKAGE__->has_many('get_trun', 'TapTinder::DB::Schema::trun', 'build_id');
-
-package TapTinder::DB::Schema::machine_session;
-
-__PACKAGE__->belongs_to('machine_id', 'TapTinder::DB::Schema::machine');
-
 
 package TapTinder::DB::Schema::rep_author;
 
@@ -1770,8 +1754,6 @@ __PACKAGE__->register_class('rep_test', 'TapTinder::DB::Schema::rep_test');
 
 __PACKAGE__->register_class('rep_file_change', 'TapTinder::DB::Schema::rep_file_change');
 
-__PACKAGE__->register_class('machine_in_group', 'TapTinder::DB::Schema::machine_in_group');
-
 __PACKAGE__->register_class('tskipall_msg', 'TapTinder::DB::Schema::tskipall_msg');
 
 __PACKAGE__->register_class('trun_conf', 'TapTinder::DB::Schema::trun_conf');
@@ -1784,6 +1766,8 @@ __PACKAGE__->register_class('user', 'TapTinder::DB::Schema::user');
 
 __PACKAGE__->register_class('param', 'TapTinder::DB::Schema::param');
 
+__PACKAGE__->register_class('msession', 'TapTinder::DB::Schema::msession');
+
 __PACKAGE__->register_class('machine', 'TapTinder::DB::Schema::machine');
 
 __PACKAGE__->register_class('build_conf', 'TapTinder::DB::Schema::build_conf');
@@ -1794,11 +1778,9 @@ __PACKAGE__->register_class('ttest', 'TapTinder::DB::Schema::ttest');
 
 __PACKAGE__->register_class('tdiag_msg', 'TapTinder::DB::Schema::tdiag_msg');
 
-__PACKAGE__->register_class('machine_group', 'TapTinder::DB::Schema::machine_group');
-
 __PACKAGE__->register_class('build', 'TapTinder::DB::Schema::build');
 
-__PACKAGE__->register_class('machine_session', 'TapTinder::DB::Schema::machine_session');
+__PACKAGE__->register_class('farm', 'TapTinder::DB::Schema::farm');
 
 __PACKAGE__->register_class('rep_author', 'TapTinder::DB::Schema::rep_author');
 
