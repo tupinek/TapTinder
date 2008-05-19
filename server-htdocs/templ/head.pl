@@ -8,7 +8,6 @@ Cache-Control: no-cache, must-revalidate
     <link rel="shortcut icon" href="favicon.ico" />
     <title>TapTinder results</title>
     <link rel="stylesheet" type="text/css" href="css/base.css" />
-    <script type="text/javascript" src="js/base.js" />
 </head>
 <body class="taptinder">
 };
