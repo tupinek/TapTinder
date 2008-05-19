@@ -6,7 +6,7 @@ Cache-Control: no-cache, must-revalidate
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=iso8859-1" />
     <link rel="shortcut icon" href="favicon.ico" />
-    <title>TapTinder results</title>
+    <title>TapTinder reports - Parrot</title>
     <link rel="stylesheet" type="text/css" href="css/base.css" />
 </head>
 <body class="taptinder">
