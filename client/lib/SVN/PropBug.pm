@@ -64,7 +64,7 @@ sub diff_contains_real_change {
                 if ( defined $prev_minus_line ) {
                     # $Id:$ -> $Id$, $Author:$ -> $Author$
                     my $fixed_prev_line = $prev_minus_line;
-                    $fixed_prev_line =~ s{\$(id|author):\s*\$}{\$$1\$}ig;
+                    $fixed_prev_line =~ s{\$(id|author):\s*[^\$]*\$}{\$$1\$}ig;
                     #print "----> ". $fixed_prev_line;
                     if ( substr($fixed_prev_line,1) ne substr($line,1) ) {
                         $real_change = 1;
