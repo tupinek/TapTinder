@@ -322,7 +322,7 @@ while ( 1 ) {
             if ( $to_head_rev ) {
                 # check if HEAD revision was tested
                 my $to_rev_two = get_revision_to_test( $ck->{name}, $state->{src_rev} );
-                if ( not defined $to_rev_two || $to_rev_two != $state->{src_rev} ) {
+                if ( (not defined $to_rev_two) || $to_rev_two != $state->{src_rev} ) {
                     print "HEAD revision " . $state->{src_rev} . " already tested.\n";
                     next NEXT_CONF;
                 }
