@@ -1,0 +1,7 @@
+---
+name: TapTinder reports
+
+session:
+    expires: '3600'
+    rewrite: '0'
+    storage: '/tmp/tt/taptinder.session'
