@@ -1,0 +1,45 @@
+[% DEFAULT title = 'Table: ' _ table_name  -%]
+
+<div class=nav><a href="javascript:history.back();">Back</a>, <a href="[% c.uri_for('/') %]">homepage</a> or <a href="[% index_uri %]">list of tables</a>.</div>
+
+<table class=data>
+<tr>
+[% FOREACH col_title IN col_titles -%]
+    <th>[% col_title -%]</th>
+[% END -%]
+</tr>
+[% IF data_error %]
+    <tr class=even><td colspan=[% col_titles.size() %]>[% data_error %]</td></tr>
+[% ELSE %]
+    [% FOREACH row IN rows -%]
+        <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %][% IF row.selected %] marked[% END %]">
+            [% FOREACH col_name IN col_names -%]
+                [% IF row.data.$col_name != undef %]
+                    <td>
+                    [% IF rels.$col_name.0 -%]
+                        <a href="[% uri_for_related( rels.$col_name, row.data.$col_name ) %]">[% row.data.$col_name | html %]</a>
+                    [% ELSE -%]
+                        [% row.data.$col_name | html %]
+                    [% END -%]
+                    </td>
+                [% ELSE -%]
+                    <td>&nbsp;</td>
+                [% END -%]
+            [% END -%]
+        </tr>
+    [% END -%]
+[% END -%]
+
+</table>
+
+[% pager_html %]
+
+[% IF msgs %]
+<div class=messages>
+<ul>
+[% FOREACH msg IN msgs -%]
+<li>[% msg %]</li>
+[% END -%]
+</ul>
+</div>
+[% END -%]

@@ -1,0 +1,43 @@
+[% IF project_name %]
+    [% DEFAULT title = project_name _ ' reports ' -%]
+[% ELSE %]
+    [% DEFAULT title = 'All project reports' -%]
+[% END -%]
+
+<div class=nav><a href="javascript:history.back();">Back</a>, <a href="[% c.uri_for('/') %]">homepage</a>
+[%- IF project_name -%]
+    or <a href="[% c.uri_for( '/report' ) %]">all reports</a>
+[%- END -%]
+.</div>
+
+[% FOREACH pr IN projects -%]
+[% IF !project_name %]
+    <h2 class=table>Project: <a href="[% c.uri_for( '/report/pr-' _ pr.name ) %]">[% pr.name %]</a></h2>
+[% END -%]
+<table class=data>
+<tr>
+<th>&nbsp;</th><th>Path</th><th colspan=3>Changed</th>
+</tr>
+<tr>
+<th>&nbsp;</th>
+<th>&nbsp;</th>
+<th>Revision</th><th>Date</th><th>Author</th>
+</tr>
+[% pr_name = pr.name %]
+[% FOREACH rp IN rep_paths.$pr_name -%]
+  <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %]">
+    <td align=right>[% loop.count() %]</td>
+    <td>[% IF rp.path_type %][% rp.path_type %] [% END %]<a href="[% rp.path_report_uri %]" class=ext>[% rp.path_nice %]</a></td>
+    <td><a href="[% c.uri_for( '/table/rev/id-' _ rp.rev_id ) %]">[% rp.max_rev_num %]</a></td>
+    <td>[% rp.date %]</td>
+    <td><a href="[% c.uri_for( '/table/rep_author/id-' _ rp.author_id ) %]">[% rp.rep_login %]</a></td>
+  </tr>
+[% END -%]
+</table>
+[% pager_html %]
+
+<div class=footinfo>
+External links: <a href="[% pr.url %]" class=ext>homepage</a>
+</div>
+
+[% END -%]

@@ -1,0 +1,15 @@
+[% DEFAULT title = 'TapTinder reports' %]
+
+<h2>Bookmarks:</h2>
+<ul class=menu>
+<li><a href="/report/pr-Parrot/rp-trunk">Parrot trunk report</a></li>
+<li><a href="/report/pr-Parrot/">Parrot branches list</a></li>
+</ul>
+
+
+<h2>Browsing:</h2>
+<ul class=menu>
+<li><a href="/report">Reports</a></li>
+<li><a href="/table">Table browser</a></li>
+</ul>
+

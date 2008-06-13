@@ -1,0 +1,82 @@
+[% DEFAULT title = 'Report for ' _ project_name _ ', ' _ rep_path_full -%]
+
+<div class=nav><a href="javascript:history.back();">Back</a>, <a href="[% c.uri_for('/') %]">homepage</a> or <a href="[% c.uri_for( '/report/pr-' _ project_name ) %]">[% project_name %] report list</a>.</div>
+
+<table class=data>
+[% FOREACH tr IN test_runs -%]
+[% IF loop.count() == 1 || tr.rev_num != tr.prev.rev_num %]
+[% IF loop.count() != 1 %]
+    <tr><td colspan=17>&nbsp;</td></tr>
+[% END -%]
+    <tr>
+    <td align=left colspan=17>
+        <a href="[% c.uri_for( '/table/rev/id-' _ tr.rev_id ) %]">[% tr.rev_num %]</a>,
+        [% tr.date %],
+        <a href="[% c.uri_for( '/table/rep_author/id-' _ tr.author_id ) %]">[% tr.rep_login %]</a>
+    </td>
+    </tr>
+
+    <tr>
+    <th>&nbsp;</th>
+    <th colspan=4>Machine</th>
+    <th colspan=3>Build</th>
+    <th colspan=1>Test</th>
+    <th colspan=8>Results</th>
+    </tr>
+
+    <th>&nbsp;</th>
+
+    <th>Name</th>
+    <th>CPU</th>
+    <th>OS</th>
+    <th>Arch</th>
+
+    <th>cc</th>
+    <th>devel</th>
+    <th>optimize</th>
+
+    <th>Harness</th>
+
+    <th>id</th>
+    <th align=center>Not seen</th>
+    <th align=center>Failed</th>
+    <th align=center>Unknown</th>
+    <th align=center>Todo</th>
+    <th align=center>Bonus</th>
+    <th align=center>Skip</th>
+    <th align=center>Ok</th>
+
+    </tr>
+[% END -%]
+
+  <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %]">
+    <td align=right>[% loop.count() %]</td>
+
+    <td><a href="[% c.uri_for( '/table/machine/id-' _ tr.machine_id ) %]">[% tr.machine_name %]</a></td>
+    <td>[% tr.cpuarch %]</td>
+    <td>[% tr.osname %]</td>
+    <td>[% tr.archname %]</td>
+
+    <td><a href="[% c.uri_for( '/table/build_conf/id-' _ tr.build_conf_id ) %]">[% tr.cc %]</a></td>
+    <td>[% tr.devel %]</td>
+    <td>[% tr.optimize %]</td>
+
+    <td><a href="[% c.uri_for( '/table/trun_conf/id-' _ tr.trun_conf_id ) %]">[% tr.harness_args %]</a></td>
+
+    <td><a href="[% c.uri_for( '/table/trun/id-' _ tr.trun_id ) %]">[% tr.trun_id %]</a></td>
+    <td>[% tr.num_notseen %]</td>
+    <td>[% tr.num_failed %]</td>
+    <td>[% tr.num_unknown %]</td>
+    <td>[% tr.num_todo %]</td>
+    <td>[% tr.num_bonus %]</td>
+    <td>[% tr.num_skip %]</td>
+    <td>[% tr.num_ok %]</td>
+
+  </tr>
+[% END -%]
+</table>
+[% pager_html %]
+<div class=footinfo>
+Report for: <a href="[% c.uri_for('/table/project/id-' _ project_id ) %]">[% project_name %]</a>,
+[% IF rep_path_type %][% rep_path_type %] [% END %]<a href="[% c.uri_for( '/table/rep_path/id-' _ rep_path_id ) %]">[% rep_path_nice %]</a>
+</div>
