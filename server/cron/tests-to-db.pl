@@ -55,7 +55,7 @@ sub load_tap_data {
     my $data;
     eval {
         #use YAML::Tiny;
-        #my $yaml = YAML::Tiny->read( $fp ); 
+        #my $yaml = YAML::Tiny->read( $fp );
         #$data = $yaml->[0];
         use YAML::Syck;
         $data = LoadFile( $fp );
@@ -92,7 +92,7 @@ sub dump_header {
 }
 
 
-# TODO  
+# TODO
 sub is_valid_user {
     my ( $machine_id, $archname, $cc, $cpuarch, $osname ) = @_;
     print "Valid machine conf.\n" if $debug;
@@ -106,7 +106,7 @@ sub get_test_result_id {
 
     # 0 .. not seen (not ok) -- empty result info
     return 0 unless defined $test;
-    
+
     # 5 ... skip -- type == 'skip'
     return 5 if $test->{type} eq 'skip';
 
@@ -125,13 +125,13 @@ sub get_test_result_id {
         # 6 .. ok (ok) -- actual_ok == 1 && type != 'todo' && type != 'skip' ( other types, reason, ... ignored )
         return 6;
     }
-    
+
     # 3 .. todo (not ok || ok) -- actual_ok == 0 && type == 'todo'
     return 3 if $test->{type} eq 'todo';
 
     # 1 .. failed (not ok) -- actual_ok == 0 && type == ''
     return 1 if $test->{type} eq '';
-    
+
     # 2 .. unknown (not ok) -- actual_ok == 0 && type != 'todo' && type != 'skip'
     return 2;
 }
@@ -154,7 +154,7 @@ sub process_test_raw_results {
         }
 
         my $file_path = $result->{test_file};
-        my $rep_file_id = $db->get_rep_file_id( 
+        my $rep_file_id = $db->get_rep_file_id(
             $file_path, # $sub_path
             $rep_path_id,
             $rev_num
@@ -163,7 +163,7 @@ sub process_test_raw_results {
             carp( "Rep file not found for ( $file_path, $rep_path_id, $rev_num )." );
             return 0;
         }
-        
+
         my $all_passed = ( $result->{max} == $result->{seen} && $result->{max} == $result->{ok} );
         my $skip_all_msg = $result->{skip_all};
         my $hang = 0;
@@ -191,7 +191,7 @@ sub process_test_raw_results {
                 $ret = $db->insert_ttest( $trun_id, $rep_test_id, $tresult_id );
                 return 0 unless $ret;
             }
-                
+
             #return 0; # debug - roolback
         }
     }
@@ -203,7 +203,7 @@ sub process_test_raw_results {
 sub process_test_results {
     my ( $db, $data, $fn ) = @_;
 
-    my $machine_id = 
+    my $machine_id =
         $data->{conf}->{machine_id}
         || $data->{conf}->{client_id}
     ;
@@ -214,7 +214,7 @@ sub process_test_results {
     # $data->{duration}
 
     # TODO
-    my $is_valid_user = is_valid_user( 
+    my $is_valid_user = is_valid_user(
         $machine_id,
         $data->{pconfig}->{archname},
         $data->{pconfig}->{cpuarch},
@@ -241,11 +241,13 @@ sub process_test_results {
     my $build_conf_id = $db->get_or_insert_build_conf( @build_conf_params );
     return 0 unless defined $build_conf_id;
 
+    my $msession_id = int( rand(5)+1 );
+
     # TODO
     my $start_time = undef;
     my $build_duration = undef;
-    my $build_id = $db->get_or_insert_build( 
-        $rep_path_id, $rev_id, $machine_id, $build_conf_id, $start_time,
+    my $build_id = $db->get_or_insert_build(
+        $rep_path_id, $rev_id, $msession_id, $build_conf_id, $start_time,
         $build_duration
     );
     return 0 unless defined $build_id;
@@ -274,11 +276,11 @@ sub process_test_results {
     my $results = $data->{results};
     my $ret = process_test_raw_results( $db, $stats, $trun_id, $rev_num, $rep_path_id, $results );
     return 0 unless $ret;
-    
+
     return $db->update_trun_stats( $trun_id, $stats );
 }
 
-        
+
 my $mtimes = {};
 my $glob_pattern = $results_dir.'/parrot-smoke-*.yaml';
 foreach my $fp ( glob($glob_pattern) ) {
@@ -361,7 +363,7 @@ foreach my $arch ( sort keys %$arch_stat ) {
     my $unique_revs = scalar keys %{$arch_stat->{$arch}};
     my $all_tests = 0;
     foreach my $rev ( keys %{$arch_stat->{$arch}} ) {
-        $all_tests += $arch_stat->{$arch}->{$rev} 
+        $all_tests += $arch_stat->{$arch}->{$rev}
     }
     print "  $arch : $unique_revs ($all_tests)\n";
 }
