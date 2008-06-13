@@ -13,6 +13,21 @@ use Data::Dumper;
 use Devel::StackTrace;
 
 
+=head1 NAME
+
+TapTinder::DB - TapTinder database functions
+
+=head1 SYNOPSIS
+
+See L<TapTinder::DB>
+
+=head1 DESCRIPTION
+
+TapTinder database functions. Doesn't use DBIx::Class schema.
+
+=cut
+
+
 sub new {
     my $class = shift;
     my $self  = {};
@@ -536,7 +551,7 @@ sub get_or_insert_build_conf {
 
 
 
-# $rep_path_id, $rev_id, $machine_id, $build_conf_id
+# $rep_path_id, $rev_id, $msession_id, $build_conf_id
 # TODO $start_time, $duration
 sub get_build_id {
     my $self = shift;
@@ -546,7 +561,7 @@ sub get_build_id {
           from build
          where rep_path_id = ?
            and rev_id = ?
-           and machine_id = ?
+           and msession_id = ?
            and conf_id = ?
     });
     $self->db_error() if $self->{dbh}->err;
@@ -557,16 +572,16 @@ sub get_build_id {
     return $result->{build_id};
 }
 
-# $rep_path_id, $rev_id, $machine_id, $build_conf_id, $start_time,
+# $rep_path_id, $rev_id, $msession_id, $build_conf_id, $start_time,
 # $build_duration
 sub insert_build {
     my $self = shift;
 
     my $sth = $self->{dbh}->prepare_cached(qq{
-        insert into build ( 
-            rep_path_id, rev_id, machine_id, conf_id, start_time, 
-            build_duration 
-        ) values ( 
+        insert into build (
+            rep_path_id, rev_id, msession_id, conf_id, start_time,
+            build_duration
+        ) values (
             ?, ?, ?, ?, ?,
             ?
         )
@@ -580,7 +595,7 @@ sub insert_build {
     return $result;
 }
 
-# $rep_path_id, $rev_id, $machine_id, $build_conf_id, $start_time,
+# $rep_path_id, $rev_id, $msession_id, $build_conf_id, $start_time,
 # $build_duration
 sub get_or_insert_build {
     my $self = shift;
@@ -824,7 +839,7 @@ sub insert_tfile {
     }
 
     my $sth = $self->{dbh}->prepare_cached(qq{
-        insert into tfile ( trun_id, rep_file_id, all_passed, tskippall_msg_id, hang ) values ( ?, ?, ?, ?, ? )
+        insert into tfile ( trun_id, rep_file_id, all_passed, tskipall_msg_id, hang ) values ( ?, ?, ?, ?, ? )
     });
     $self->db_error() if $self->{dbh}->err;
 
@@ -938,6 +953,21 @@ sub prepare_others_and_insert_ttest {
 
     return $self->insert_ttest( $trun_id, $rep_test_id, $trest_id );
 }
+
+
+=head1 SEE ALSO
+
+L<TapTinder>
+
+=head1 AUTHOR
+
+Michal Jurosz <mj@mj41.cz>
+
+=head1 LICENSE
+
+This file is part of TapTinder. See L<TapTinder> license.
+
+=cut
 
 
 1;

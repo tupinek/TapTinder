@@ -5,7 +5,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_path');
 
 
@@ -64,7 +64,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('param_type');
 
 
@@ -105,7 +105,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('project');
 
 
@@ -155,7 +155,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_test');
 
 
@@ -214,7 +214,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_file_change');
 
 
@@ -263,7 +263,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('tskipall_msg');
 
 
@@ -304,7 +304,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('trun_conf');
 
 
@@ -354,7 +354,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rev_rep_path');
 
 
@@ -378,6 +378,7 @@ __PACKAGE__->add_columns(
       'size' => '11'
     },
 );
+__PACKAGE__->set_primary_key('rev_id', 'rep_path_id');
 
 
 package TapTinder::DB::Schema::rep_change_type;
@@ -385,7 +386,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_change_type');
 
 
@@ -426,7 +427,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('user');
 
 
@@ -512,7 +513,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('param');
 
 
@@ -553,7 +554,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('msession');
 
 
@@ -612,7 +613,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('machine');
 
 
@@ -752,7 +753,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('build_conf');
 
 
@@ -820,7 +821,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_file_change_from');
 
 
@@ -869,7 +870,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('ttest');
 
 
@@ -919,7 +920,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('tdiag_msg');
 
 
@@ -969,7 +970,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('build');
 
 
@@ -1046,7 +1047,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('farm');
 
 
@@ -1105,7 +1106,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_author');
 
 
@@ -1155,7 +1156,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('trest');
 
 
@@ -1196,7 +1197,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('trun');
 
 
@@ -1300,7 +1301,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rev');
 
 
@@ -1368,7 +1369,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('tfile');
 
 
@@ -1436,7 +1437,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_file');
 
 
@@ -1495,7 +1496,7 @@ use base 'DBIx::Class';
 use strict;
 use warnings;
 
-__PACKAGE__->load_components(qw/ Core/);
+__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep');
 
 
