@@ -4,7 +4,7 @@
 
 <table class=data>
 [% FOREACH tr IN test_runs -%]
-[% IF loop.count() == 1 || tr.rev_num != tr.prev.rev_num %]
+[% IF loop.count() == 1 || tr.rev_num != loop.prev().rev_num %]
 [% IF loop.count() != 1 %]
     <tr><td colspan=17>&nbsp;</td></tr>
 [% END -%]
