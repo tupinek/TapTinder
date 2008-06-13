@@ -197,8 +197,9 @@ Revision info to repository path map (M:N).
 * rep_path_id
 <source lang=sql>
 CREATE TABLE rev_rep_path (
-    rev_id              INT UNSIGNED NOT NULL,
-    rep_path_id         INT UNSIGNED NOT NULL,
+    rev_id              INT UNSIGNED NOT NULL PRIMARY KEY,
+    rep_path_id         INT UNSIGNED NOT NULL PRIMARY KEY,
+    UNIQUE KEY unique_rep_id_path (rev_id, rep_path_id),
     INDEX i_rev_id_rep_path_id (rev_id, rep_path_id),
     CONSTRAINT fk_rev_rep_path_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
     CONSTRAINT fk_rev_rep_path_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id)
