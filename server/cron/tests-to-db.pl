@@ -241,6 +241,7 @@ sub process_test_results {
     my $build_conf_id = $db->get_or_insert_build_conf( @build_conf_params );
     return 0 unless defined $build_conf_id;
 
+    #my $msession_id = int( rand(5)+1 );
     my $msession_id = int( rand(5)+1 );
 
     # TODO
@@ -259,9 +260,11 @@ sub process_test_results {
         return 0 unless $trun_conf_id;
 
     } else {
-        my $trun_id = $db->get_max_trun_id( $build_id, $trun_conf_id );
+        my $trun_id = $db->get_max_trun_id_with_conf(
+            $machine_id, $rep_path_id, $rev_id, $build_conf_id, $trun_conf_id
+        );
         if ( $trun_id ) {
-            print "trun for $build_id, $trun_conf_id already found in DB.";
+            print "trun for machine_id:$machine_id, rep_path_id:$rep_path_id, rev_id:$rev_id, build_conf_id:$build_conf_id, trun_conf_id:$trun_conf_id already found in DB.";
             return 0;
         }
     }

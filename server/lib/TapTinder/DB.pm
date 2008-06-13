@@ -695,6 +695,30 @@ sub get_max_trun_id {
 }
 
 
+# $machine_id, $rep_path_id, $rev_id, $build_conf_id, $trun_conf_id
+sub get_max_trun_id_with_conf {
+    my $self = shift;
+
+    my $sth = $self->{dbh}->prepare_cached(qq{
+        select MAX(trun_id) as max_trun_id
+          from msession, build, trun
+         where msession.machine_id = ?
+           and build.msession_id = msession.msession_id
+           and build.rep_path_id = ?
+           and build.rev_id = ?
+           and build.conf_id = ?
+           and trun.build_id = build.build_id
+           and trun.conf_id = ?
+    });
+    $self->db_error() if $self->{dbh}->err;
+
+    my $result = $self->{dbh}->selectrow_hashref( $sth, {}, @_ );
+    $self->db_error() if $self->{dbh}->err;
+    print $self->dump_get( \@_, $result ) if $self->{debug};
+    return $result->{max_trun_id};
+}
+
+
 # $trun_id, $stats
 sub update_trun_stats {
     my $self = shift;
