@@ -58,7 +58,6 @@ sub index : Path  {
     # default page listing values
     my $pr = {
         page => 1,
-        rows => ( $is_index ) ? 15 : 10,
     };
     if ( $params ) {
         # try to set page, rows, ... values from url params
@@ -102,7 +101,7 @@ sub index : Path  {
                 '+select' => $plus_cols,
                 '+as' => $plus_cols,
                 bind  => [ $project_data->{rep_id} ],
-                rows  => $pr->{rows},
+                rows  => $pr->{rows} || 15,
             };
             if ( $project_name ) {
                 $search_conf->{page} = $pr->{page};
@@ -205,31 +204,45 @@ sub index : Path  {
     }
 
     #$ot .= "rep_path_id: $rep_path_id\n\n";
-
     $rs = $c->model('WebDB::rev')->search(
         {
             'get_rev_rep_path.rep_path_id' => $rep_path_id,
-            'get_build.rep_path_id' => $rep_path_id,
         },
         {
             join => [
                 'get_rev_rep_path',
-                {
-                    'get_build' => [
-                        { msession_id => 'machine_id', },
-                        'conf_id',
-                        { get_trun => 'conf_id', },
-                    ],
-                },
                 'author_id',
             ],
-            'where' => '',
             'select' => [qw/
+                get_rev_rep_path.rep_path_id
                 me.rev_id
                 me.rev_num
                 me.date
                 me.author_id
                 author_id.rep_login
+             /],
+            'as' => [qw/
+                rep_path_id
+                rev_id
+                rev_num
+                date
+                author_id
+                rep_login
+            /],
+            order_by => 'me.rev_num DESC',
+            page => $pr->{page},
+            rows => $pr->{rows} || 5,
+        }
+    );
+
+    my $build_search = {
+            join => [
+                { msession_id => 'machine_id', },
+                'conf_id',
+                { get_trun => 'conf_id', },
+            ],
+            'select' => [qw/
+                me.build_id
 
                 machine_id.machine_id
                 machine_id.name
@@ -255,11 +268,7 @@ sub index : Path  {
                 conf_id_2.harness_args
             /],
             'as' => [qw/
-                rev_id
-                rev_num
-                date
-                author_id
-                rep_login
+                build_id
 
                 machine_id
                 machine_name
@@ -284,19 +293,34 @@ sub index : Path  {
                 trun_conf_id
                 harness_args
             /],
-            order_by => 'rev_num DESC',
-            page => $pr->{page},
-            rows => $pr->{rows},
+            prder_by => 'machine_id',
+
+        };
+
+
+    my @revs = ();
+    my $builds = {};
+    while (my $rev = $rs->next) {
+        my %rev_cols = ( $rev->get_columns() );
+
+        my $rs_build = $c->model('WebDB::build')->search(
+            {
+                'me.rep_path_id' => $rev_cols{rep_path_id},
+                'me.rev_id' => $rev_cols{rev_id},
+            },
+            $build_search
+        );
+        push @revs, \%rev_cols;
+
+        while (my $build = $rs_build->next) {
+            my %build_cols = ( $build->get_columns() );
+            push @{$builds->{ $rev_cols{rev_id} }->{ $rev_cols{rep_path_id} }}, \%build_cols;
         }
-    );
-    my @test_runs = ();
-    while (my $trun = $rs->next) {
-        my %cols = ( $trun->get_columns() );
-        push @test_runs, \%cols;
-        #$ot .= dump_row( $trun ) . "\n";
-        #$ot .= Dumper( \%cols ) . "\n";
     }
-    $c->stash->{test_runs} = \@test_runs;
+    #$c->stash->{dump} = sub { return Dumper( \@_ ); };
+    #$ot .= Dumper( $builds );
+    $c->stash->{revs} = \@revs;
+    $c->stash->{builds} = $builds;
 
     $c->stash->{project_id} = $project_id;
     $c->stash->{rep_path_id} = $rep_path_id;
