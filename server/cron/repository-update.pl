@@ -72,7 +72,7 @@ my $revs;
 my $last_log_rev;
 unless ( -e $log_dump_fn ) {
     $last_log_rev = 1;
-} 
+}
 else {
     print "reading svn log dump from $log_dump_fn...\n";
     $revs = require $log_dump_fn;
@@ -91,7 +91,7 @@ if ( ( !$debug_logpart || (not -e $log_dump_fn) )
     $to_rev = '100' if $debug_logpart;
     print "getting svn log for revisions $last_log_rev..$to_rev online...\n";
     my $new_revs = SVN::Log::retrieve ($conf_rep->{repository}, $last_log_rev, $to_rev);
-    
+
     #shift @$new_revs;
     #print dmp( $new_revs );
     if ( scalar @$new_revs > 0 ) {
@@ -128,7 +128,7 @@ print "max_revnum_in_db: $max_revnum_in_db\n" if $debug > 3;
 # debug - probably disabled below
 my $this_rev_nums_only;
 $this_rev_nums_only = {
-     9619 => 1, # D /branhces/debian 
+     9619 => 1, # D /branhces/debian
     22647 => 1, # D /branches/autogcc
     22648 => 1, # D /tags/autogcc-22642
 
@@ -175,7 +175,7 @@ $authors = $db->get_rep_authors( $rep_id );
 # output: ( trunk/, filepath/filename ), ( braches/BRANCHNAME/, undef ), ( tags/TAGNAME/, undef )
 sub split_rep_path {
     my ( $project_name, $path ) = @_;
-    
+
     if ( my ( $base, $oth ) = $path =~ m{^/(trunk|branches/[^\/]+|tags/[^\/]+)\/?(.*?)$} ) {
         $base .= '/' unless substr($base,-1,1) eq '/';
         return ( $base, $oth );
@@ -223,7 +223,7 @@ foreach my $rd ( @$revs ) {
         my $date_ts = svntime_to_dbtime( $rd->{date} );
         $db->log_rev_error( $rd, "Time parser error datestr '$rd->{date}'." ) unless defined $date_ts;
         my $rep_author_id = $authors->{ $rd->{'author'} }->{rep_author_id};
-        $rev_id = $db->insert_rev( 
+        $rev_id = $db->insert_rev(
             $rep_id,
             $rev_num,
             $rep_author_id,
@@ -235,7 +235,7 @@ foreach my $rd ( @$revs ) {
     # group files by rep_path
     # table rev can contain same rev_num for different rev_path_ids
     my $rp_changes = {};
-    
+
     foreach my $path ( sort keys %{$rd->{'paths'}} ) {
         my $path_info = $rd->{'paths'}->{$path};
         my $action = $path_info->{'action'};
@@ -247,40 +247,43 @@ foreach my $rd ( @$revs ) {
         }
 
         my ( $rep_path, $sub_path ) = split_rep_path( $project_name, $path );
-        $db->log_rev_error( $rd, "Parsing path '$path' failed." ) unless defined $rep_path;
+        unless ( defined $rep_path ) {
+            carp "Parsing path '$path' failed.";
 
-        unless ( exists $rp_changes->{$rep_path} ) {
-            $rp_changes->{$rep_path} = {
-                sub_paths => {},
-            };
+        } else {
+            unless ( exists $rp_changes->{$rep_path} ) {
+                $rp_changes->{$rep_path} = {
+                    sub_paths => {},
+                };
 
-            # get or insert rep_path
-            my $rep_path_id = $db->get_rep_path_id( $rep_id, $rep_path, $rev_num );
-            unless ( defined $rep_path_id ) {
-                $rep_path_id = $db->insert_rep_path(
-                    $rep_id, $rep_path, $rev_num
-                );
+                # get or insert rep_path
+                my $rep_path_id = $db->get_rep_path_id( $rep_id, $rep_path, $rev_num );
+                unless ( defined $rep_path_id ) {
+                    $rep_path_id = $db->insert_rep_path(
+                        $rep_id, $rep_path, $rev_num
+                    );
+                }
+
+                # insert rev_rep_path unless exists
+                unless ( $db->exists_rev_rep_path( $rev_id, $rep_path_id ) ) {
+                    $db->insert_rev_rep_path( $rev_id, $rep_path_id );
+                }
+
+                $rp_changes->{$rep_path}->{rep_path_id} = $rep_path_id;
             }
 
-            # insert rev_rep_path unless exists
-            unless ( $db->exists_rev_rep_path( $rev_id, $rep_path_id ) ) {
-                $db->insert_rev_rep_path( $rev_id, $rep_path_id );
+            # set deleted for $rep_path
+            if ( $sub_path eq '' && $action eq 'D' ) {
+                # delete rep_path
+                $db->set_rep_path_deleted( $rep_id, $rep_path, $rev_num );
             }
 
-            $rp_changes->{$rep_path}->{rep_path_id} = $rep_path_id;
+            # store ref to path info
+            $rp_changes->{$rep_path}->{sub_paths}->{$sub_path} = $rd->{'paths'}->{$path};
+            print "rep_path: $rep_path, sub_path: $sub_path\n" if $debug > 4;
         }
-        
-        # set deleted for $rep_path
-        if ( $sub_path eq '' && $action eq 'D' ) {
-            # delete rep_path
-            $db->set_rep_path_deleted( $rep_id, $rep_path, $rev_num );
-        }
-        
-        # store ref to path info
-        $rp_changes->{$rep_path}->{sub_paths}->{$sub_path} = $rd->{'paths'}->{$path};
-        print "rep_path: $rep_path, sub_path: $sub_path\n" if $debug > 4;
     }
-    
+
     #print dmp( $rp_changes );
     #$db->rollback; die;
 
@@ -297,7 +300,7 @@ foreach my $rd ( @$revs ) {
             }
         }
     }
-    
+
     $db->commit or $db->db_error( "Commiting all changes for $rev_num failed." );
 
     print "rev " . $rev_num . " done, ok\n" if $debug > 1;
@@ -322,10 +325,10 @@ foreach my $rd ( @$revs ) {
             print "  " . $rd->{'paths'}->{$rkey}->{'action'} . " " . $rkey . "\n";
         }
     }
-    
+
     #$state->{rev_to_db_saved} = $rd->{revisions};
     # save_state();
-    
+
 }
 
 $db->commit or $db->db_error( "End commit failed." );
