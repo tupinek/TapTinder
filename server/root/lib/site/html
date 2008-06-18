@@ -16,7 +16,7 @@
 </div>
 [% END -%]
 [% content %]
-[% IF c.debug  # TODO %]
+[% IF c.debug && ot  # TODO %]
 <pre>[% ot | html %]</pre>
 [% END %]
 <div id="footer">[% site.poweredby %]</div>
