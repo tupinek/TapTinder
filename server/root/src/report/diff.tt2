@@ -1,0 +1,40 @@
+[% DEFAULT title = 'Results diff for ' _ project_name -%]
+
+<div class=nav><a href="javascript:history.back();">Back</a>, <a href="[% c.uri_for('/') %]">homepage</a> or <a href="[% c.uri_for( '/report/pr-' _ project_name ) %]">[% project_name %] report list</a>.</div>
+
+<table class=data>
+
+
+[% FOREACH res IN ress %]
+[% IF loop.count() == 1 -%]
+  <tr>
+  <th>Test file</th>
+  <th>Num</th>
+  <th>Name</th>
+  [% FOREACH trun_info IN trun_infos %]
+    <th>[% trun_info.rev_num %]</th>
+  [% END %]
+  </tr>
+[% END -%]
+
+<tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %]">
+<td><a href="/table/rep_file/id-[% res.file.rep_file_id %]">[% res.file.sub_path %]</a></td>
+<td><a href="/table/rep_test/id-[% res.file.rep_test_id %]">[% res.file.test_number %]</a></td>
+<td>[% res.file.test_name %]</td>
+[% FOREACH trun_info IN trun_infos %]
+  <td>[%- t_trun_id = trun_info.trun_id; t_trest_id = res.results.$t_trun_id %]
+  [% IF t_trest_id %]
+    <a href="/table/trest/id-[% t_trest_id %]">[% trest_infos.$t_trest_id.title -%]</a></td>
+  [% ELSE %]
+    -
+  [% END %]
+[% END %]
+</tr>
+
+[% END %]
+</table>
+
+
+<div class=footinfo>
+Report for: <a href="[% c.uri_for('/table/project/id-' _ project_id ) %]">[% project_name %]</a>
+</div>

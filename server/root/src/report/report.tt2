@@ -1,15 +1,17 @@
 [% DEFAULT title = 'Report for ' _ project_name _ ', ' _ rep_path_full -%]
-
 <div class=nav><a href="javascript:history.back();">Back</a>, <a href="[% c.uri_for('/') %]">homepage</a> or <a href="[% c.uri_for( '/report/pr-' _ project_name ) %]">[% project_name %] report list</a>.</div>
 
+<form method="GET" action="[% project_uri _ 'diff' %]">
+
+[% table_col_num = 18 %]
 <table class=data>
 [% FOREACH rev IN revs -%]
 
     [% IF loop.count() != 1 %]
-        <tr><td colspan=17>&nbsp;</td></tr>
+        <tr><td colspan=[% table_col_num %] >&nbsp;</td></tr>
     [% END -%]
     <tr>
-    <td align=left colspan=17>
+    <td align=left colspan=[% table_col_num %]>
         <a href="[% c.uri_for( '/table/rev/id-' _ rev.rev_id ) %]">[% rev.rev_num %]</a>,
         [% rev.date %],
         <a href="[% c.uri_for( '/table/rep_author/id-' _ rev.author_id ) %]">[% rev.rep_login %]</a>
@@ -28,6 +30,7 @@
     <th colspan=3>Build</th>
     <th colspan=1>Test</th>
     <th colspan=8>Results</th>
+    <th>&nbsp;</th>
     </tr>
 
     <tr>
@@ -53,6 +56,7 @@
     <th align=center>Skip</th>
     <th align=center>Ok</th>
 
+    <th>&nbsp;</th>
     </tr>
     [% END -%]
 
@@ -79,11 +83,12 @@
     <td>[% build.num_skip %]</td>
     <td>[% build.num_ok %]</td>
 
+    <td><input type=checkbox name="[% 'trun-' _ build.trun_id  | html %]" /></td>
   </tr>
 [% END -%]
 [% IF prev_was_empty %]
     <tr>
-    <th align=left colspan=17>
+    <th align=left colspan=[% table_col_num %]>
     Not tested.
     </td>
     </tr>
@@ -91,9 +96,19 @@
 [% END -%]
 
 [% END -%]
+
+    <tr>
+    <td align=right colspan=[% table_col_num %]>
+    <input type="submit" id="submit" name="Submit" value="Compare selected" />
+    </td>
+    </tr>
+
 </table>
+</form>
+
 [% pager_html %]
 <div class=footinfo>
 Report for: <a href="[% c.uri_for('/table/project/id-' _ project_id ) %]">[% project_name %]</a>,
 [% IF rep_path_type %][% rep_path_type %] [% END %]<a href="[% c.uri_for( '/table/rep_path/id-' _ rep_path_id ) %]">[% rep_path_nice %]</a>
 </div>
+

@@ -8,16 +8,16 @@ package TapTinder::DB::Schema::rev_rep_path;
 
 __PACKAGE__->add_unique_constraint([ qw/rev_id rep_path_id/ ]);
 
+=pod
 
 # own resultsets
 package TapTinder::DB::Schema::rep_path;
 
-# Make a new ResultSource based on the User class
 my $source = __PACKAGE__->result_source_instance();
 my $new_source = $source->new( $source );
 $new_source->source_name( 'ActiveRepPathList' );
 
-$new_source->name( \<<SQL );
+$new_source->name(\<<'');
 (
    SELECT rp.*,
           mr.max_rev_num,
@@ -39,9 +39,11 @@ $new_source->name( \<<SQL );
       and ra.rep_author_id = r.author_id
     ORDER BY max_rev_num DESC
 )
-SQL
+
 
 TapTinder::DB::Schema->register_source( 'ActiveRepPathList' => $new_source );
+
+=cut
 
 
 # ViewMD - view metadata

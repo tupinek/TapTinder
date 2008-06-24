@@ -23,9 +23,47 @@ Catalyst controller for TapTinder web reports. The actions for reports browsing.
 
 =cut
 
+# TODO - temporary solution
+# dbix-class bug, see commented code in Taptinder::DB::SchemaAdd
+sub CreateMyResultSets {
+    my ( $self, $c ) = @_;
+
+    my $source = TapTinder::DB::Schema::rep_path->result_source_instance;
+    my $new_source = $source->new($source);
+    $new_source->source_name('ActiveRepPathList');
+
+    $new_source->name(\<<'');
+(
+   SELECT rp.*,
+          mr.max_rev_num,
+          r.rev_id, r.author_id, r.date,
+          ra.rep_login
+     FROM rep_path rp,
+        ( SELECT rrp.rep_path_id, max(r.rev_num) as max_rev_num
+           FROM rev_rep_path  rrp, rev r
+          WHERE r.rev_id = rrp.rev_id
+          GROUP BY rrp.rep_path_id
+        ) mr,
+        rev r,
+        rep_author ra
+    WHERE rp.rep_id = ?
+      and rp.rev_num_to is null -- optimalization
+      and rp.path not like "tags/%"
+      and mr.rep_path_id = rp.rep_path_id
+      and r.rev_num = mr.max_rev_num
+      and ra.rep_author_id = r.author_id
+    ORDER BY max_rev_num DESC
+)
+
+    my $schema = $c->model('WebDB')->schema;
+    $schema->register_source('ActiveRepPathList' => $new_source);
+
+    return 1;
+}
+
+
 sub index : Path  {
     my ( $self, $c, $p_project, $par1, $par2, @args ) = @_;
-    my $p_rep_path;
     my $params;
 
     my $ot : Stashed = '';
@@ -41,17 +79,17 @@ sub index : Path  {
         $project_name =~ s{^pr-}{};
         $c->stash->{project_name} = $project_name;
     }
+    $c->stash->{project_uri} = $c->uri_for( '/report/pr-'.$project_name.'/' );
 
     # project name, nothing else
     if ( !$par1 ) {
         $is_index = 1;
     # project name and parameters
-    } elsif ( $par1 =~ /^(page|rows)\-/ ) {
+    } elsif ( $par1 =~ /^(page|rows|offset)\-/ ) {
         $params = $par1;
         $is_index = 1;
     # probably rep_path name
     } else {
-        $p_rep_path = $par1;
         $params = $par2 if $par2;
     }
 
@@ -67,8 +105,8 @@ sub index : Path  {
                 $pr->{page} = $1;
                 next;
             }
-            if ( $part =~ m/^ rows-(\d+) $/x ) {
-                $pr->{rows} = $1;
+            if ( $part =~ m/^ (rows|offset)-(\d+) $/x ) {
+                $pr->{$1} = $2;
                 next;
             }
         }
@@ -92,14 +130,16 @@ sub index : Path  {
         my @projects = ();
         my %rep_paths = ();
 
+        $self->CreateMyResultSets( $c );
+
         while (my $row = $rs->next) {
             my $project_data = { $row->get_columns };
 
-            my $plus_cols = [ qw/ max_rev_num rev_id author_id date rep_login /];
+            my $plus_rows = [ qw/ max_rev_num rev_id author_id date rep_login /];
 
             my $search_conf = {
-                '+select' => $plus_cols,
-                '+as' => $plus_cols,
+                '+select' => $plus_rows,
+                '+as' => $plus_rows,
                 bind  => [ $project_data->{rep_id} ],
                 rows  => $pr->{rows} || 15,
             };
@@ -157,9 +197,178 @@ sub index : Path  {
         return;
     }
 
+    if ( $par1 =~ /^diff/ ) {
+        #$ot .= Dumper( $c->request->params );
+        my @selected_trun_ids = grep { defined $_; } map { $_ =~ /^trun-(\d+)/; $1; } keys %{$c->request->params};
+        $ot .= Dumper( \@selected_trun_ids );
+
+        #$ot .= Dumper( $c->model('WebDB::build') );
+        my $rs_trun_info = $c->model('WebDB::trun')->search(
+            {
+                trun_id => \@selected_trun_ids,
+            },
+            {
+                prefetch => {
+                    build_id => [ 'rev_id', { 'rep_path_id' => 'rep_id' } ]
+                },
+                '+select' => [qw/ rev_id.rev_num  /],
+                '+as' => [qw/ rev_num /],
+                order_by => 'rev_id.rev_num',
+            }
+        );
+        my @trun_infos = ();
+        while (my $trun_info = $rs_trun_info->next) {
+            my %row = ( $trun_info->get_columns() );
+            push @trun_infos, \%row;
+        }
+        $c->stash->{trun_infos} = \@trun_infos;
+        $ot .= Dumper( \@trun_infos );
+
+
+        my $rs = $c->model('WebDB::ttest')->search(
+            {
+                trun_id => \@selected_trun_ids,
+            },
+            {
+                join => [
+                    { rep_test_id => 'rep_file_id' },
+                ],
+                '+select' => [qw/
+                    rep_test_id.rep_file_id
+                    rep_test_id.number
+                    rep_test_id.name
+
+                    rep_file_id.rep_path_id
+                    rep_file_id.sub_path
+                    rep_file_id.rev_num_from
+                    rep_file_id.rev_num_to
+                /],
+                '+as' => [qw/
+                    rep_file_id
+                    test_number
+                    test_name
+
+                    rep_path_id
+                    sub_path
+                    rev_num_from
+                    rev_num_to
+                /],
+                order_by => [ 'rep_file_id.sub_path', 'me.rep_test_id' ],
+            }
+        );
+
+        my @ress = ();
+        my $prev_rt_id = 0;
+        my %res_cache = ();
+        my %res_ids_sum = ();
+        my $num_of_res = scalar @selected_trun_ids;
+        my %row;
+        my %prev_row = ();
+        my $same_rep_path_id = 1;
+        # $rs is ordered by ttest.rep_test_id
+
+
+        # we need $prev_row, $row and info if next row will be defined
+        my $res = undef;
+        my $res_next = $rs->next;
+        my $num = 1;
+        TTEST_NEXT: while ( 1 ) {
+            # first run of while loop
+            unless ( defined $res ) {
+                # nothing found
+                last TTEST_NEXT unless defined $res_next;
+            }
+
+            # use previous rs to get row
+            $res = $res_next;
+            $res_next = $rs->next;
+
+            if ( defined $res ) {
+                %row = ( $res->get_columns() );
+                $same_rep_path_id = 0 if %prev_row && $row{rep_path_id} != $prev_row{rep_path_id};
+            }
+
+            #
+            # find if results are same
+            if ( (not defined $res) || $prev_rt_id != $row{rep_test_id} ) {
+                my $are_same = 1;
+                if ( $prev_rt_id ) {
+                    $are_same = 0 if scalar( keys %res_ids_sum ) > 1;
+                    if ( $are_same ) {
+                        TTEST_SAME: while (  my ( $k, $v ) = each(%res_ids_sum) ) {
+                            if ( $num_of_res != $v ) {
+                                $are_same = 0;
+                                last TTEST_SAME;
+                            }
+                        }
+                    }
+                }
+
+                # remember not different results
+                unless ( $are_same ) {
+                    #$ot .= Dumper( \%res_ids_sum );
+                    #$ot .= Dumper( \@res_cache );
+                    delete $prev_row{trest_id};
+                    delete $prev_row{trun_id};
+                    #$ot .= Dumper( \%prev_row );
+
+                    $ot .= Dumper( \%res_cache );
+                    foreach my $trun_info ( @trun_infos ) {
+                        next if exists $res_cache{ $trun_info->{trun_id} };
+                        my $rev_num = $res_cache{ $trun_info->{trun_id} }->{rev_num};
+                        $ot .= Dumper( $trun_info );
+                        if ( $rev_num >= $trun_info->{rev_num_from}
+                             && ( (not defined $trun_info->{rev_num_to}) || $rev_num <= $trun_info->{rev_num_to} )
+                           )
+                        {
+                            $res_cache{ $trun_info->{trun_id} } = 6;
+                        }
+                        #my $trun_
+                    }
+                    $ot .= Dumper( \%res_cache );
+                    $ot .= "num $num---\n";
+                    push @ress, {
+                        file => { %prev_row },
+                        results => { %res_cache },
+                    };
+                }
+
+                last TTEST_NEXT unless defined $res;
+
+                %prev_row = %row;
+                $prev_rt_id = $row{rep_test_id};
+                %res_cache = ();
+                %res_ids_sum = ();
+            }
+
+
+            # another test
+            $res_cache{ $row{trun_id} } = $row{trest_id};
+            $res_ids_sum{ $row{trest_id} }++;
+            $num++;
+
+        }
+        $ot .= Dumper( \@ress );
+        $c->stash->{same_rep_path_id} = $same_rep_path_id;
+        $c->stash->{ress} = \@ress;
+
+
+        #$ot .= Dumper( $c->model('WebDB::build') );
+        my $rs_trest_info = $c->model('WebDB::trest')->search;
+        my %trest_infos = ();
+        while (my $trest_info = $rs_trest_info->next) {
+            my %row = ( $trest_info->get_columns() );
+            $trest_infos{ $trest_info->trest_id } = \%row;
+        }
+        $c->stash->{trest_infos} = \%trest_infos;
+        $ot .= Dumper( \%trest_infos );
+
+        $c->stash->{template} = 'report/diff.tt2';
+        return;
+    }
 
     # project path selected
-
+    my $p_rep_path = $par1;
     my $rep_path_simple = $p_rep_path;
     $rep_path_simple =~ s{^rp-}{};
     my $rep_path_db = $rep_path_simple;
@@ -181,11 +390,11 @@ sub index : Path  {
         }
     );
     unless ( $rs ) {
-        $c->stash->{error} = "Rep_path '$project_name' for project '$rep_path_db' not found.";
+        $c->stash->{error} = "Rep_path '$rep_path_db' for project '$project_name' not found.";
         return;
     }
     my $rep_path_id = $rs->rep_path_id ;
-    my $project_id = $rs->get_column('project_id') ;
+    my $project_id = $rs->get_columns('project_id') ;
 
     my ( $path_nice, $path_type );
     # branches, tags
@@ -232,6 +441,7 @@ sub index : Path  {
             order_by => 'me.rev_num DESC',
             page => $pr->{page},
             rows => $pr->{rows} || 5,
+            offset => $pr->{offset} || 0,
         }
     );
 
@@ -293,7 +503,7 @@ sub index : Path  {
                 trun_conf_id
                 harness_args
             /],
-            prder_by => 'machine_id',
+            order_by => 'machine_id',
 
         };
 
@@ -301,20 +511,20 @@ sub index : Path  {
     my @revs = ();
     my $builds = {};
     while (my $rev = $rs->next) {
-        my %rev_cols = ( $rev->get_columns() );
+        my %rev_rows = ( $rev->get_columns() );
 
         my $rs_build = $c->model('WebDB::build')->search(
             {
-                'me.rep_path_id' => $rev_cols{rep_path_id},
-                'me.rev_id' => $rev_cols{rev_id},
+                'me.rep_path_id' => $rev_rows{rep_path_id},
+                'me.rev_id' => $rev_rows{rev_id},
             },
             $build_search
         );
-        push @revs, \%rev_cols;
+        push @revs, \%rev_rows;
 
         while (my $build = $rs_build->next) {
-            my %build_cols = ( $build->get_columns() );
-            push @{$builds->{ $rev_cols{rev_id} }->{ $rev_cols{rep_path_id} }}, \%build_cols;
+            my %build_rows = ( $build->get_columns() );
+            push @{$builds->{ $rev_rows{rev_id} }->{ $rev_rows{rep_path_id} }}, \%build_rows;
         }
     }
     #$c->stash->{dump} = sub { return Dumper( \@_ ); };
