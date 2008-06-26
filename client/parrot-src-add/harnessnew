@@ -325,12 +325,14 @@ elsif ($yaml) {
 
     my $start = time();
     if ( 1 ) {
+        use Test::Harness::Straps;
         my $strap = Test::Harness::Straps->new;
         my @all_results;
         foreach my $test_file (@tests) {
-            my %results = $strap->analyze_file($test_file);
-            $results{'test_file'} = $test_file;
-            push @all_results, \%results;
+            my $one_file_results = $strap->analyze_file($test_file);
+            $one_file_results->{'test_file'} = $test_file;
+            push @all_results, { %$one_file_results };
+            #use Data::Dumper; die Dumper( \@all_results );
         }
         my $end = time();
         my $duration = $end - $start;
