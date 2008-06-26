@@ -149,7 +149,7 @@ sub process_test_raw_results {
         # skiping files withnout details
         # probably not exist in repository, e.g. parrot rev: 26769 test_file: t/codingstd/cppcomments.t
         unless ( defined $test_details ) {
-            print "Details for test_file '" . $result->{test_file} . "' not found.";
+            print "Details for test_file '" . $result->{test_file} . "' not found.\n";
             next TEST_RESULT;
         }
 
@@ -241,8 +241,8 @@ sub process_test_results {
     my $build_conf_id = $db->get_or_insert_build_conf( @build_conf_params );
     return 0 unless defined $build_conf_id;
 
-    #my $msession_id = int( rand(5)+1 );
-    my $msession_id = int( rand(5)+1 );
+    my $msession_id = $machine_id + 5;
+    #$msession_id = int( rand(5)+1 ) if $machine_id == 3;
 
     # TODO
     my $start_time = undef;
