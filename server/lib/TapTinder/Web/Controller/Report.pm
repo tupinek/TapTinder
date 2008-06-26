@@ -200,7 +200,7 @@ sub index : Path  {
     if ( $par1 =~ /^diff/ ) {
         #$ot .= Dumper( $c->request->params );
         my @selected_trun_ids = grep { defined $_; } map { $_ =~ /^trun-(\d+)/; $1; } keys %{$c->request->params};
-        $ot .= Dumper( \@selected_trun_ids );
+        #$ot .= Dumper( \@selected_trun_ids );
 
         #$ot .= Dumper( $c->model('WebDB::build') );
         my $rs_trun_info = $c->model('WebDB::trun')->search(
@@ -222,7 +222,7 @@ sub index : Path  {
             push @trun_infos, \%row;
         }
         $c->stash->{trun_infos} = \@trun_infos;
-        $ot .= Dumper( \@trun_infos );
+        #$ot .= Dumper( \@trun_infos );
 
 
         my $rs = $c->model('WebDB::ttest')->search(
@@ -312,25 +312,32 @@ sub index : Path  {
                     delete $prev_row{trun_id};
                     #$ot .= Dumper( \%prev_row );
 
-                    $ot .= Dumper( \%res_cache );
+                    my $to_base_report = 0;
                     foreach my $trun_info ( @trun_infos ) {
-                        next if exists $res_cache{ $trun_info->{trun_id} };
-                        my $rev_num = $res_cache{ $trun_info->{trun_id} }->{rev_num};
-                        $ot .= Dumper( $trun_info );
-                        if ( $rev_num >= $trun_info->{rev_num_from}
-                             && ( (not defined $trun_info->{rev_num_to}) || $rev_num <= $trun_info->{rev_num_to} )
+                        if ( exists $res_cache{ $trun_info->{trun_id} } ) {
+                            my $trest_id = $res_cache{ $trun_info->{trun_id} };
+                            # 0 not seen, 1 failed, 2 unknown, 4 bonus
+                            $to_base_report = 1 if $trest_id <= 2 || $trest_id == 4;
+                            next;
+                        }
+                        if ( $trun_info->{rev_num} >= $prev_row{rev_num_from}
+                             && ( !$prev_row{rev_num_to} || $trun_info->{rev_num} <= $prev_row{rev_num_to} )
                            )
                         {
                             $res_cache{ $trun_info->{trun_id} } = 6;
+
+                        } else {
+                            $to_base_report = 1;
                         }
                         #my $trun_
                     }
-                    $ot .= Dumper( \%res_cache );
-                    $ot .= "num $num---\n";
-                    push @ress, {
-                        file => { %prev_row },
-                        results => { %res_cache },
-                    };
+                    if ( $to_base_report ) {
+                        #$ot .= Dumper( \%res_cache );
+                        push @ress, {
+                            file => { %prev_row },
+                            results => { %res_cache },
+                        };
+                    }
                 }
 
                 last TTEST_NEXT unless defined $res;
@@ -361,7 +368,7 @@ sub index : Path  {
             $trest_infos{ $trest_info->trest_id } = \%row;
         }
         $c->stash->{trest_infos} = \%trest_infos;
-        $ot .= Dumper( \%trest_infos );
+        #$ot .= Dumper( \%trest_infos );
 
         $c->stash->{template} = 'report/diff.tt2';
         return;
