@@ -19,10 +19,14 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
             prefix => 'TapTinder::DB::Schema',
         },
     ) or die SQL::Translator->error;
+
     my $out_fn = './lib/TapTinder/DB/Schema.pm';
+
+    my $content = $translator->translate;
+    $content =~ s{load_components\(qw/\s*Core/\)}{load_components\(qw/Core ViewMD/\)}gs;
     my $fh;
     open ( $fh, '>', $out_fn ) || die $!;
-    print $fh $translator->translate;
+    print $fh $content;
     close $fh;
 
 
