@@ -62,47 +62,52 @@ sub CreateMyResultSets {
 }
 
 
-sub action_do {
-    my ( $self, $c, $ot ) = @_;
-    my $ot : Stashed;
+sub dadd {
+    my $self = shift;
+    my $c = shift;
+    my $str = shift;
+    $c->stash->{ot} .= $str;
+}
 
-    $ot .= Dumper( $c->request->params );
+
+sub dumper {
+    my $self = shift;
+    my $c = shift;
+    $c->stash->{ot} .= Dumper( @_ );
+}
+
+
+sub action_do {
+    my ( $self, $c ) = @_;
+
+    $self->dumper( $c, $c->request->params );
     my @selected_trun_ids = grep { defined $_; } map { $_ =~ /^trun-(\d+)/; $1; } keys %{$c->request->params};
-    #$ot .= Dumper( \@selected_trun_ids );
+    #$self->dumper( $c, \@selected_trun_ids );
     unless ( scalar @selected_trun_ids ) {
         $c->stash->{error} = "Please select some test results. One to show failing tests. More to show diff.";
         #$c->response->redirect( ); # TODO
         return;
     }
 
-    return $self->action_do_one( $c, $ot, @selected_trun_ids[0] ) if scalar(@selected_trun_ids) == 1;
-    return $self->action_do_many( $c, $ot, @selected_trun_ids );
+    if ( scalar(@selected_trun_ids) == 1 ) {
+        return $self->action_do_one( $c, $selected_trun_ids[0] );
+    }
+    return $self->action_do_many( $c, \@selected_trun_ids );
 }
 
 
-sub action_do_one {
-    my ( $self, $c, $ot, $trun_id ) = @_;
-    my $ot : Stashed;
+sub get_trun_infos {
+    my ( $self, $c, $ra_trun_ids ) = @_;
 
-    $c->stash->{error} = "Not implemented yet.";
-    return;
-}
-
-
-sub action_do_many {
-    my ( $self, $c, $ot, @selected_trun_ids ) = @_;
-    my $ot : Stashed;
-
-    #$ot .= Dumper( $c->model('WebDB::build') );
     my $rs_trun_info = $c->model('WebDB::trun')->search(
         {
-            trun_id => \@selected_trun_ids,
+            trun_id => $ra_trun_ids,
         },
         {
             prefetch => {
                 build_id => [ 'rev_id', { 'rep_path_id' => 'rep_id' } ]
             },
-            '+select' => [qw/ rev_id.rev_num  /],
+            '+select' => [qw/ rev_id.rev_num /],
             '+as' => [qw/ rev_num /],
             order_by => 'rev_id.rev_num',
         }
@@ -112,13 +117,17 @@ sub action_do_many {
         my %row = ( $trun_info->get_columns() );
         push @trun_infos, \%row;
     }
-    $c->stash->{trun_infos} = \@trun_infos;
-    #$ot .= Dumper( \@trun_infos );
+    #$self->dumper( $c, \@trun_infos );
+    return @trun_infos;
+}
 
+
+sub get_ttest_rs {
+    my ( $self, $c, $ra_trun_ids ) = @_;
 
     my $rs = $c->model('WebDB::ttest')->search(
         {
-            trun_id => \@selected_trun_ids,
+            trun_id => $ra_trun_ids,
         },
         {
             join => [
@@ -147,12 +156,78 @@ sub action_do_many {
             order_by => [ 'rep_file_id.sub_path', 'me.rep_test_id' ],
         }
     );
+    return $rs;
+}
+
+
+sub get_trest_infos {
+    my ( $self, $c ) = @_;
+
+    #$self->dumper( $c, $c->model('WebDB::build') );
+    my $rs_trest_info = $c->model('WebDB::trest')->search;
+    my %trest_infos = ();
+    while (my $trest_info = $rs_trest_info->next) {
+        my %row = ( $trest_info->get_columns() );
+        $trest_infos{ $trest_info->trest_id } = \%row;
+    }
+    #$self->dumper( $c, \%trest_infos );
+    return %trest_infos;
+}
+
+
+sub action_do_one {
+    my ( $self, $c, $trun_id ) = @_;
+
+    my $ra_selected_trun_ids = [ $trun_id ];
+    my @trun_infos = $self->get_trun_infos( $c, $ra_selected_trun_ids ) ;
+    $c->stash->{trun_infos} = \@trun_infos;
+
+    my $rs = $self->get_ttest_rs( $c, $ra_selected_trun_ids ) ;
+    my @ress = ();
+    while (my $res_info = $rs->next) {
+        my %row = ( $res_info->get_columns() );
+
+        my $to_base_report = 0;
+        my $trest_id = $row{trest_id};
+        $to_base_report = 1 if $trest_id <= 2 || $trest_id == 4;
+        next unless $to_base_report;
+
+        my %res = (
+            $row{trun_id} => $trest_id,
+        );
+
+        delete $row{trest_id};
+        delete $row{trun_id};
+        push @ress, {
+            file => { %row },
+            results => { %res },
+        };
+    }
+
+    $self->dumper( $c, \@ress );
+    $c->stash->{ress} = \@ress;
+
+    my %trest_infos = $self->get_trest_infos( $c ) ;
+    $c->stash->{trest_infos} = \%trest_infos;
+
+    $c->stash->{template} = 'report/diff.tt2';
+    return;
+}
+
+
+sub action_do_many {
+    my ( $self, $c, $ra_selected_trun_ids ) = @_;
+
+    my @trun_infos = $self->get_trun_infos( $c, $ra_selected_trun_ids ) ;
+    $c->stash->{trun_infos} = \@trun_infos;
+
+    my $rs = $self->get_ttest_rs( $c, $ra_selected_trun_ids ) ;
 
     my @ress = ();
     my $prev_rt_id = 0;
     my %res_cache = ();
     my %res_ids_sum = ();
-    my $num_of_res = scalar @selected_trun_ids;
+    my $num_of_res = scalar @$ra_selected_trun_ids;
     my %row;
     my %prev_row = ();
     my $same_rep_path_id = 1;
@@ -197,11 +272,11 @@ sub action_do_many {
 
             # remember not different results
             unless ( $are_same ) {
-                #$ot .= Dumper( \%res_ids_sum );
-                #$ot .= Dumper( \@res_cache );
+                #$self->dumper( $c, \%res_ids_sum );
+                #$self->dumper( $c, \@res_cache );
                 delete $prev_row{trest_id};
                 delete $prev_row{trun_id};
-                #$ot .= Dumper( \%prev_row );
+                #$self->dumper( $c, \%prev_row );
 
                 my $to_base_report = 0;
                 foreach my $trun_info ( @trun_infos ) {
@@ -223,7 +298,7 @@ sub action_do_many {
                     #my $trun_
                 }
                 if ( $to_base_report ) {
-                    #$ot .= Dumper( \%res_cache );
+                    #$self->dumper( $c, \%res_cache );
                     push @ress, {
                         file => { %prev_row },
                         results => { %res_cache },
@@ -246,20 +321,12 @@ sub action_do_many {
         $num++;
 
     }
-    $ot .= Dumper( \@ress );
+    $self->dumper( $c, \@ress );
     $c->stash->{same_rep_path_id} = $same_rep_path_id;
     $c->stash->{ress} = \@ress;
 
-
-    #$ot .= Dumper( $c->model('WebDB::build') );
-    my $rs_trest_info = $c->model('WebDB::trest')->search;
-    my %trest_infos = ();
-    while (my $trest_info = $rs_trest_info->next) {
-        my %row = ( $trest_info->get_columns() );
-        $trest_infos{ $trest_info->trest_id } = \%row;
-    }
+    my %trest_infos = $self->get_trest_infos( $c ) ;
     $c->stash->{trest_infos} = \%trest_infos;
-    #$ot .= Dumper( \%trest_infos );
 
     $c->stash->{template} = 'report/diff.tt2';
     return;
@@ -269,10 +336,10 @@ sub action_do_many {
 
 sub index : Path  {
     my ( $self, $c, $p_project, $par1, $par2, @args ) = @_;
-    my $params;
-
     my $ot : Stashed = '';
-    #$ot = Dumper( { p_project => $p_project, par1 => $par1, par2 => $par2, args => \@args } );
+
+    my $params;
+    #$self->dumper( $c, { p_project => $p_project, par1 => $par1, par2 => $par2, args => \@args } );
 
     my $project_name = undef;
 
@@ -403,7 +470,7 @@ sub index : Path  {
     }
 
     if ( $par1 =~ /^do/ ) {
-        return $self->action_do( $c, $ot );
+        return $self->action_do( $c );
     }
 
     # project path selected
@@ -451,7 +518,7 @@ sub index : Path  {
         $path_nice = $rep_path_simple;
     }
 
-    #$ot .= "rep_path_id: $rep_path_id\n\n";
+    #$self->dadd( $c, "rep_path_id: $rep_path_id\n\n" );
     $rs = $c->model('WebDB::rev')->search(
         {
             'get_rev_rep_path.rep_path_id' => $rep_path_id,
@@ -567,7 +634,7 @@ sub index : Path  {
         }
     }
     #$c->stash->{dump} = sub { return Dumper( \@_ ); };
-    #$ot .= Dumper( $builds );
+    #$self->dumper( $c, $builds );
     $c->stash->{revs} = \@revs;
     $c->stash->{builds} = $builds;
 
