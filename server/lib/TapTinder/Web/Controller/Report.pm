@@ -62,6 +62,211 @@ sub CreateMyResultSets {
 }
 
 
+sub action_do {
+    my ( $self, $c, $ot ) = @_;
+    my $ot : Stashed;
+
+    $ot .= Dumper( $c->request->params );
+    my @selected_trun_ids = grep { defined $_; } map { $_ =~ /^trun-(\d+)/; $1; } keys %{$c->request->params};
+    #$ot .= Dumper( \@selected_trun_ids );
+    unless ( scalar @selected_trun_ids ) {
+        $c->stash->{error} = "Please select some test results. One to show failing tests. More to show diff.";
+        #$c->response->redirect( ); # TODO
+        return;
+    }
+
+    return $self->action_do_one( $c, $ot, @selected_trun_ids[0] ) if scalar(@selected_trun_ids) == 1;
+    return $self->action_do_many( $c, $ot, @selected_trun_ids );
+}
+
+
+sub action_do_one {
+    my ( $self, $c, $ot, $trun_id ) = @_;
+    my $ot : Stashed;
+
+    $c->stash->{error} = "Not implemented yet.";
+    return;
+}
+
+
+sub action_do_many {
+    my ( $self, $c, $ot, @selected_trun_ids ) = @_;
+    my $ot : Stashed;
+
+    #$ot .= Dumper( $c->model('WebDB::build') );
+    my $rs_trun_info = $c->model('WebDB::trun')->search(
+        {
+            trun_id => \@selected_trun_ids,
+        },
+        {
+            prefetch => {
+                build_id => [ 'rev_id', { 'rep_path_id' => 'rep_id' } ]
+            },
+            '+select' => [qw/ rev_id.rev_num  /],
+            '+as' => [qw/ rev_num /],
+            order_by => 'rev_id.rev_num',
+        }
+    );
+    my @trun_infos = ();
+    while (my $trun_info = $rs_trun_info->next) {
+        my %row = ( $trun_info->get_columns() );
+        push @trun_infos, \%row;
+    }
+    $c->stash->{trun_infos} = \@trun_infos;
+    #$ot .= Dumper( \@trun_infos );
+
+
+    my $rs = $c->model('WebDB::ttest')->search(
+        {
+            trun_id => \@selected_trun_ids,
+        },
+        {
+            join => [
+                { rep_test_id => 'rep_file_id' },
+            ],
+            '+select' => [qw/
+                rep_test_id.rep_file_id
+                rep_test_id.number
+                rep_test_id.name
+
+                rep_file_id.rep_path_id
+                rep_file_id.sub_path
+                rep_file_id.rev_num_from
+                rep_file_id.rev_num_to
+            /],
+            '+as' => [qw/
+                rep_file_id
+                test_number
+                test_name
+
+                rep_path_id
+                sub_path
+                rev_num_from
+                rev_num_to
+            /],
+            order_by => [ 'rep_file_id.sub_path', 'me.rep_test_id' ],
+        }
+    );
+
+    my @ress = ();
+    my $prev_rt_id = 0;
+    my %res_cache = ();
+    my %res_ids_sum = ();
+    my $num_of_res = scalar @selected_trun_ids;
+    my %row;
+    my %prev_row = ();
+    my $same_rep_path_id = 1;
+    # $rs is ordered by ttest.rep_test_id
+
+
+    # we need $prev_row, $row and info if next row will be defined
+    my $res = undef;
+    my $res_next = $rs->next;
+    my $num = 1;
+    TTEST_NEXT: while ( 1 ) {
+        # first run of while loop
+        unless ( defined $res ) {
+            # nothing found
+            last TTEST_NEXT unless defined $res_next;
+        }
+
+        # use previous rs to get row
+        $res = $res_next;
+        $res_next = $rs->next;
+
+        if ( defined $res ) {
+            %row = ( $res->get_columns() );
+            $same_rep_path_id = 0 if %prev_row && $row{rep_path_id} != $prev_row{rep_path_id};
+        }
+
+        #
+        # find if results are same
+        if ( (not defined $res) || $prev_rt_id != $row{rep_test_id} ) {
+            my $are_same = 1;
+            if ( $prev_rt_id ) {
+                $are_same = 0 if scalar( keys %res_ids_sum ) > 1;
+                if ( $are_same ) {
+                    TTEST_SAME: while (  my ( $k, $v ) = each(%res_ids_sum) ) {
+                        if ( $num_of_res != $v ) {
+                            $are_same = 0;
+                            last TTEST_SAME;
+                        }
+                    }
+                }
+            }
+
+            # remember not different results
+            unless ( $are_same ) {
+                #$ot .= Dumper( \%res_ids_sum );
+                #$ot .= Dumper( \@res_cache );
+                delete $prev_row{trest_id};
+                delete $prev_row{trun_id};
+                #$ot .= Dumper( \%prev_row );
+
+                my $to_base_report = 0;
+                foreach my $trun_info ( @trun_infos ) {
+                    if ( exists $res_cache{ $trun_info->{trun_id} } ) {
+                        my $trest_id = $res_cache{ $trun_info->{trun_id} };
+                        # 0 not seen, 1 failed, 2 unknown, 4 bonus
+                        $to_base_report = 1 if $trest_id <= 2 || $trest_id == 4;
+                        next;
+                    }
+                    if ( $trun_info->{rev_num} >= $prev_row{rev_num_from}
+                         && ( !$prev_row{rev_num_to} || $trun_info->{rev_num} <= $prev_row{rev_num_to} )
+                       )
+                    {
+                        $res_cache{ $trun_info->{trun_id} } = 6;
+
+                    } else {
+                        $to_base_report = 1;
+                    }
+                    #my $trun_
+                }
+                if ( $to_base_report ) {
+                    #$ot .= Dumper( \%res_cache );
+                    push @ress, {
+                        file => { %prev_row },
+                        results => { %res_cache },
+                    };
+                }
+            }
+
+            last TTEST_NEXT unless defined $res;
+
+            %prev_row = %row;
+            $prev_rt_id = $row{rep_test_id};
+            %res_cache = ();
+            %res_ids_sum = ();
+        }
+
+
+        # another test
+        $res_cache{ $row{trun_id} } = $row{trest_id};
+        $res_ids_sum{ $row{trest_id} }++;
+        $num++;
+
+    }
+    $ot .= Dumper( \@ress );
+    $c->stash->{same_rep_path_id} = $same_rep_path_id;
+    $c->stash->{ress} = \@ress;
+
+
+    #$ot .= Dumper( $c->model('WebDB::build') );
+    my $rs_trest_info = $c->model('WebDB::trest')->search;
+    my %trest_infos = ();
+    while (my $trest_info = $rs_trest_info->next) {
+        my %row = ( $trest_info->get_columns() );
+        $trest_infos{ $trest_info->trest_id } = \%row;
+    }
+    $c->stash->{trest_infos} = \%trest_infos;
+    #$ot .= Dumper( \%trest_infos );
+
+    $c->stash->{template} = 'report/diff.tt2';
+    return;
+}
+
+
+
 sub index : Path  {
     my ( $self, $c, $p_project, $par1, $par2, @args ) = @_;
     my $params;
@@ -197,181 +402,8 @@ sub index : Path  {
         return;
     }
 
-    if ( $par1 =~ /^diff/ ) {
-        #$ot .= Dumper( $c->request->params );
-        my @selected_trun_ids = grep { defined $_; } map { $_ =~ /^trun-(\d+)/; $1; } keys %{$c->request->params};
-        #$ot .= Dumper( \@selected_trun_ids );
-
-        #$ot .= Dumper( $c->model('WebDB::build') );
-        my $rs_trun_info = $c->model('WebDB::trun')->search(
-            {
-                trun_id => \@selected_trun_ids,
-            },
-            {
-                prefetch => {
-                    build_id => [ 'rev_id', { 'rep_path_id' => 'rep_id' } ]
-                },
-                '+select' => [qw/ rev_id.rev_num  /],
-                '+as' => [qw/ rev_num /],
-                order_by => 'rev_id.rev_num',
-            }
-        );
-        my @trun_infos = ();
-        while (my $trun_info = $rs_trun_info->next) {
-            my %row = ( $trun_info->get_columns() );
-            push @trun_infos, \%row;
-        }
-        $c->stash->{trun_infos} = \@trun_infos;
-        #$ot .= Dumper( \@trun_infos );
-
-
-        my $rs = $c->model('WebDB::ttest')->search(
-            {
-                trun_id => \@selected_trun_ids,
-            },
-            {
-                join => [
-                    { rep_test_id => 'rep_file_id' },
-                ],
-                '+select' => [qw/
-                    rep_test_id.rep_file_id
-                    rep_test_id.number
-                    rep_test_id.name
-
-                    rep_file_id.rep_path_id
-                    rep_file_id.sub_path
-                    rep_file_id.rev_num_from
-                    rep_file_id.rev_num_to
-                /],
-                '+as' => [qw/
-                    rep_file_id
-                    test_number
-                    test_name
-
-                    rep_path_id
-                    sub_path
-                    rev_num_from
-                    rev_num_to
-                /],
-                order_by => [ 'rep_file_id.sub_path', 'me.rep_test_id' ],
-            }
-        );
-
-        my @ress = ();
-        my $prev_rt_id = 0;
-        my %res_cache = ();
-        my %res_ids_sum = ();
-        my $num_of_res = scalar @selected_trun_ids;
-        my %row;
-        my %prev_row = ();
-        my $same_rep_path_id = 1;
-        # $rs is ordered by ttest.rep_test_id
-
-
-        # we need $prev_row, $row and info if next row will be defined
-        my $res = undef;
-        my $res_next = $rs->next;
-        my $num = 1;
-        TTEST_NEXT: while ( 1 ) {
-            # first run of while loop
-            unless ( defined $res ) {
-                # nothing found
-                last TTEST_NEXT unless defined $res_next;
-            }
-
-            # use previous rs to get row
-            $res = $res_next;
-            $res_next = $rs->next;
-
-            if ( defined $res ) {
-                %row = ( $res->get_columns() );
-                $same_rep_path_id = 0 if %prev_row && $row{rep_path_id} != $prev_row{rep_path_id};
-            }
-
-            #
-            # find if results are same
-            if ( (not defined $res) || $prev_rt_id != $row{rep_test_id} ) {
-                my $are_same = 1;
-                if ( $prev_rt_id ) {
-                    $are_same = 0 if scalar( keys %res_ids_sum ) > 1;
-                    if ( $are_same ) {
-                        TTEST_SAME: while (  my ( $k, $v ) = each(%res_ids_sum) ) {
-                            if ( $num_of_res != $v ) {
-                                $are_same = 0;
-                                last TTEST_SAME;
-                            }
-                        }
-                    }
-                }
-
-                # remember not different results
-                unless ( $are_same ) {
-                    #$ot .= Dumper( \%res_ids_sum );
-                    #$ot .= Dumper( \@res_cache );
-                    delete $prev_row{trest_id};
-                    delete $prev_row{trun_id};
-                    #$ot .= Dumper( \%prev_row );
-
-                    my $to_base_report = 0;
-                    foreach my $trun_info ( @trun_infos ) {
-                        if ( exists $res_cache{ $trun_info->{trun_id} } ) {
-                            my $trest_id = $res_cache{ $trun_info->{trun_id} };
-                            # 0 not seen, 1 failed, 2 unknown, 4 bonus
-                            $to_base_report = 1 if $trest_id <= 2 || $trest_id == 4;
-                            next;
-                        }
-                        if ( $trun_info->{rev_num} >= $prev_row{rev_num_from}
-                             && ( !$prev_row{rev_num_to} || $trun_info->{rev_num} <= $prev_row{rev_num_to} )
-                           )
-                        {
-                            $res_cache{ $trun_info->{trun_id} } = 6;
-
-                        } else {
-                            $to_base_report = 1;
-                        }
-                        #my $trun_
-                    }
-                    if ( $to_base_report ) {
-                        #$ot .= Dumper( \%res_cache );
-                        push @ress, {
-                            file => { %prev_row },
-                            results => { %res_cache },
-                        };
-                    }
-                }
-
-                last TTEST_NEXT unless defined $res;
-
-                %prev_row = %row;
-                $prev_rt_id = $row{rep_test_id};
-                %res_cache = ();
-                %res_ids_sum = ();
-            }
-
-
-            # another test
-            $res_cache{ $row{trun_id} } = $row{trest_id};
-            $res_ids_sum{ $row{trest_id} }++;
-            $num++;
-
-        }
-        $ot .= Dumper( \@ress );
-        $c->stash->{same_rep_path_id} = $same_rep_path_id;
-        $c->stash->{ress} = \@ress;
-
-
-        #$ot .= Dumper( $c->model('WebDB::build') );
-        my $rs_trest_info = $c->model('WebDB::trest')->search;
-        my %trest_infos = ();
-        while (my $trest_info = $rs_trest_info->next) {
-            my %row = ( $trest_info->get_columns() );
-            $trest_infos{ $trest_info->trest_id } = \%row;
-        }
-        $c->stash->{trest_infos} = \%trest_infos;
-        #$ot .= Dumper( \%trest_infos );
-
-        $c->stash->{template} = 'report/diff.tt2';
-        return;
+    if ( $par1 =~ /^do/ ) {
+        return $self->action_do( $c, $ot );
     }
 
     # project path selected
