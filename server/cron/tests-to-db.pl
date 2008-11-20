@@ -8,6 +8,7 @@ use Data::Dumper;
 use File::stat;
 use File::Spec::Functions;
 use File::Basename;
+use File::Copy;
 
 use lib '../lib';
 use TapTinder::DB;
@@ -305,6 +306,11 @@ foreach my $mtime ( reverse sort keys %$mtimes ) {
     my $fn_basename = basename( $fn );
     my @lt = localtime($mtime);
     my $time = sprintf("%04d-%02d-%02d %02d-%02d-%02d",($lt[5] + 1900),($lt[4] + 1),$lt[3],$lt[2], $lt[1], $lt[0] );
+
+    # move to
+    my $dir_time = sprintf("results-%04d-%02d-%02d-%02d",($lt[5] + 1900),($lt[4] + 1),$lt[3],$lt[2] );
+    my $new_dir = $results_dir . '/' . $dir_time . '/';
+
     print "file: $fn_basename\n";
     print "mtime: $time\n";
     $last_fn = $fn;
@@ -324,6 +330,11 @@ foreach my $mtime ( reverse sort keys %$mtimes ) {
             my $ret = process_test_results( $db, $data, $fn_basename );
             if ( $ret ) {
                 $db->commit();
+                # move
+                mkdir( $new_dir ) unless -e $new_dir;
+                File::Copy::move( $fn, $new_dir );
+                print "File moved to '$new_dir'.\n";
+
             } else {
                 $db->rollback();
             }
