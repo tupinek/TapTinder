@@ -78,7 +78,7 @@ sub base_index  {
     # user defined parameters (another one is table_name)
     my $pr = {
         rows => 15,
-        page => 1,
+        page => undef,
         selected_ids => undef,
     };
     $self->set_pr( $pr, $args[0] ) if $args[0];
@@ -153,11 +153,6 @@ sub set_pr {
             #$self->dumper( $c, [ \@selected_id ] );
             next;
         }
-    }
-    if ( defined $pr->{selected_ids} ) {
-        #$pr->{page} = undef;
-    } else {
-        $pr->{page} = 1 if $pr->{page} < 1;
     }
 }
 
@@ -344,7 +339,9 @@ sub prepare_data_orserr {
             $pr->{page} = 1;
         }
 
-    } elsif ( defined $pr->{page} ) {
+    } else {
+        $pr->{page} = 1 unless defined $pr->{page};
+
         $search_type = 'page';
         $search_conf->{page} = $pr->{page};
     };
