@@ -7,6 +7,7 @@ use base 'Catalyst::Controller';
 our $VERSION = '0.003';
 
 use Data::Page::HTML qw/get_pager_html/;
+use Data::Dumper; # TODO - needed only for debug mode
 
 =head1 NAME
 
@@ -50,6 +51,12 @@ sub db_schema_class_name {
 }
 
 
+sub dumper {
+    my ( $self, $c, $ra_data, $prefix_text ) = @_;
+    $c->stash->{ot} .= $prefix_text . Dumper( $ra_data );
+}
+
+
 sub base_index  {
     my ( $self, $c, $table_name, @args ) = @_;
 
@@ -81,7 +88,7 @@ sub base_index  {
     $c->stash->{rels} = $rels;
 
     $c->stash->{uri_for_related} = $self->default_rs_uri_for_related($c);
-    use Data::Dumper; $c->stash->{ot} .= 'rels: ' . Dumper($rels);
+    $self->dumper( $c, [ $rels ], 'rels: ' );
 
     my $view_class = $self->db_schema_class_name.'::'.$table_name;
     $c->stash->{col_names} = $cols_allowed;
@@ -89,7 +96,7 @@ sub base_index  {
 
     $self->prepare_data_orserr( $c, $schema, $table_name, $cols_allowed, $pr ) or return;
 
-    #use Data::Dumper; $c->stash->{ot} .= Dumper( $c->stash );
+    #$self->dumper( $c, [ $c->stash ], 'stash' );
 }
 
 
@@ -138,7 +145,7 @@ sub set_pr {
             } else {
                 $pr->{selected_ids} = [ $matched ];
             }
-            #$ot .= Dumper( \@selected_id );
+            #$self->dumper( $c, [ \@selected_id ] );
             next;
         }
     }
@@ -238,10 +245,10 @@ sub get_rels {
 
     my $rels = {};
     my @raw_rels = $schema->source($table_name)->relationships;
-    use Data::Dumper; $c->stash->{ot} .= 'raw rels: ' . Dumper($rels);
+    $self->dumper( $c, [ $rels ], 'raw rels: ' );
     foreach my $rel_name ( @raw_rels ) {
         my $info = $schema->source($table_name)->relationship_info( $rel_name );
-        use Data::Dumper; $c->stash->{ot} .= "raw rel info for '$rel_name': " . Dumper($info);
+        $self->dumper( $c, [ $info ], "raw rel info for '$rel_name': " );
 
         next if defined $info->{attrs}->{join_type} && $info->{attrs}->{join_type} eq 'LEFT';
 
@@ -255,8 +262,7 @@ sub get_rels {
         $col =~ s/^self\.//;
 
         if ( 0 ) {
-            use Data::Dumper;
-            $c->stash->{ot} .= "rels: $col ($rel_name) --> $fr_table.$fr_col ... " . Dumper($info);
+            $self->dumper( $c, [ $info ], "rels: $col ($rel_name) --> $fr_table.$fr_col ... " );
         }
 
         $rels->{$col} = [ $fr_table, $fr_col ];
@@ -294,7 +300,7 @@ sub prepare_data_orserr {
         $search_conf->{page} = $pr->{page};
     };
 
-    use Data::Dumper; $c->stash->{ot} .= Dumper( { pr => $pr, search_conf => $search_conf } );
+    $self->dumper( $c, [ { pr => $pr, search_conf => $search_conf } ] );
     $rs = $c->model($self->db_schema_base_class_name.'::'.$table_name)->search( undef, $search_conf );
     if ( $pr->{page} > $rs->pager->last_page && $rs->pager->last_page > 0 ) {
         $pr->{page} = $rs->pager->last_page;
