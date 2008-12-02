@@ -42,12 +42,17 @@ table browser cotroller for your L<Catalyst> application.
 
 
 sub db_schema_base_class_name {
-  return 'MyAppDB';
+    return 'MyAppDB';
 }
 
 
 sub db_schema_class_name {
-  return 'MyApp::Model::MyAppDB';
+    return 'MyApp::Model::MyAppDB';
+}
+
+
+sub use_complex_search_by_id {
+    return 1;
 }
 
 
@@ -274,6 +279,8 @@ sub get_rels {
 sub prepare_data_orserr {
     my ( $self, $c, $schema, $table_name, $cols_allowed, $pr ) = @_;
 
+
+    my $use_complex_search_by_id = $self->use_complex_search_by_id();
     my $rs;
 
     my $search_type = undef;
@@ -285,22 +292,53 @@ sub prepare_data_orserr {
     my $primary_cols = [ $schema->source($table_name)->primary_columns ];
 
     if ( defined $pr->{selected_ids} ) {
-        $search_type = 'one row';
+
         $search_conf->{where} = {};
-        my $num = 0;
-        foreach my $pr_col_name ( @$primary_cols ) {
-            $search_conf->{where}->{$pr_col_name} = $pr->{selected_ids}->[ $num ];
-            $num++;
+
+        if ( !$use_complex_search_by_id ) {
+            $search_type = 'one row';
+
+            my $num = 0;
+            foreach my $pr_col_name ( @$primary_cols ) {
+                $search_conf->{where}->{$pr_col_name} = $pr->{selected_ids}->[ $num ];
+                $num++;
+            }
+            $search_conf->{page} = 1;
+            $pr->{page} = 1;
+
+        } else {
+            $search_type = 'one row';
+
+            my $pn_search_conf = {
+                columns => $cols_allowed,
+                rows => $pr->{rows},
+            };
+
+            $pn_search_conf->{where} = {};
+            my $num = 0;
+            foreach my $pr_col_name ( @$primary_cols ) {
+                $pn_search_conf->{where}->{$pr_col_name} = { '<=', $pr->{selected_ids}->[ $num ] };
+                $num++;
+            }
+            $pn_search_conf->{page} = 1;
+
+            $self->dumper( $c, [ { pr => $pr, search_conf => $pn_search_conf } ], 'find page num select ' );
+            my $rs_find_page_num = $c->model($self->db_schema_base_class_name.'::'.$table_name)->search( undef, $pn_search_conf );
+            if ( ! $rs_find_page_num ) {
+                $c->stash->{data_error} = 'Find page num select error.';
+                return 0;
+            }
+            $search_conf->{page} = $rs_find_page_num->pager->last_page;
+            $pr->{page} = 1;
         }
-        $pr->{page} = 1;
-        $search_conf->{page} = 1;
+
 
     } elsif ( defined $pr->{page} ) {
         $search_type = 'page';
         $search_conf->{page} = $pr->{page};
     };
 
-    $self->dumper( $c, [ { pr => $pr, search_conf => $search_conf } ] );
+    $self->dumper( $c, [ { pr => $pr, search_conf => $search_conf } ], 'final select ' );
     $rs = $c->model($self->db_schema_base_class_name.'::'.$table_name)->search( undef, $search_conf );
     if ( $pr->{page} > $rs->pager->last_page && $rs->pager->last_page > 0 ) {
         $pr->{page} = $rs->pager->last_page;
@@ -320,7 +358,7 @@ sub prepare_data_orserr {
             uri => $c->uri_for( $table_name, $id_uri_part )->as_string,
         };
         if ( defined $pr->{selected_ids} ) {
-            if ( $#{$pr->{selected_ids}} > 0 ) {
+            if ( scalar @{$pr->{selected_ids}} > 1 ) {
                 # TODO
             } else {
                 $row_info->{selected} = 1 if $row_data->{ $primary_cols->[0] } == $pr->{selected_ids}->[0];
