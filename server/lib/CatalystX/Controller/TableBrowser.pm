@@ -369,6 +369,7 @@ sub prepare_data_orserr {
     my @sc_join = ();
     my $ft_data_conf = {};
     foreach my $self_col_name ( keys %{$rels->{out}} ) {
+        my @sc_fr_rels = ();
         my $fr_table_name = $rels->{out}->{$self_col_name}->[0];
         # skip joins to itself
         next if $fr_table_name eq $table_name;
@@ -388,15 +389,17 @@ sub prepare_data_orserr {
             push @sc_select, $ft_full_col_name;
             my $ft_full_col_name_as = $self_col_name . '_' . $ft_col_name;
             push @sc_as, $ft_full_col_name_as;
+            push @sc_fr_rels, $ft_full_col_name_as;
         }
 
         # TODO
         #my $maybe_cols_ra = $schema->source($fr_table_name)->cols_in_foreign_tables;
-        my $ft_cols_sub = $view_class->cols_in_foreign_tables;
-        $ft_data_conf->{ $self_col_name } = [ $ft_cols_sub, \@sc_select ];
+        my $ft_cols_sub = $view_class->cols_in_foreign_tables_sub;
+        $ft_data_conf->{ $self_col_name } = [ $ft_cols_sub, [ @sc_fr_rels ] ];
     }
     $self->dumper( $c, [ \@sc_select ], "sc_select " );
     $self->dumper( $c, [ \@sc_join ], "sc_join " );
+    $self->dumper( $c, [ $ft_data_conf ], "ft_data_conf " );
 
     if ( @sc_select ) {
         $search_conf->{'+select'} = \@sc_select;
@@ -492,8 +495,6 @@ sub default_rs_data_for_related {
         my @data = ();
         foreach my $ft_col_name ( @$ra_ft_cols ) {
             my $ft_col_name_as = $ft_col_name;
-            $ft_col_name_as =~ s/\./_/g;
-            #return Dumper( $ft_col_name_as );
             push @data, $row->{$ft_col_name_as};
         }
         my $text = '';
@@ -505,6 +506,7 @@ sub default_rs_data_for_related {
             } else {
                 $text .= '-';
             }
+            $num++;
         }
         return $text;
     };
