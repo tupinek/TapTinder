@@ -16,8 +16,8 @@
             [% FOREACH col_name IN col_names -%]
                 [% IF row.data.$col_name != undef %]
                     <td>
-                    [% IF rels.$col_name.0 -%]
-                        <a href="[% uri_for_related( rels.$col_name, row.data.$col_name ) %]">[% row.data.$col_name | html %]</a>
+                    [% IF rels.out.$col_name.0 -%]
+                        <a href="[% uri_for_related( 'out', rels.out.$col_name, row.data.$col_name ) %]">[% row.data.$col_name | html %]</a>
                     [% ELSE -%]
                         [% row.data.$col_name | html %]
                     [% END -%]
@@ -33,6 +33,18 @@
 </table>
 
 [% pager_html %]
+
+[% IF rels.in -%]
+Links here:
+  [% num = 0 %]
+  [% FOREACH rel = rels.in %]
+    [%- IF num != 0 %],
+    [%- IF num % 5 == 0 %]<br />[% END %]
+    [% END %]
+    <a href="[% uri_for_related( 'in', rel ) %]">[% rel.1 | html %]</a> ([% rel.2 | html -%])
+    [%- num =  num + 1 -%]
+  [%- END -%]
+[% END %]
 
 [% IF msgs %]
 <div class=messages>

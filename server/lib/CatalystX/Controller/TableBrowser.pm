@@ -58,6 +58,7 @@ sub use_complex_search_by_id {
 
 sub dumper {
     my ( $self, $c, $ra_data, $prefix_text ) = @_;
+    $prefix_text = '' unless defined $prefix_text;
     $c->stash->{ot} .= $prefix_text . Dumper( $ra_data );
 }
 
@@ -91,9 +92,9 @@ sub base_index  {
 
     my $rels = $self->get_rels( $c, $schema, $table_name );
     $c->stash->{rels} = $rels;
-
-    $c->stash->{uri_for_related} = $self->default_rs_uri_for_related($c);
     $self->dumper( $c, [ $rels ], 'rels: ' );
+
+    $c->stash->{uri_for_related} = $self->default_rs_uri_for_related( $c );
 
     my $view_class = $self->db_schema_class_name.'::'.$table_name;
     $c->stash->{col_names} = $cols_allowed;
@@ -245,12 +246,10 @@ sub get_rels {
 
     my $rels = {};
     my @raw_rels = $schema->source($table_name)->relationships;
-    $self->dumper( $c, [ $rels ], 'raw rels: ' );
+    $self->dumper( $c, [ \@raw_rels ], 'raw rels: ' );
     foreach my $rel_name ( @raw_rels ) {
         my $info = $schema->source($table_name)->relationship_info( $rel_name );
-        $self->dumper( $c, [ $info ], "raw rel info for '$rel_name': " );
-
-        next if defined $info->{attrs}->{join_type} && $info->{attrs}->{join_type} eq 'LEFT';
+        #$self->dumper( $c, [ $info ], "raw rel info for '$rel_name': " );
 
         my $fr_table = $info->{source};
         $fr_table =~ s/.*\:([^\:]+)$/$1/;
@@ -261,11 +260,21 @@ sub get_rels {
         my $col = (values %{$info->{cond}})[0];
         $col =~ s/^self\.//;
 
-        if ( 0 ) {
-            $self->dumper( $c, [ $info ], "rels: $col ($rel_name) --> $fr_table.$fr_col ... " );
+        my $type;
+        if ( defined $info->{attrs}->{join_type} && $info->{attrs}->{join_type} eq 'LEFT' ) {
+            $type = 'in';
+            $rels->{in} = [] unless defined $rels->{in};
+            push @{$rels->{in}}, [ $col, $fr_table, $fr_col ];
+        } else {
+            $type = 'out';
+            $rels->{out}->{$col} = [ $fr_table, $fr_col ];
         }
 
-        $rels->{$col} = [ $fr_table, $fr_col ];
+
+        if ( 0 ) {
+            $self->dumper( $c, [ $info ], "rel $type: $col ($rel_name) --> $fr_table.$fr_col ... " );
+        }
+
     }
     return $rels;
 }
@@ -402,8 +411,11 @@ sub default_rs_uri_for_related {
 
     my $action_ns = $c->action->namespace;
     return sub {
-        my ( $rel_data, $id ) = @_;
-        return $c->uri_for( '/' . $action_ns, $rel_data->[0], 'id-'.$id )->as_string;
+        my ( $type, $rel_data, $id ) = @_;
+        if ( $type eq 'out' ) {
+            return $c->uri_for( '/' . $action_ns, $rel_data->[0], 'id-'.$id )->as_string;
+        }
+        return $c->uri_for( '/' . $action_ns, $rel_data->[1] )->as_string;
     };
 }
 
