@@ -2,7 +2,7 @@ package DBIx::Class::ViewMD;
 
 use strict;
 use warnings;
-our $VERSION = '0.001';
+our $VERSION = '0.004';
 
 BEGIN {
     use base qw/DBIx::Class::Row Class::Accessor::Grouped/;
@@ -11,8 +11,9 @@ BEGIN {
     __PACKAGE__->mk_group_accessors('inherited' => qw/
         titles
         restricted_cols
-        list_cols
         cols_in_table_view
+        cols_in_foreign_tables
+        cols_in_foreign_tables_sub
     /);
 };
 
@@ -36,12 +37,15 @@ DBIx::Class::ViewMD
         ...
     'first_name' => {
         ...
+    'last_name' => {
+        ...
     'passwd' => {
         ...
     ...
 
-  __PACKAGE__->restricted_cols( { 'passwd' => 1, } );
   __PACKAGE__->titles( [ 'ID', 'Person first name', 'Person password', ... ] );
+  __PACKAGE__->restricted_cols( { 'passwd' => 1, } );
+  __PACKAGE__->cols_in_foreign_tables( [ qw/first_name last_name/  );
 
 
 =head1 DESCRIPTION

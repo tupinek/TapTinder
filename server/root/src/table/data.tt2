@@ -14,12 +14,13 @@
     [% FOREACH row IN rows -%]
         <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %][% IF row.selected %] marked[% END %]">
             [% FOREACH col_name IN col_names -%]
-                [% IF row.data.$col_name != undef %]
+                [% full_col_name = 'me_' _ col_name %]
+                [% IF row.data.$full_col_name != undef %]
                     <td>
                     [% IF rels.out.$col_name.0 -%]
-                        <a href="[% uri_for_related( 'out', rels.out.$col_name, row.data.$col_name ) %]">[% row.data.$col_name | html %]</a>
+                        <a href="[% uri_for_related( 'out', rels.out.$col_name, row.data.$full_col_name ) %]">[% data_for_related( col_name, row.data ) %]</a>
                     [% ELSE -%]
-                        [% row.data.$col_name | html %]
+                        [% row.data.$full_col_name | html %]
                     [% END -%]
                     </td>
                 [% ELSE -%]
@@ -41,7 +42,7 @@ Links here:
     [%- IF num != 0 %],
     [%- IF num % 5 == 0 %]<br />[% END %]
     [% END %]
-    <a href="[% uri_for_related( 'in', rel ) %]">[% rel.1 | html %]</a> ([% rel.2 | html -%])
+    <a href="[% uri_for_related( 'in', rel ) %]">[% rel.1 _ '.' _ rel.2 | html %]</a>
     [%- num =  num + 1 -%]
   [%- END -%]
 [% END %]

@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use base 'Catalyst::Controller';
 
-our $VERSION = '0.003';
+our $VERSION = '0.004';
 
 use Data::Page::HTML qw/get_pager_html/;
 use Data::Dumper; # TODO - needed only for debug mode
@@ -94,13 +94,10 @@ sub base_index  {
     $c->stash->{rels} = $rels;
     $self->dumper( $c, [ $rels ], 'rels: ' );
 
-    $c->stash->{uri_for_related} = $self->default_rs_uri_for_related( $c );
-
     my $view_class = $self->db_schema_class_name.'::'.$table_name;
-    $c->stash->{col_names} = $cols_allowed;
     $c->stash->{col_titles} = $view_class->titles || $self->col_names_to_titles( $cols_allowed );
 
-    $self->prepare_data_orserr( $c, $schema, $table_name, $cols_allowed, $pr ) or return;
+    $self->prepare_data_orserr( $c, $schema, $table_name, $cols_allowed, $pr, $rels ) or return;
 
     #$self->dumper( $c, [ $c->stash ], 'stash' );
 }
@@ -249,7 +246,7 @@ sub get_rels {
     $self->dumper( $c, [ \@raw_rels ], 'raw rels: ' );
     foreach my $rel_name ( @raw_rels ) {
         my $info = $schema->source($table_name)->relationship_info( $rel_name );
-        #$self->dumper( $c, [ $info ], "raw rel info for '$rel_name': " );
+        $self->dumper( $c, [ $info ], "raw rel info for '$rel_name': " );
 
         my $fr_table = $info->{source};
         $fr_table =~ s/.*\:([^\:]+)$/$1/;
@@ -262,14 +259,15 @@ sub get_rels {
 
         my $type;
         if ( defined $info->{attrs}->{join_type} && $info->{attrs}->{join_type} eq 'LEFT' ) {
+            # many foreign tables columns can poin to one self column
             $type = 'in';
             $rels->{in} = [] unless defined $rels->{in};
             push @{$rels->{in}}, [ $col, $fr_table, $fr_col ];
         } else {
+            # one self column can point only to one foreign table column
             $type = 'out';
             $rels->{out}->{$col} = [ $fr_table, $fr_col ];
         }
-
 
         if ( 0 ) {
             $self->dumper( $c, [ $info ], "rel $type: $col ($rel_name) --> $fr_table.$fr_col ... " );
@@ -281,7 +279,7 @@ sub get_rels {
 
 
 sub prepare_data_orserr {
-    my ( $self, $c, $schema, $table_name, $cols_allowed, $pr ) = @_;
+    my ( $self, $c, $schema, $table_name, $cols_allowed, $pr, $rels ) = @_;
 
     # only page num - show page
     # only id
@@ -292,11 +290,20 @@ sub prepare_data_orserr {
     my $use_complex_search_by_id = $self->use_complex_search_by_id();
     my $rs;
 
+    my $cols_allowed_full_name = [];
+    my $cols_allowed_full_name_as = [];
+    foreach my $cn ( @$cols_allowed ) {
+        push @$cols_allowed_full_name, "me.".$cn;
+        push @$cols_allowed_full_name_as, "me_".$cn;
+    }
+
     my $search_type = undef;
     my $search_conf = {
-        columns => $cols_allowed,
-        rows => $pr->{rows},
+        'select' => $cols_allowed_full_name,
+        'rows' => $pr->{rows},
+        'as' => $cols_allowed_full_name_as,
     };
+    $c->stash->{col_names} = $cols_allowed;
 
     my $primary_cols = [ $schema->source($table_name)->primary_columns ];
     my $page_navigation_params_part_prefix = '';
@@ -355,6 +362,52 @@ sub prepare_data_orserr {
         $search_conf->{page} = $pr->{page};
     };
 
+
+    # process cols_in_foreign_tables for all realted tables
+    my @sc_select = ();
+    my @sc_as = ();
+    my @sc_join = ();
+    my $ft_data_conf = {};
+    foreach my $self_col_name ( keys %{$rels->{out}} ) {
+        my $fr_table_name = $rels->{out}->{$self_col_name}->[0];
+        # skip joins to itself
+        next if $fr_table_name eq $table_name;
+
+        my $fr_col_name = $rels->{out}->{$self_col_name}->[1];
+        my $view_class = $self->db_schema_class_name.'::'.$fr_table_name;
+        # TODO
+        #my $maybe_cols_ra = $schema->source($fr_table_name)->cols_in_foreign_tables;
+        my $ra_ft_cols = $view_class->cols_in_foreign_tables;
+
+        # skip all without cols_in_foreign_tables definitions
+        next unless $ra_ft_cols;
+
+        push @sc_join, $self_col_name;
+        foreach my $ft_col_name ( @$ra_ft_cols ) {
+            my $ft_full_col_name = $self_col_name . '.' . $ft_col_name;
+            push @sc_select, $ft_full_col_name;
+            my $ft_full_col_name_as = $self_col_name . '_' . $ft_col_name;
+            push @sc_as, $ft_full_col_name_as;
+        }
+
+        # TODO
+        #my $maybe_cols_ra = $schema->source($fr_table_name)->cols_in_foreign_tables;
+        my $ft_cols_sub = $view_class->cols_in_foreign_tables;
+        $ft_data_conf->{ $self_col_name } = [ $ft_cols_sub, \@sc_select ];
+    }
+    $self->dumper( $c, [ \@sc_select ], "sc_select " );
+    $self->dumper( $c, [ \@sc_join ], "sc_join " );
+
+    if ( @sc_select ) {
+        $search_conf->{'+select'} = \@sc_select;
+        $search_conf->{'+as'} = \@sc_as;
+        $search_conf->{'join'} = \@sc_join;
+    }
+
+    $c->stash->{uri_for_related} = $self->default_rs_uri_for_related( $c );
+    $c->stash->{data_for_related} = $self->default_rs_data_for_related( $c, $rels, $ft_data_conf );
+
+
     $self->dumper( $c, [ { pr => $pr, search_conf => $search_conf } ], 'final select ' );
     $rs = $c->model($self->db_schema_base_class_name.'::'.$table_name)->search( undef, $search_conf );
     if ( $pr->{page} > $rs->pager->last_page && $rs->pager->last_page > 0 ) {
@@ -365,11 +418,13 @@ sub prepare_data_orserr {
         return;
     }
 
+
     my @rows = ();
     while (my $row = $rs->next) {
         my $id_uri_part = 'id';
         $id_uri_part .= '-' . $row->get_column($_) foreach @$primary_cols;
         my $row_data = { $row->get_columns };
+        $self->dumper( $c, [ $row_data ], "row_data " );
         my $row_info = {
             data => $row_data,
             uri => $c->uri_for( $table_name, $id_uri_part )->as_string,
@@ -378,7 +433,7 @@ sub prepare_data_orserr {
             if ( scalar @{$pr->{selected_ids}} > 1 ) {
                 # TODO
             } else {
-                $row_info->{selected} = 1 if $row_data->{ $primary_cols->[0] } == $pr->{selected_ids}->[0];
+                $row_info->{selected} = 1 if $row_data->{ 'me_'. $primary_cols->[0] } == $pr->{selected_ids}->[0];
             }
         }
         push @rows, $row_info;
@@ -418,6 +473,43 @@ sub default_rs_uri_for_related {
         return $c->uri_for( '/' . $action_ns, $rel_data->[1] )->as_string;
     };
 }
+
+
+sub default_rs_data_for_related {
+    my ( $self, $c, $rels, $ft_data_conf ) = @_;
+
+    return sub {
+        my ( $self_col_name, $row ) = @_;
+        my $fr_table_name = $rels->{out}->{$self_col_name}->[0];
+        my $fr_col_name = $rels->{out}->{$self_col_name}->[1];
+
+        if ( not $ft_data_conf->{ $self_col_name } ) {
+            return $row->{'me_'.$self_col_name};
+        }
+
+        my $ft_cols_sub = $ft_data_conf->{ $self_col_name }->[0];
+        my $ra_ft_cols = $ft_data_conf->{ $self_col_name }->[1];
+        my @data = ();
+        foreach my $ft_col_name ( @$ra_ft_cols ) {
+            my $ft_col_name_as = $ft_col_name;
+            $ft_col_name_as =~ s/\./_/g;
+            #return Dumper( $ft_col_name_as );
+            push @data, $row->{$ft_col_name_as};
+        }
+        my $text = '';
+        my $num = 0;
+        foreach my $val ( @data ) {
+            $text .= ' ' if $num > 0;
+            if ( defined $val ) {
+                $text .= $val;
+            } else {
+                $text .= '-';
+            }
+        }
+        return $text;
+    };
+}
+
 
 sub col_names_to_titles {
     my ( $self, $ra ) = @_;
