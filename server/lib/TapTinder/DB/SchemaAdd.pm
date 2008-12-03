@@ -48,20 +48,52 @@ TapTinder::DB::Schema->register_source( 'ActiveRepPathList' => $new_source );
 
 # ViewMD - view metadata
 
-package TapTinder::DB::Schema::rev_rep_path;
-#__PACKAGE__->titles( [ 'Revision', 'Rep. path' ] );
+package TapTinder::DB::Schema::build_conf;
+__PACKAGE__->cols_in_foreign_tables( [ qw/cc devel/ ] );
 
-
-package TapTinder::DB::Schema::user;
-__PACKAGE__->restricted_cols( { 'passwd' => 1, } );
-#__PACKAGE__->cols_in_table_view( [ qw/login first_name/ ] );
+package TapTinder::DB::Schema::farm;
+__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
 
 package TapTinder::DB::Schema::machine;
 __PACKAGE__->restricted_cols( { 'passwd' => 1, } );
-
+__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
 
 package TapTinder::DB::Schema::msession;
 __PACKAGE__->restricted_cols( { 'key' => 1, 'pid' => 1, } );
+
+package TapTinder::DB::Schema::param_type;
+__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
+
+package TapTinder::DB::Schema::project;
+__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
+
+package TapTinder::DB::Schema::rep;
+__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
+
+package TapTinder::DB::Schema::rep_author;
+__PACKAGE__->cols_in_foreign_tables( [ qw/rep_login/ ] );
+
+package TapTinder::DB::Schema::rep_change_type;
+__PACKAGE__->cols_in_foreign_tables( [ qw/info/ ] );
+
+package TapTinder::DB::Schema::rep_file;
+__PACKAGE__->cols_in_foreign_tables( [ qw/rep_path_id sub_path rev_num_from rev_num_to/ ] );
+
+package TapTinder::DB::Schema::rep_path;
+__PACKAGE__->cols_in_foreign_tables( [ qw/path rev_num_from rev_num_to/ ] );
+
+package TapTinder::DB::Schema::rep_test;
+__PACKAGE__->cols_in_foreign_tables( [ qw/rep_file_id number/ ] );
+
+package TapTinder::DB::Schema::rev;
+__PACKAGE__->cols_in_foreign_tables( [ qw/rev_num/ ] );
+
+package TapTinder::DB::Schema::trest;
+__PACKAGE__->cols_in_foreign_tables( [ qw/title/ ] );
+
+package TapTinder::DB::Schema::user;
+__PACKAGE__->restricted_cols( { 'passwd' => 1, } );
+__PACKAGE__->cols_in_foreign_tables( [ qw/login/ ] );
 
 
 1;

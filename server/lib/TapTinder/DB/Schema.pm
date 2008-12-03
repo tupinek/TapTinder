@@ -378,7 +378,6 @@ __PACKAGE__->add_columns(
       'size' => '11'
     },
 );
-__PACKAGE__->set_primary_key('rev_id', 'rep_path_id');
 
 
 package TapTinder::DB::Schema::rep_change_type;
