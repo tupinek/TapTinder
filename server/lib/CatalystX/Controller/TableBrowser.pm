@@ -297,15 +297,17 @@ sub prepare_data_orserr {
         push @$cols_allowed_full_name_as, "me_".$cn;
     }
 
+    my $primary_cols = [ $schema->source($table_name)->primary_columns ];
+
     my $search_type = undef;
     my $search_conf = {
         'select' => $cols_allowed_full_name,
         'rows' => $pr->{rows},
         'as' => $cols_allowed_full_name_as,
+        'order_by' => $primary_cols,
     };
     $c->stash->{col_names} = $cols_allowed;
 
-    my $primary_cols = [ $schema->source($table_name)->primary_columns ];
     my $page_navigation_params_part_prefix = '';
 
     if ( defined $pr->{selected_ids} ) {
