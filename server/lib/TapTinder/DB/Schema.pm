@@ -1683,7 +1683,8 @@ package TapTinder::DB::Schema::rep_author;
 
 __PACKAGE__->belongs_to('rep_id', 'TapTinder::DB::Schema::rep');
 
-__PACKAGE__->belongs_to('user_id', 'TapTinder::DB::Schema::user');
+#__PACKAGE__->belongs_to('user_id', 'TapTinder::DB::Schema::user');
+__PACKAGE__->belongs_to('user_id', 'TapTinder::DB::Schema::user', 'user_id', { join_type => 'left' } );
 
 __PACKAGE__->has_many('get_rev', 'TapTinder::DB::Schema::rev', 'author_id');
 
