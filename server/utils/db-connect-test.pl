@@ -16,10 +16,15 @@ my $dbh = DBI->connect(
     $conf->{db}->{user},
     $conf->{db}->{password},
     { RaiseError => 1, AutoCommit => 0 }
-) or die $DBI::errstr;
+) or croak $DBI::errstr;
 
 
-my $sth = $dbh->prepare("SELECT client_id, user_id, created, last_login, ip, cpuarch, osname, archname, active  FROM client WHERE active=1");
+my $sth = $dbh->prepare("
+    SELECT machine_id, user_id, name, info, ip,
+           cpuarch, osname, archname, active, created,
+           last_login, prev_machine_id
+      FROM machine WHERE active=1
+");
 $sth->execute();
 
 while ( my @row = $sth->fetchrow_array ) {
