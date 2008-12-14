@@ -80,6 +80,11 @@ VALUES (
 5, 'shreck3', 1, substring(MD5(RAND()), -8), NULL, NOW(), NULL, '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, 1
 );
 
+INSERT INTO machine ( machine_id, name, user_id, passwd, info, created, last_login, ip, cpuarch, osname, archname, active, prev_machine_id, farm_id )
+VALUES (
+6, 'ent', 1, substring(MD5(RAND()), -8), NULL, NOW(), NULL, '147.229.2.49', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, 1
+);
+
 
 INSERT INTO farm ( farm_id, name, has_same_hw, has_same_sw, info )
 VALUES (
