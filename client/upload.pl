@@ -45,7 +45,7 @@ my %request = ( upload => 1, version => VERSION, smokes => [] );
 }
 
 {
-    my $taptinderserv = $conf->{taptinderserv};
+    my $taptinderserv = $conf->{taptinderserv} . 'upload.pl';
     debug "Sending data to taptinderserv \"$taptinderserv\"... ";
     my $ua = LWP::UserAgent->new;
     $ua->agent( "taptinder-client-upload/" . VERSION );

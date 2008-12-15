@@ -6,5 +6,5 @@ parrot:
    client_passwd: YourClientPasswd
    email: email@somedomain.com
    irc_nick: YourProjectIRCNick
-   taptinderserv: http://tt.perl6.cz/upload.pl
+   taptinderserv: http://tt.ro.vutbr.cz/
    compressupload: 0

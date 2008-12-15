@@ -1,11 +1,11 @@
 package TapTinder::Web::View::TT;
 
-use strict;
 use base 'Catalyst::View::TT';
+use strict;
 
 =head1 NAME
 
-TapTinder::Web::View::TT - TapTinder TTSite View
+TapTinder::Web::View::TT - TapTinder TT (TemplateToolkit) Site View
 
 =head1 SYNOPSIS
 
@@ -13,7 +13,7 @@ See L<TapTinder::Web>
 
 =head1 DESCRIPTION
 
-TapTinder TTSite View.
+TapTinder TT Site View.
 
 =cut
 
@@ -31,7 +31,6 @@ __PACKAGE__->config({
     #COMPILE_DIR => '/tmp/taptinder/cache',
 });
 
-
 =head1 AUTHOR
 
 Michal Jurosz <mj@mj41.cz>
@@ -41,6 +40,5 @@ Michal Jurosz <mj@mj41.cz>
 This file is part of TapTinder. See L<TapTinder> license.
 
 =cut
-
 
 1;
