@@ -1,6 +1,11 @@
 use strict;
 use warnings;
 
+use Carp qw(carp croak verbose);
+use FindBin qw($RealBin);
+
+use lib "$RealBin/../libcpan";
+
 use SQL::Translator;
 
 my $to = $ARGV[0] || 'dbix';
