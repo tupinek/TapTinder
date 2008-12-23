@@ -124,10 +124,20 @@ __PACKAGE__->table('${tname}');
 #                     $cont->fields->[0]->name . "', '" .
 #                     "${dbixschema}::" . $cont->reference_table . "');\n";
 
+                my $join_part = '';
+                my $field_name = $cont->fields->[0]->name;
+
+                if ( $table->get_field($field_name)->is_nullable ) {
+                    $join_part = qq/,{join_type => 'left'}/;
+                }
+#                print Data::Dumper::Dumper( \@{$cont->reference_fields} );
                 $tableextras{$table->name} .= "\n__PACKAGE__->belongs_to('" .
-                    $cont->fields->[0]->name . "', '" .
-                    "${dbixschema}::" . $cont->reference_table . "');\n";
-                
+                    $field_name . "',"
+                    . "'${dbixschema}::" . $cont->reference_table . "'"
+                    . ",'" . $field_name . "'"
+                    . $join_part
+                    . ");\n";
+
                 my $other = "\n__PACKAGE__->has_many('" .
                     "get_" . $table->name. "', '" .
                     "${dbixschema}::" . $table->name. "', '" .
