@@ -3,7 +3,7 @@
 <!-- perl utils\wiki_schema.pl sql\schema.wiki 1 > sql\schema.sql -->
 <!-- PARSE PART DBCREATE BEGIN -->
 <source lang=sql>
--- schema version: 0.03
+-- schema version: 0.05
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 </source>
@@ -64,8 +64,8 @@ CREATE TABLE machine (
     prev_machine_id INT UNSIGNED DEFAULT NULL,
     farm_id         INT UNSIGNED DEFAULT NULL,
     CONSTRAINT fk_machine_user_id FOREIGN KEY (user_id) REFERENCES user (user_id),
-    CONSTRAINT fk_machine_prev_machine_id FOREIGN KEY (prev_machine_id) REFERENCES machine (machine_id)
-    /* CONSTRAINT fk_machine_farm_id FOREIGN KEY (farm_id) REFERENCES farm (farm_id) */
+    CONSTRAINT fk_machine_prev_machine_id FOREIGN KEY (prev_machine_id) REFERENCES machine (machine_id),
+    CONSTRAINT fk_machine_farm_id FOREIGN KEY (farm_id) REFERENCES farm (farm_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -139,8 +139,8 @@ CREATE TABLE rep_author (
     INDEX i_rep_id (rep_id),
     INDEX i_rep_login (rep_login),
     INDEX i_user_id (user_id),
-    CONSTRAINT fk_user_rep_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id)
-    /* CONSTRAINT fk_user_rep_user_id FOREIGN KEY (user_id) REFERENCES user (user_id) */
+    CONSTRAINT fk_user_rep_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
+    CONSTRAINT fk_user_rep_user_id FOREIGN KEY (user_id) REFERENCES user (user_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -298,14 +298,14 @@ CREATE TABLE patch (
     author_id       INT UNSIGNED NOT NULL,
     date            DATETIME NOT NULL,
     msg             TEXT,
-    file_id         INT UNSIGNED NOT NULL,
+    fsfile_id       INT UNSIGNED NOT NULL,
     new_patch_id    INT UNSIGNED DEFAULT NULL,
     INDEX i_rep_path_id (rep_path_id),
     INDEX i_rev_num (rev_num),
     CONSTRAINT fk_patch_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
     CONSTRAINT fk_patch_rep_author_id FOREIGN KEY (author_id) REFERENCES rep_author (rep_author_id),
-    CONSTRAINT fk_patch_file_id FOREIGN KEY (file_id) REFERENCES file (file_id)
-    /* CONSTRAINT fk_patch_new_patch_id FOREIGN KEY (new_patch_id) REFERENCES patch (patch_id) */
+    CONSTRAINT fk_patch_file_id FOREIGN KEY (fsfile_id) REFERENCES fsfile (fsfile_id),
+    CONSTRAINT fk_patch_new_patch_id FOREIGN KEY (new_patch_id) REFERENCES patch (patch_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -345,8 +345,8 @@ CREATE TABLE build_conf (
     devel           VARCHAR(255) DEFAULT NULL,
     `optimize`      VARCHAR(255) DEFAULT NULL,
     alias_conf_id   INT UNSIGNED DEFAULT NULL,
-    INDEX i_hash (hash)
-    /* CONSTRAINT fk_conf_alias_conf_id FOREIGN KEY (conf_id) REFERENCES build_conf (build_conf_id) */
+    INDEX i_hash (hash),
+    CONSTRAINT fk_build_conf_alias_conf_id FOREIGN KEY (alias_conf_id) REFERENCES build_conf (build_conf_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -362,8 +362,8 @@ CREATE TABLE trun_conf (
     hash            VARCHAR(50) NOT NULL,
     harness_args    VARCHAR(255) DEFAULT NULL,
     alias_conf_id   INT UNSIGNED DEFAULT NULL,
-    INDEX i_hash (hash)
-    /* CONSTRAINT fk_conf_alias_conf_id FOREIGN KEY (conf_id) REFERENCES trun_conf (trun_conf_id) */
+    INDEX i_hash (hash),
+    CONSTRAINT fk_trun_conf_alias_conf_id FOREIGN KEY (alias_conf_id) REFERENCES trun_conf (trun_conf_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -385,8 +385,8 @@ CREATE TABLE job (
     name            VARCHAR(25),
     `desc`          TEXT DEFAULT NULL,
     INDEX i_rep_id (rep_id),
-    CONSTRAINT fk_job_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id)
-    /* CONSTRAINT fk_job_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id) */
+    CONSTRAINT fk_job_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
+    CONSTRAINT fk_job_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -475,8 +475,8 @@ CREATE TABLE msession (
     end_time            DATETIME DEFAULT NULL,
     abort_reason_id     INT UNSIGNED DEFAULT NULL,
     INDEX i_machine_id (machine_id),
-    CONSTRAINT fk_msession_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id)
-    /* CONSTRAINT fk_msession_abort_reason_id FOREIGN KEY (abort_reason_id) REFERENCES msabort_reason (msabort_reason_id) */
+    CONSTRAINT fk_msession_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id),
+    CONSTRAINT fk_msession_abort_reason_id FOREIGN KEY (abort_reason_id) REFERENCES msabort_reason (msabort_reason_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -674,8 +674,8 @@ CREATE TABLE tfile (
     hang                BOOLEAN DEFAULT 0,
     INDEX i_trun_id (trun_id),
     CONSTRAINT fk_tfile_trun_id FOREIGN KEY (trun_id) REFERENCES trun (trun_id),
-    CONSTRAINT fk_tfile_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id)
-    /* CONSTRAINT fk_tfile_tskipall_msg_id FOREIGN KEY (tskipall_msg_id) REFERENCES tskipall_msg (tskipall_msg_id) */
+    CONSTRAINT fk_tfile_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id),
+    CONSTRAINT fk_tfile_tskipall_msg_id FOREIGN KEY (tskipall_msg_id) REFERENCES tskipall_msg (tskipall_msg_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -810,7 +810,7 @@ CREATE TABLE fspath_select (
     fspath_id           INT UNSIGNED NOT NULL,
     INDEX i_fspath_selectd_fsfile_type_id_rep_path_id (fsfile_type_id,rep_path_id),
     CONSTRAINT fk_fspath_select_fsfile_type_id FOREIGN KEY (fsfile_type_id) REFERENCES fsfile_type (fsfile_type_id),
-    /* CONSTRAINT fk_fspath_select_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id), */
+    CONSTRAINT fk_fspath_select_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
     CONSTRAINT fk_fsfile_default_conf_fspath_id FOREIGN KEY (fspath_id) REFERENCES fspath (fspath_id)
 ) TYPE=InnoDB;
 </source>

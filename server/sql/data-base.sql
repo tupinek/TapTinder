@@ -74,6 +74,12 @@ VALUES (
 );
 
 
+INSERT INTO farm ( farm_id, name, has_same_hw, has_same_sw, `desc`  )
+VALUES (
+1, 'vutbr.cz web cluster', 1, 1, 'some computer power is always availible'
+);
+
+
 INSERT INTO machine ( machine_id, name, user_id, passwd, `desc`, created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
 VALUES (
 1, 'dbtest', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.84', 'i386', 'linux', 'i386-linux-thread-multi', 0, NULL, NULL
@@ -108,12 +114,6 @@ VALUES (
 INSERT INTO machine ( machine_id, name, user_id, passwd, `desc` , created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
 VALUES (
 7, 'pc-jurosz (new)', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.124', 'i386', 'MSWin32', 'MSWin32-x86-multi-thread', 0, NULL, NULL
-);
-
-
-INSERT INTO farm ( farm_id, name, has_same_hw, has_same_sw, `desc`  )
-VALUES (
-1, 'vutbr.cz web cluster', 1, 1, 'some computer power is always availible'
 );
 
 
