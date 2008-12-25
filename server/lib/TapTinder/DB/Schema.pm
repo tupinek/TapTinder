@@ -1927,6 +1927,15 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
+    'msjob_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'msjob_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
     'status_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
@@ -2523,6 +2532,7 @@ __PACKAGE__->belongs_to('msession_id','TapTinder::DB::Schema::msession','msessio
 
 __PACKAGE__->belongs_to('job_id','TapTinder::DB::Schema::job','job_id');
 
+__PACKAGE__->has_many('get_msjob_command', 'TapTinder::DB::Schema::msjob_command', 'msjob_id');
 
 package TapTinder::DB::Schema::msabort_reason;
 
@@ -2693,6 +2703,8 @@ __PACKAGE__->belongs_to('ttest_id','TapTinder::DB::Schema::ttest','ttest_id');
 package TapTinder::DB::Schema::msjob_command;
 
 __PACKAGE__->belongs_to('job_part_command_id','TapTinder::DB::Schema::job_part_command','job_part_command_id');
+
+__PACKAGE__->belongs_to('msjob_id','TapTinder::DB::Schema::msjob','msjob_id');
 
 __PACKAGE__->belongs_to('status_id','TapTinder::DB::Schema::command_status','status_id');
 

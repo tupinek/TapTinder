@@ -503,6 +503,7 @@ CREATE TABLE msjob (
 ==== msjob_command ====
 * msjob_command_id
 * job_command_id
+* msjob_id
 * command_status_id
 * pid
 * start_time
@@ -512,6 +513,7 @@ CREATE TABLE msjob (
 CREATE TABLE msjob_command (
     msjob_command_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     job_part_command_id INT UNSIGNED NOT NULL,
+    msjob_id            INT UNSIGNED NOT NULL,
     status_id           INT UNSIGNED NOT NULL,
     pid                 INT UNSIGNED NOT NULL,
     start_time          DATETIME NOT NULL,
@@ -519,6 +521,7 @@ CREATE TABLE msjob_command (
     output_id           INT UNSIGNED NOT NULL,
     INDEX i_job_part_command_id (job_part_command_id),
     CONSTRAINT fk_msjob_command_job_part_command_id FOREIGN KEY (job_part_command_id) REFERENCES job_part_command (job_part_command_id),
+    CONSTRAINT fk_msjob_command_msjob_id FOREIGN KEY (msjob_id) REFERENCES msjob (msjob_id),
     CONSTRAINT fk_msjob_command_job_status_id FOREIGN KEY (status_id) REFERENCES command_status (command_status_id),
     CONSTRAINT fk_msjob_command_output_id FOREIGN KEY (output_id) REFERENCES fsfile (fsfile_id)
 ) TYPE=InnoDB;

@@ -119,13 +119,13 @@ VALUES (
 
 INSERT INTO project ( project_id, name, url, `desc`  )
 VALUES (
-1, 'Parrot', 'http://www.parrotcode.org/', 'Parrot is a virtual machine designed to efficiently compile and execute bytecode for dynamic languages. Parrot currently hosts a variety of language implementations in various stages of completion, including Tcl, Javascript, Ruby, Lua, Scheme, PHP, Python, Perl 6, APL, and a .NET bytecode translator.'
+1, 'Parrot', 'http://www.parrot.org/', 'Parrot is a virtual machine designed to efficiently compile and execute bytecode for dynamic languages. Parrot currently hosts a variety of language implementations in various stages of completion, including Tcl, Javascript, Ruby, Lua, Scheme, PHP, Python, Perl 6, APL, and a .NET bytecode translator.'
 );
 
 
 INSERT INTO rep ( rep_id, project_id, active, name, path, `desc`  )
 VALUES (
-1, 1, 1, 'parrot repository', 'http://svn.perl.org/parrot/', ''
+1, 1, 1, 'Parrot repository', 'http://svn.perl.org/parrot/', ''
 );
 
 
