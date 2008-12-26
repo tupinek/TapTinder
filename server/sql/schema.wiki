@@ -435,9 +435,9 @@ CREATE TABLE machine_job_conf (
     rep_path_id         INT UNSIGNED NOT NULL,
     job_id              INT UNSIGNED NOT NULL,
     INDEX i_machine_id (machine_id),
-    CONSTRAINT fk_machine_job_conf_rep_id FOREIGN KEY (rep_id) REFERENCES rep_path (rep_id),
+    CONSTRAINT fk_machine_job_conf_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
     CONSTRAINT fk_machine_job_conf_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
-    CONSTRAINT fk_machine_job_conf_job_id FOREIGN KEY (job_id) REFERENCES rep_path (job_id)
+    CONSTRAINT fk_machine_job_conf_job_id FOREIGN KEY (job_id) REFERENCES job (job_id)
 ) TYPE=InnoDB;
 </source>
 

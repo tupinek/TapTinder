@@ -2722,9 +2722,7 @@ __PACKAGE__->has_many('get_rev_rep_path', 'TapTinder::DB::Schema::rev_rep_path',
 __PACKAGE__->has_many('get_rep_file', 'TapTinder::DB::Schema::rep_file', 'rep_path_id');
 __PACKAGE__->has_many('get_patch', 'TapTinder::DB::Schema::patch', 'rep_path_id');
 __PACKAGE__->has_many('get_job', 'TapTinder::DB::Schema::job', 'rep_path_id');
-__PACKAGE__->has_many('get_machine_job_conf', 'TapTinder::DB::Schema::machine_job_conf', 'rep_id');
 __PACKAGE__->has_many('get_machine_job_conf', 'TapTinder::DB::Schema::machine_job_conf', 'rep_path_id');
-__PACKAGE__->has_many('get_machine_job_conf', 'TapTinder::DB::Schema::machine_job_conf', 'job_id');
 __PACKAGE__->has_many('get_build', 'TapTinder::DB::Schema::build', 'rep_path_id');
 __PACKAGE__->has_many('get_fspath_select', 'TapTinder::DB::Schema::fspath_select', 'rep_path_id');
 
@@ -3004,15 +3002,16 @@ __PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id');
 __PACKAGE__->belongs_to('rep_path_id','TapTinder::DB::Schema::rep_path','rep_path_id',{join_type => 'left'});
 
 __PACKAGE__->has_many('get_job_part', 'TapTinder::DB::Schema::job_part', 'job_id');
+__PACKAGE__->has_many('get_machine_job_conf', 'TapTinder::DB::Schema::machine_job_conf', 'job_id');
 __PACKAGE__->has_many('get_msjob', 'TapTinder::DB::Schema::msjob', 'job_id');
 
 package TapTinder::DB::Schema::machine_job_conf;
 
-__PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep_path','rep_id');
+__PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id');
 
 __PACKAGE__->belongs_to('rep_path_id','TapTinder::DB::Schema::rep_path','rep_path_id');
 
-__PACKAGE__->belongs_to('job_id','TapTinder::DB::Schema::rep_path','job_id');
+__PACKAGE__->belongs_to('job_id','TapTinder::DB::Schema::job','job_id');
 
 
 package TapTinder::DB::Schema::rep_author;
@@ -3061,6 +3060,7 @@ __PACKAGE__->has_many('get_rep_author', 'TapTinder::DB::Schema::rep_author', 're
 __PACKAGE__->has_many('get_rev', 'TapTinder::DB::Schema::rev', 'rep_id');
 __PACKAGE__->has_many('get_rep_path', 'TapTinder::DB::Schema::rep_path', 'rep_id');
 __PACKAGE__->has_many('get_job', 'TapTinder::DB::Schema::job', 'rep_id');
+__PACKAGE__->has_many('get_machine_job_conf', 'TapTinder::DB::Schema::machine_job_conf', 'rep_id');
 
 
 
