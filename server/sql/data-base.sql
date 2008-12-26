@@ -169,11 +169,13 @@ VALUES (
 ), (
 4, 'running command', NULL
 ), (
-5, 'stop by user', NULL
+5, 'paused by user', NULL
 ), (
-6, 'stop by web server', NULL
+6, 'stop by user', NULL
 ), (
-7, 'stop by anything else', NULL
+7, 'stop by web server', NULL
+), (
+8, 'stop by anything else', NULL
 );
 
 
@@ -181,9 +183,11 @@ INSERT INTO msabort_reason ( msabort_reason_id, name, `desc` )
 VALUES (
 1, 'unknown reason', NULL
 ), (
-2, 'bad client behavior', NULL
+2, 'deprecated client revision', NULL
 ), (
-3, 'deprecated client revision', NULL
+3, 'bad client behavior', NULL
+), (
+4, 'iterrupted by client', NULL
 );
 
 

@@ -51,7 +51,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
             add_color => 1,
             show_constraints => 1,
 
-            width => 18,
+            width => 20,
             height => 16,
             fontsize => 18,
 

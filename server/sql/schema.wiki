@@ -3,7 +3,7 @@
 <!-- perl utils\wiki_schema.pl sql\schema.wiki 1 > sql\schema.sql -->
 <!-- PARSE PART DBCREATE BEGIN -->
 <source lang=sql>
--- schema version: 0.05
+-- schema version: 0.06
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 </source>
@@ -329,44 +329,6 @@ CREATE TABLE rep_test (
 ) TYPE=InnoDB;
 </source>
 
-==== build_conf ====
-Build configurations.
-* conf_id
-* hash
-* cc
-* devel
-* optimize
-* alias_conf_id - another conf with the same semantics, but different syntax
-<source lang=sql>
-CREATE TABLE build_conf (
-    build_conf_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    hash            VARCHAR(50) NOT NULL,
-    cc              VARCHAR(255) DEFAULT NULL,
-    devel           VARCHAR(255) DEFAULT NULL,
-    `optimize`      VARCHAR(255) DEFAULT NULL,
-    alias_conf_id   INT UNSIGNED DEFAULT NULL,
-    INDEX i_hash (hash),
-    CONSTRAINT fk_build_conf_alias_conf_id FOREIGN KEY (alias_conf_id) REFERENCES build_conf (build_conf_id)
-) TYPE=InnoDB;
-</source>
-
-==== trun_conf ====
-Test run configurations.
-* trun_conf_id
-* hash
-* harness_args
-* alias_conf_id - another conf with the same semantics, but different syntax
-<source lang=sql>
-CREATE TABLE trun_conf (
-    trun_conf_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    hash            VARCHAR(50) NOT NULL,
-    harness_args    VARCHAR(255) DEFAULT NULL,
-    alias_conf_id   INT UNSIGNED DEFAULT NULL,
-    INDEX i_hash (hash),
-    CONSTRAINT fk_trun_conf_alias_conf_id FOREIGN KEY (alias_conf_id) REFERENCES trun_conf (trun_conf_id)
-) TYPE=InnoDB;
-</source>
-
 ==== job ====
 * job_id
 * rep_id
@@ -396,6 +358,7 @@ CREATE TABLE job (
 * order
 * name
 * desc
+* depends_on_id - Depends on job_part.job_part_id. Job part (job_part_id) can't start if job_part.depends_on_id doesn't finished ok.
 <source lang=sql>
 CREATE TABLE job_part (
     job_part_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -403,8 +366,10 @@ CREATE TABLE job_part (
     `order`         INT UNSIGNED NOT NULL,
     name            VARCHAR(25),
     `desc`          TEXT DEFAULT NULL,
+    depends_on_id  INT UNSIGNED DEFAULT NULL,
     INDEX i_job_id (job_id),
-    CONSTRAINT fk_job_part_job_id FOREIGN KEY (job_id) REFERENCES job (job_id)
+    CONSTRAINT fk_job_part_job_id FOREIGN KEY (job_id) REFERENCES job (job_id),
+    CONSTRAINT fk_job_part_depedns_on_id FOREIGN KEY (depends_on_id) REFERENCES job_part (job_part_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -445,7 +410,7 @@ CREATE TABLE job_part_command (
 * name
 * 1 .. running
 * 2 .. ok -- finished ok
-* 3 .. stopped
+* 3 .. interrupted
 * 4 .. error -- finished with error
 * desc
 <source lang=sql>
@@ -453,6 +418,26 @@ CREATE TABLE command_status (
     command_status_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name                VARCHAR(25),
     `desc`              TEXT DEFAULT NULL
+) TYPE=InnoDB;
+</source>
+
+==== machine_job_conf ====
+* machine_job_conf_id
+* machine_id
+* rep_id
+* rep_path_id
+* job_id
+<source lang=sql>
+CREATE TABLE machine_job_conf (
+    machine_job_conf_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    machine_id          INT UNSIGNED NOT NULL,
+    rep_id              INT UNSIGNED NOT NULL,
+    rep_path_id         INT UNSIGNED NOT NULL,
+    job_id              INT UNSIGNED NOT NULL,
+    INDEX i_machine_id (machine_id),
+    CONSTRAINT fk_machine_job_conf_rep_id FOREIGN KEY (rep_id) REFERENCES rep_path (rep_id),
+    CONSTRAINT fk_machine_job_conf_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
+    CONSTRAINT fk_machine_job_conf_job_id FOREIGN KEY (job_id) REFERENCES rep_path (job_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -485,14 +470,13 @@ CREATE TABLE msession (
 * msession_id
 * job_id
 * pid
-* abort_reason_id
+Abort reason is determined by msession.
 <source lang=sql>
 CREATE TABLE msjob (
     msjob_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msession_id         INT UNSIGNED NOT NULL,
     job_id              INT UNSIGNED NOT NULL,
     pid                 INT UNSIGNED NOT NULL,
-    abort_reason_id     INT UNSIGNED DEFAULT NULL,
     INDEX i_msession_id (msession_id),
     INDEX i_job_id (job_id),
     CONSTRAINT fk_msjob_msession_id FOREIGN KEY (msession_id) REFERENCES msession (msession_id),
@@ -508,6 +492,7 @@ CREATE TABLE msjob (
 * pid
 * start_time
 * end_time
+* finished_ok
 * output_id
 <source lang=sql>
 CREATE TABLE msjob_command (
@@ -518,6 +503,7 @@ CREATE TABLE msjob_command (
     pid                 INT UNSIGNED NOT NULL,
     start_time          DATETIME NOT NULL,
     end_time            DATETIME DEFAULT NULL,
+    finished_ok         BOOLEAN NOT NULL,
     output_id           INT UNSIGNED NOT NULL,
     INDEX i_job_part_command_id (job_part_command_id),
     CONSTRAINT fk_msjob_command_job_part_command_id FOREIGN KEY (job_part_command_id) REFERENCES job_part_command (job_part_command_id),
@@ -554,13 +540,14 @@ CREATE TABLE mslog (
 Machine session status messages.
 * msstatus_id
 * name - short status description
-** 1 - unknown status
-** 2 - msession just created
-** 3 - waiting for new job
-** 4 - running command
-** 5 - stop by user
-** 6 - stop by web server -- see also msabort_reason table
-** 7 - stop by anything else
+** 1 .. unknown status
+** 2 .. msession just created
+** 3 .. waiting for new job
+** 4 .. running command
+** 5 .. paused by user
+** 6 .. stop by user
+** 7 .. stop by web server -- see also msabort_reason table
+** 8 .. stop by anything else
 * desc - long description
 <source lang=sql>
 CREATE TABLE msstatus (
@@ -575,8 +562,9 @@ Machine session status messages.
 * msabort_reason_id
 * name - short abort reason description
 ** 1 .. unknown reason
-** 2 .. bad client behavior
-** 3 .. deprecated client revision
+** 2 .. deprecated client revision
+** 3 .. bad client behavior
+** 4 .. iterrupted by client
 * desc - long reason description
 <source lang=sql>
 CREATE TABLE msabort_reason (
@@ -586,31 +574,72 @@ CREATE TABLE msabort_reason (
 ) TYPE=InnoDB;
 </source>
 
+==== build_conf ====
+Build configurations.
+* conf_id
+* hash
+* cc
+* devel
+* optimize
+* alias_conf_id - another conf with the same semantics, but different syntax
+<source lang=sql>
+CREATE TABLE build_conf (
+    build_conf_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    hash            VARCHAR(50) NOT NULL,
+    cc              VARCHAR(255) DEFAULT NULL,
+    devel           VARCHAR(255) DEFAULT NULL,
+    `optimize`      VARCHAR(255) DEFAULT NULL,
+    alias_conf_id   INT UNSIGNED DEFAULT NULL,
+    INDEX i_hash (hash),
+    CONSTRAINT fk_build_conf_alias_conf_id FOREIGN KEY (alias_conf_id) REFERENCES build_conf (build_conf_id)
+) TYPE=InnoDB;
+</source>
+
 ==== build ====
 * build_id
 * rep_path_id
 * rev_id
+* patch_id
 * msjob_command_id
 * conf_id - build configuration id
 <source lang=sql>
 CREATE TABLE build (
     build_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msjob_command_id    INT UNSIGNED NOT NULL,
-    rev_id              INT UNSIGNED NOT NULL,
     rep_path_id         INT UNSIGNED NOT NULL,
+    rev_id              INT UNSIGNED NOT NULL,
+    patch_id            INT UNSIGNED DEFAULT NULL,
     conf_id             INT UNSIGNED NOT NULL,
     INDEX i_msjob_command_id (msjob_command_id),
     INDEX i_rev_id (rev_id),
     INDEX i_rep_path_id (rep_path_id),
     INDEX i_conf_id (conf_id),
     CONSTRAINT fk_build_msjob_command_id FOREIGN KEY (msjob_command_id) REFERENCES msjob_command (msjob_command_id),
-    CONSTRAINT fk_build_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
     CONSTRAINT fk_build_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
+    CONSTRAINT fk_build_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
+    CONSTRAINT fk_build_patch_id FOREIGN KEY (patch_id) REFERENCES patch (patch_id),
     CONSTRAINT fk_build_conf_id FOREIGN KEY (conf_id) REFERENCES build_conf (build_conf_id)
 ) TYPE=InnoDB;
 </source>
 
-==== trun (t) ====
+==== trun_conf ====
+Test run configurations.
+* trun_conf_id
+* hash
+* harness_args
+* alias_conf_id - another conf with the same semantics, but different syntax
+<source lang=sql>
+CREATE TABLE trun_conf (
+    trun_conf_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    hash            VARCHAR(50) NOT NULL,
+    harness_args    VARCHAR(255) DEFAULT NULL,
+    alias_conf_id   INT UNSIGNED DEFAULT NULL,
+    INDEX i_hash (hash),
+    CONSTRAINT fk_trun_conf_alias_conf_id FOREIGN KEY (alias_conf_id) REFERENCES trun_conf (trun_conf_id)
+) TYPE=InnoDB;
+</source>
+
+==== trun ====
 Test run info and test run statistics (cache).
 * trun_id
 * msjob_command_id
@@ -642,6 +671,43 @@ CREATE TABLE trun (
     CONSTRAINT fk_trun_msjob_command_id FOREIGN KEY (msjob_command_id) REFERENCES msjob_command (msjob_command_id),
     CONSTRAINT fk_trun_build_id FOREIGN KEY (build_id) REFERENCES build (build_id),
     CONSTRAINT fk_trun_conf_id FOREIGN KEY (conf_id) REFERENCES trun_conf (trun_conf_id)
+) TYPE=InnoDB;
+</source>
+
+==== brun_conf ====
+Benchmark run.
+* brun_conf_id
+* hash
+* args
+* alias_conf_id - another conf with the same semantics, but different syntax
+<source lang=sql>
+CREATE TABLE brun_conf (
+    brun_conf_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    hash            VARCHAR(50) NOT NULL,
+    args            VARCHAR(255) DEFAULT NULL,
+    alias_conf_id   INT UNSIGNED DEFAULT NULL,
+    INDEX i_hash (hash),
+    CONSTRAINT fk_brun_conf_alias_conf_id FOREIGN KEY (alias_conf_id) REFERENCES brun_conf (brun_conf_id)
+) TYPE=InnoDB;
+</source>
+
+==== brun ====
+* brun_id
+* msjob_command_id
+* build_id -- cache
+* conf_id
+<source lang=sql>
+CREATE TABLE brun (
+    brun_id             INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msjob_command_id    INT UNSIGNED NOT NULL,
+    build_id            INT UNSIGNED NOT NULL,
+    conf_id             INT UNSIGNED NOT NULL,
+    INDEX i_msjob_command_id (msjob_command_id),
+    INDEX i_build_id (build_id),
+    INDEX i_conf_id (conf_id),
+    CONSTRAINT fk_brun_msjob_command_id FOREIGN KEY (msjob_command_id) REFERENCES msjob_command (msjob_command_id),
+    CONSTRAINT fk_brun_build_id FOREIGN KEY (build_id) REFERENCES build (build_id),
+    CONSTRAINT fk_brun_conf_id FOREIGN KEY (conf_id) REFERENCES brun_conf (brun_conf_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -741,6 +807,26 @@ CREATE TABLE tdiag_msg (
 ) TYPE=InnoDB;
 </source>
 
+==== bfile ====
+Bench file results.
+* bfile_id
+* brun_id
+* rep_file_id
+* run_time
+* hang -- if test hang and was killed
+<source lang=sql>
+CREATE TABLE bfile (
+    bfile_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    brun_id             INT UNSIGNED NOT NULL,
+    rep_file_id         INT UNSIGNED NOT NULL,
+    run_time            INT UNSIGNED DEFAULT NULL,
+    hang                BOOLEAN DEFAULT 0,
+    INDEX i_brun_id (brun_id),
+    CONSTRAINT fk_bfile_brun_id FOREIGN KEY (brun_id) REFERENCES brun (brun_id),
+    CONSTRAINT fk_bfile_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id)
+) TYPE=InnoDB;
+</source>
+
 ==== fspath ====
 List of directories with files.
 * fspath_id
@@ -811,7 +897,7 @@ CREATE TABLE fspath_select (
     fsfile_type_id      INT UNSIGNED NOT NULL,
     rep_path_id         INT UNSIGNED NOT NULL,
     fspath_id           INT UNSIGNED NOT NULL,
-    INDEX i_fspath_selectd_fsfile_type_id_rep_path_id (fsfile_type_id,rep_path_id),
+    INDEX i_fsfile_type_id_rep_path_id (fsfile_type_id,rep_path_id),
     CONSTRAINT fk_fspath_select_fsfile_type_id FOREIGN KEY (fsfile_type_id) REFERENCES fsfile_type (fsfile_type_id),
     CONSTRAINT fk_fspath_select_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
     CONSTRAINT fk_fsfile_default_conf_fspath_id FOREIGN KEY (fspath_id) REFERENCES fspath (fspath_id)
