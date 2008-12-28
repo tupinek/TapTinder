@@ -427,7 +427,10 @@ sub prepare_data_orserr {
     my @rows = ();
     while (my $row = $rs->next) {
         my $id_uri_part = 'id';
-        $id_uri_part .= '-' . $row->get_column($_) foreach @$primary_cols;
+        foreach my $col_name ( @$primary_cols ) {
+            my $text = $row->get_column($col_name);
+            $id_uri_part .= '-' . $text if $text;
+        }
         my $row_data = { $row->get_columns };
         $self->dumper( $c, [ $row_data ], "row_data " );
         my $row_info = {
