@@ -39,14 +39,15 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
 
 # graph - GraphViz - .png
 } elsif ( $to eq 'graph' || $to eq 'ALL' ) {
+    my $output_type = 'png';
     my $translator = SQL::Translator->new(
         filename  => $input_file,
         parser => 'MySQL',
         producer => 'GraphViz',
         debug => $debug,
         producer_args => {
-            out_file => './temp/schema.png',
-            #output_type => 'png',
+            out_file => './temp/schema.' . $output_type,
+            output_type => $output_type,
             #layout => 'neato',
             add_color => 1,
             show_constraints => 1,

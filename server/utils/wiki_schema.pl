@@ -210,5 +210,4 @@ if ( $conf->{raw_create} ) {
     print "\n\n";
 
     print "$sel_sql\n";
-
 }

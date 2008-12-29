@@ -1,5 +1,14 @@
-echo -n "updating sql/schema.sql - "
-perl utils/wiki_schema.pl sql/schema.wiki > temp/schema.sql && cat temp/schema.sql > temp/all.sql && cat sql/data-base.sql >> temp/all.sql && echo done
+echo -n "updating some temp/*.sql - "
+perl utils/wiki_schema.pl sql/schema.wiki > temp/schema.sql 
+cat temp/schema.sql > temp/all.sql 
+cat sql/data-base.sql >> temp/all.sql
+
+cat temp/all.sql > temp/all-devel.sql
+cat sql/data-devel.sql >> temp/all-devel.sql
+
+cat temp/all.sql > temp/all-stable.sql
+cat sql/data-devel.sql >> temp/all-stable.sql
+echo done
 
 echo -n "updating temp/sel-tables.sql - "
 perl utils/wiki_schema.pl sql/schema.wiki 0 0 0 trun > temp/sel-tables.sql && echo done
