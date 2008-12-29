@@ -531,13 +531,22 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'pid' => {
+    'number' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'pid',
+      'name' => 'number',
       'is_nullable' => 0,
+      'size' => '11'
+    },
+    'pid' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'pid',
+      'is_nullable' => 1,
       'size' => '11'
     },
 );
@@ -1683,6 +1692,24 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
+    'rep_path_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 1,
+      'name' => 'rep_path_id',
+      'is_nullable' => 1,
+      'size' => '11'
+    },
+    'rev_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 1,
+      'name' => 'rev_id',
+      'is_nullable' => 1,
+      'size' => '11'
+    },
 );
 __PACKAGE__->set_primary_key('brun_id');
 
@@ -1904,6 +1931,15 @@ __PACKAGE__->add_columns(
       'is_nullable' => 1,
       'size' => '65535'
     },
+    'params' => {
+      'data_type' => 'TEXT',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'params',
+      'is_nullable' => 1,
+      'size' => '65535'
+    },
 );
 __PACKAGE__->set_primary_key('command_id');
 
@@ -2079,15 +2115,6 @@ __PACKAGE__->add_columns(
       'is_foreign_key' => 0,
       'name' => 'end_time',
       'is_nullable' => 1,
-      'size' => 0
-    },
-    'finished_ok' => {
-      'data_type' => 'BOOLEAN',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'finished_ok',
-      'is_nullable' => 0,
       'size' => 0
     },
     'output_id' => {
@@ -2321,7 +2348,7 @@ __PACKAGE__->add_columns(
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
-      'is_foreign_key' => 0,
+      'is_foreign_key' => 1,
       'name' => 'machine_id',
       'is_nullable' => 0,
       'size' => '11'
@@ -2451,6 +2478,24 @@ __PACKAGE__->add_columns(
       'is_foreign_key' => 1,
       'name' => 'conf_id',
       'is_nullable' => 0,
+      'size' => '11'
+    },
+    'rep_path_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 1,
+      'name' => 'rep_path_id',
+      'is_nullable' => 1,
+      'size' => '11'
+    },
+    'rev_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 1,
+      'name' => 'rev_id',
+      'is_nullable' => 1,
       'size' => '11'
     },
     'num_notseen' => {
@@ -2684,13 +2729,13 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '255'
     },
-    'url' => {
+    'subpath' => {
       'data_type' => 'VARCHAR',
       'is_auto_increment' => 0,
-      'default_value' => 'NULL',
+      'default_value' => '',
       'is_foreign_key' => 0,
-      'name' => 'url',
-      'is_nullable' => 1,
+      'name' => 'subpath',
+      'is_nullable' => 0,
       'size' => '255'
     },
     'desc' => {
@@ -2711,6 +2756,15 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => 0
     },
+    'default_layout' => {
+      'data_type' => 'BOOLEAN',
+      'is_auto_increment' => 0,
+      'default_value' => '1',
+      'is_foreign_key' => 0,
+      'name' => 'default_layout',
+      'is_nullable' => 0,
+      'size' => 0
+    },
 );
 __PACKAGE__->set_primary_key('rep_id');
 
@@ -2724,6 +2778,8 @@ __PACKAGE__->has_many('get_patch', 'TapTinder::DB::Schema::patch', 'rep_path_id'
 __PACKAGE__->has_many('get_job', 'TapTinder::DB::Schema::job', 'rep_path_id');
 __PACKAGE__->has_many('get_machine_job_conf', 'TapTinder::DB::Schema::machine_job_conf', 'rep_path_id');
 __PACKAGE__->has_many('get_build', 'TapTinder::DB::Schema::build', 'rep_path_id');
+__PACKAGE__->has_many('get_trun', 'TapTinder::DB::Schema::trun', 'rep_path_id');
+__PACKAGE__->has_many('get_brun', 'TapTinder::DB::Schema::brun', 'rep_path_id');
 __PACKAGE__->has_many('get_fspath_select', 'TapTinder::DB::Schema::fspath_select', 'rep_path_id');
 
 package TapTinder::DB::Schema::trun_conf;
@@ -2825,6 +2881,8 @@ __PACKAGE__->has_many('get_rep_file_change', 'TapTinder::DB::Schema::rep_file_ch
 __PACKAGE__->has_many('get_rep_file_change_from', 'TapTinder::DB::Schema::rep_file_change_from', 'rev_id');
 __PACKAGE__->has_many('get_rep_file_change_from', 'TapTinder::DB::Schema::rep_file_change_from', 'from_rev_id');
 __PACKAGE__->has_many('get_build', 'TapTinder::DB::Schema::build', 'rev_id');
+__PACKAGE__->has_many('get_trun', 'TapTinder::DB::Schema::trun', 'rev_id');
+__PACKAGE__->has_many('get_brun', 'TapTinder::DB::Schema::brun', 'rev_id');
 
 package TapTinder::DB::Schema::fspath;
 
@@ -2916,6 +2974,10 @@ __PACKAGE__->belongs_to('build_id','TapTinder::DB::Schema::build','build_id');
 
 __PACKAGE__->belongs_to('conf_id','TapTinder::DB::Schema::brun_conf','conf_id');
 
+__PACKAGE__->belongs_to('rep_path_id','TapTinder::DB::Schema::rep_path','rep_path_id',{join_type => 'left'});
+
+__PACKAGE__->belongs_to('rev_id','TapTinder::DB::Schema::rev','rev_id',{join_type => 'left'});
+
 __PACKAGE__->has_many('get_bfile', 'TapTinder::DB::Schema::bfile', 'brun_id');
 
 package TapTinder::DB::Schema::machine;
@@ -2927,6 +2989,7 @@ __PACKAGE__->belongs_to('prev_machine_id','TapTinder::DB::Schema::machine','prev
 __PACKAGE__->has_many('get_machine', 'TapTinder::DB::Schema::machine', 'prev_machine_id');
 __PACKAGE__->belongs_to('farm_id','TapTinder::DB::Schema::farm','farm_id',{join_type => 'left'});
 
+__PACKAGE__->has_many('get_machine_job_conf', 'TapTinder::DB::Schema::machine_job_conf', 'machine_id');
 __PACKAGE__->has_many('get_msession', 'TapTinder::DB::Schema::msession', 'machine_id');
 
 package TapTinder::DB::Schema::rep_file_change_from;
@@ -3007,6 +3070,8 @@ __PACKAGE__->has_many('get_msjob', 'TapTinder::DB::Schema::msjob', 'job_id');
 
 package TapTinder::DB::Schema::machine_job_conf;
 
+__PACKAGE__->belongs_to('machine_id','TapTinder::DB::Schema::machine','machine_id');
+
 __PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id');
 
 __PACKAGE__->belongs_to('rep_path_id','TapTinder::DB::Schema::rep_path','rep_path_id');
@@ -3030,6 +3095,10 @@ __PACKAGE__->belongs_to('msjob_command_id','TapTinder::DB::Schema::msjob_command
 __PACKAGE__->belongs_to('build_id','TapTinder::DB::Schema::build','build_id');
 
 __PACKAGE__->belongs_to('conf_id','TapTinder::DB::Schema::trun_conf','conf_id');
+
+__PACKAGE__->belongs_to('rep_path_id','TapTinder::DB::Schema::rep_path','rep_path_id',{join_type => 'left'});
+
+__PACKAGE__->belongs_to('rev_id','TapTinder::DB::Schema::rev','rev_id',{join_type => 'left'});
 
 __PACKAGE__->has_many('get_tfile', 'TapTinder::DB::Schema::tfile', 'trun_id');
 __PACKAGE__->has_many('get_ttest', 'TapTinder::DB::Schema::ttest', 'trun_id');

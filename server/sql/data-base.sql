@@ -64,68 +64,7 @@ VALUES (
 
 INSERT INTO param ( param_id, param_type_id, value )
 VALUES (
-1, 1, '0.0.03'
-);
-
-
-INSERT INTO user ( user_id, login, passwd, first_name, last_name, active, created, last_login )
-VALUES (
-1, 'mj41', substring(MD5(RAND()), -8), 'Michal', 'Jurosz', 1, NOW(), NULL
-);
-
-
-INSERT INTO farm ( farm_id, name, has_same_hw, has_same_sw, `desc`  )
-VALUES (
-1, 'vutbr.cz web cluster', 1, 1, 'some computer power is always availible'
-);
-
-
-INSERT INTO machine ( machine_id, name, user_id, passwd, `desc`, created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
-VALUES (
-1, 'dbtest', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.84', 'i386', 'linux', 'i386-linux-thread-multi', 0, NULL, NULL
-);
-
-
-INSERT INTO machine ( machine_id, name, user_id, passwd, `desc`, created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
-VALUES (
-2, 'pc-jurosz', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.124', 'i386', 'MSWin32', 'MSWin32-x86-multi-thread', 0, NULL, NULL
-);
-
-INSERT INTO machine ( machine_id, name, user_id, passwd, `desc` , created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
-VALUES (
-3, 'shreck1', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, 1
-);
-
-INSERT INTO machine ( machine_id, name, user_id, passwd, `desc` , created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
-VALUES (
-4, 'shreck2', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, 1
-);
-
-INSERT INTO machine ( machine_id, name, user_id, passwd, `desc` , created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
-VALUES (
-5, 'shreck3', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, 1
-);
-
-INSERT INTO machine ( machine_id, name, user_id, passwd, `desc` , created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
-VALUES (
-6, 'ent', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.49', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, 1
-);
-
-INSERT INTO machine ( machine_id, name, user_id, passwd, `desc` , created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
-VALUES (
-7, 'pc-jurosz (new)', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.124', 'i386', 'MSWin32', 'MSWin32-x86-multi-thread', 0, NULL, NULL
-);
-
-
-INSERT INTO project ( project_id, name, url, `desc`  )
-VALUES (
-1, 'Parrot', 'http://www.parrot.org/', 'Parrot is a virtual machine designed to efficiently compile and execute bytecode for dynamic languages. Parrot currently hosts a variety of language implementations in various stages of completion, including Tcl, Javascript, Ruby, Lua, Scheme, PHP, Python, Perl 6, APL, and a .NET bytecode translator.'
-);
-
-
-INSERT INTO rep ( rep_id, project_id, active, name, path, `desc`  )
-VALUES (
-1, 1, 1, 'Parrot repository', 'http://svn.perl.org/parrot/', ''
+1, 1, '0.0.07'
 );
 
 
@@ -185,9 +124,11 @@ VALUES (
 ), (
 2, 'deprecated client revision', NULL
 ), (
-3, 'bad client behavior', NULL
+3, 'machine was disabled', NULL
 ), (
-4, 'iterrupted by client', NULL
+4, 'bad client behavior', NULL
+), (
+5, 'iterrupted by user', NULL
 );
 
 
@@ -199,83 +140,47 @@ VALUES (
 );
 
 
-INSERT INTO job ( job_id, rep_id, rep_path_id, client_min_rev, priority, name, `desc` )
+INSERT INTO command ( command_id, name, `desc`, params )
 VALUES (
-1, 1, NULL, 150, 1, 'Parrot only', NULL
+1, 'get_src',
+'clean source code checkout/update',
+'rep_path_id, rev_id'
 ), (
-2, 1, NULL, 150, 1, 'Parrot and Rakudo', NULL
-);
-
-
-INSERT INTO job_part ( job_part_id, job_id, `order`, name, `desc` )
-VALUES (
-1, 1, 1, 'sole', NULL
+2, 'prepare',
+'preparing job environment (copy clean -> temp, check temp, create dir for results, chdir)',
+null
 ), (
-2, 2, 1, 'Parrot', NULL
+3, 'patch',
+'applying patch',
+'patch_id'
 ), (
-3, 2, 2, 'Rakudo spectests', NULL
-);
-
-
-INSERT INTO command ( command_id, name, `desc` )
-VALUES (
-1, 'get_src', 'clean source code checkout/update'
+4, 'perl_configure',
+'running command - perl Configure.pl',
+null
 ), (
-2, 'prepare', 'preparing job environment (copy clean -> temp, check temp, create dir for results, chdir)'
+5, 'make',
+'running command - make',
+null
 ), (
-3, 'patch', 'applying patch'
+6, 'trun ',
+'running command - perl t/taptinder_harness --yaml',
+null
 ), (
-4, 'perl_configure', 'running command - perl Configure.pl'
+7, 'test',
+'running command - make test',
+null
 ), (
-5, 'make', 'running command - make'
+8, 'bench',
+'running command - perl utils/benchmark.pl',
+null
 ), (
-6, 'trun ', 'running command - perl t/taptinder_harness --yaml'
+9, 'install',
+'running command - make install',
+null
 ), (
-7, 'test', 'running command - make test'
-), (
-8, 'smolder', 'running command - make smolder'
-), (
-9, 'bench', 'running command - perl utils/benchmark.pl'
-), (
-10, 'install', 'running command - make install'
-), (
-11, 'clean', 'cleaning machine, e.g. after install'
-), (
-12, 'externtests', 'external source code test checkout/update'
-);
-
-
-INSERT INTO job_part_command ( job_part_command_id, job_part_id, `order`, command_id )
-VALUES (
-1, 1, 1, 1
-), (
-2, 1, 2, 2
-), (
-3, 1, 3, 4
-), (
-4, 1, 4, 5
-), (
-5, 1, 5, 6
-), (
-
-
-6, 2, 1, 1
-), (
-7, 2, 2, 2
-), (
-8, 2, 3, 4
-), (
-9, 2, 4, 5
-), (
-10, 2, 5, 6
-), (
-
-12, 3, 1, 2
-), (
-15, 3, 2, 11
-), (
-14, 3, 3, 6
-
+10, 'clean',
+'cleaning machine, e.g. after install',
+null
 );
 
 
@@ -291,4 +196,3 @@ VALUES (
 );
 
 commit;
-

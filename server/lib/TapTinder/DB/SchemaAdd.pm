@@ -107,7 +107,7 @@ package TapTinder::DB::Schema::rep_author;
 __PACKAGE__->cols_in_foreign_tables( [ qw/rep_login/ ] );
 
 package TapTinder::DB::Schema::rep_change_type;
-__PACKAGE__->cols_in_foreign_tables( [ qw/info/ ] );
+__PACKAGE__->cols_in_foreign_tables( [ qw/desc/ ] );
 
 package TapTinder::DB::Schema::rep_file;
 __PACKAGE__->cols_in_foreign_tables( [ qw/rep_path_id sub_path rev_num_from rev_num_to/ ] );
@@ -122,7 +122,7 @@ package TapTinder::DB::Schema::rev;
 __PACKAGE__->cols_in_foreign_tables( [ qw/rev_num/ ] );
 
 package TapTinder::DB::Schema::trest;
-__PACKAGE__->cols_in_foreign_tables( [ qw/title/ ] );
+__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
 
 package TapTinder::DB::Schema::user;
 __PACKAGE__->restricted_cols( { 'passwd' => 1, } );

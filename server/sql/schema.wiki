@@ -3,7 +3,7 @@
 <!-- perl utils\wiki_schema.pl sql\schema.wiki 1 > sql\schema.sql -->
 <!-- PARSE PART DBCREATE BEGIN -->
 <source lang=sql>
--- schema version: 0.06
+-- schema version: 0.07
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 </source>
@@ -107,18 +107,19 @@ Project repository. Each project can has only one active repository.
 * project_id
 * name
 * path
-* url
 * desc
-* active
+* active - 1 .. repository is active, 0 .. old (deprecated) repository
+* default_layout - Has default Subversion repository layout (trunk, tags, branches).
 <source lang=sql>
 CREATE TABLE rep (
-    rep_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    project_id  INT UNSIGNED NOT NULL,
-    name        VARCHAR(255) NOT NULL,
-    path        VARCHAR(255) NOT NULL,
-    url         VARCHAR(255) DEFAULT NULL,
-    `desc`      TEXT DEFAULT NULL,
-    active      BOOLEAN NOT NULL DEFAULT 1,
+    rep_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    project_id      INT UNSIGNED NOT NULL,
+    name            VARCHAR(255) NOT NULL,
+    path            VARCHAR(255) NOT NULL,
+    subpath         VARCHAR(255) NOT NULL DEFAULT '',
+    `desc`          TEXT DEFAULT NULL,
+    active          BOOLEAN NOT NULL DEFAULT 1,
+    default_layout  BOOLEAN NOT NULL DEFAULT 1,
     CONSTRAINT fk_rep_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),
     UNIQUE KEY unique_rep_id_path (rep_id, path)
 ) TYPE=InnoDB;
@@ -147,7 +148,7 @@ CREATE TABLE rep_author (
 ==== rev ====
 Revision info.
 * rev_id
-* rep_id -- cache for rev_rep_path.rep_path_id -> rep_path.rep_id
+* rep_id - cache for rev_rep_path.rep_path_id -> rep_path.rep_id
 * rev_num
 * author_id
 * date
@@ -198,7 +199,6 @@ CREATE TABLE rev_rep_path (
     rev_id              INT UNSIGNED NOT NULL,
     rep_path_id         INT UNSIGNED NOT NULL,
     UNIQUE KEY unique_rep_id_path (rev_id, rep_path_id),
-    INDEX i_rev_id_rep_path_id (rev_id, rep_path_id),
     CONSTRAINT fk_rev_rep_path_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
     CONSTRAINT fk_rev_rep_path_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id)
 ) TYPE=InnoDB;
@@ -283,12 +283,12 @@ Only one file for each patch.
 * patch_id
 * rep_path_id
 * rev_num - revison number found in patch
-* rev_num_to -- cache, server checks if patch apply ok
+* rev_num_to - cache, server checks if patch apply ok
 * author_id
 * date
 * msg
 * file_id
-* new_patch_id -- if not null then patch has newer version
+* new_patch_id - if not null then patch has newer version
 <source lang=sql>
 CREATE TABLE patch (
     patch_id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -313,9 +313,9 @@ CREATE TABLE patch (
 Number and name of the test. Each rep_file can contains many tests. Rep file gets new id after each file change.
 * rep_test_id
 * rep_file_id
-* number -- this test number in rep_file
-* name -- first inserted, name of the test (if any and not empty)
-* has_another_name -- 1 if another name was found
+* number - this test number in rep_file
+* name - first inserted, name of the test (if any and not empty)
+* has_another_name - 1 if another name was found
 <source lang=sql>
 CREATE TABLE rep_test (
     rep_test_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -377,12 +377,14 @@ CREATE TABLE job_part (
 * command_id
 * name
 * desc
-Client should known what to run for each command_id. E.g. 1 (perlconf) means run 'perl Configure.pl' or 'perl.exe Configure.pl' (under win32).
+* params
+Client should known what to run for each command_id. E.g. 1 (perlconf) means run 'perl Configure.pl' or 'perl.exe Configure.pl' (under win32). Server shoul know, which params client needs.
 <source lang=sql>
 CREATE TABLE command (
     command_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(25),
-    `desc`          TEXT DEFAULT NULL
+    `desc`          TEXT DEFAULT NULL,
+    params          TEXT DEFAULT NULL
 ) TYPE=InnoDB;
 </source>
 
@@ -435,6 +437,7 @@ CREATE TABLE machine_job_conf (
     rep_path_id         INT UNSIGNED NOT NULL,
     job_id              INT UNSIGNED NOT NULL,
     INDEX i_machine_id (machine_id),
+    CONSTRAINT fk_machine_job_conf_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id),
     CONSTRAINT fk_machine_job_conf_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
     CONSTRAINT fk_machine_job_conf_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
     CONSTRAINT fk_machine_job_conf_job_id FOREIGN KEY (job_id) REFERENCES job (job_id)
@@ -469,6 +472,7 @@ CREATE TABLE msession (
 * msjob_id
 * msession_id
 * job_id
+* number - job number inside session
 * pid
 Abort reason is determined by msession.
 <source lang=sql>
@@ -476,7 +480,8 @@ CREATE TABLE msjob (
     msjob_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msession_id         INT UNSIGNED NOT NULL,
     job_id              INT UNSIGNED NOT NULL,
-    pid                 INT UNSIGNED NOT NULL,
+    number              INT UNSIGNED NOT NULL,
+    pid                 INT UNSIGNED DEFAULT NULL,
     INDEX i_msession_id (msession_id),
     INDEX i_job_id (job_id),
     CONSTRAINT fk_msjob_msession_id FOREIGN KEY (msession_id) REFERENCES msession (msession_id),
@@ -492,7 +497,6 @@ CREATE TABLE msjob (
 * pid
 * start_time
 * end_time
-* finished_ok
 * output_id
 <source lang=sql>
 CREATE TABLE msjob_command (
@@ -503,7 +507,6 @@ CREATE TABLE msjob_command (
     pid                 INT UNSIGNED NOT NULL,
     start_time          DATETIME NOT NULL,
     end_time            DATETIME DEFAULT NULL,
-    finished_ok         BOOLEAN NOT NULL,
     output_id           INT UNSIGNED NOT NULL,
     INDEX i_job_part_command_id (job_part_command_id),
     CONSTRAINT fk_msjob_command_job_part_command_id FOREIGN KEY (job_part_command_id) REFERENCES job_part_command (job_part_command_id),
@@ -563,8 +566,9 @@ Machine session status messages.
 * name - short abort reason description
 ** 1 .. unknown reason
 ** 2 .. deprecated client revision
-** 3 .. bad client behavior
-** 4 .. iterrupted by client
+** 3 .. machine was disabled
+** 4 .. bad client behavior
+** 5 .. iterrupted by user
 * desc - long reason description
 <source lang=sql>
 CREATE TABLE msabort_reason (
@@ -643,21 +647,25 @@ CREATE TABLE trun_conf (
 Test run info and test run statistics (cache).
 * trun_id
 * msjob_command_id
-* build_id -- cache for build__msjob_id(build.msjob_command_id) == trun__msjob_id(trun.msjob_command_id)
+* build_id - cache for build__msjob_id(build.msjob_command_id) == trun__msjob_id(trun.msjob_command_id)
 * conf_id - test configuration id
-* num_notseen -- cache
-* num_failed -- cache
-* num_unknown -- cache
-* num_todo -- cache
-* num_bonus -- cache
-* num_skip -- cache
-* num_ok -- cache
+* rep_path_id - not null for external test suite
+* rev_id - not null for external test suite
+* num_notseen - cache
+* num_failed - cache
+* num_unknown - cache
+* num_todo - cache
+* num_bonus - cache
+* num_skip - cache
+* num_ok - cache
 <source lang=sql>
 CREATE TABLE trun (
     trun_id             INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msjob_command_id    INT UNSIGNED NOT NULL,
     build_id            INT UNSIGNED NOT NULL,
     conf_id             INT UNSIGNED NOT NULL,
+    rep_path_id         INT UNSIGNED DEFAULT NULL,
+    rev_id              INT UNSIGNED DEFAULT NULL,
     num_notseen         INT UNSIGNED NOT NULL,
     num_failed          INT UNSIGNED NOT NULL,
     num_unknown         INT UNSIGNED NOT NULL,
@@ -668,9 +676,13 @@ CREATE TABLE trun (
     INDEX i_msjob_command_id (msjob_command_id),
     INDEX i_build_id (build_id),
     INDEX i_conf_id (conf_id),
+    INDEX i_rev_id (rev_id),
+    INDEX i_rep_path_id (rep_path_id),
     CONSTRAINT fk_trun_msjob_command_id FOREIGN KEY (msjob_command_id) REFERENCES msjob_command (msjob_command_id),
     CONSTRAINT fk_trun_build_id FOREIGN KEY (build_id) REFERENCES build (build_id),
-    CONSTRAINT fk_trun_conf_id FOREIGN KEY (conf_id) REFERENCES trun_conf (trun_conf_id)
+    CONSTRAINT fk_trun_conf_id FOREIGN KEY (conf_id) REFERENCES trun_conf (trun_conf_id),
+    CONSTRAINT fk_trun_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
+    CONSTRAINT fk_trun_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -694,20 +706,28 @@ CREATE TABLE brun_conf (
 ==== brun ====
 * brun_id
 * msjob_command_id
-* build_id -- cache
+* build_id - cache
 * conf_id
+* rep_path_id - not null for external test suite
+* rev_id - not null for external test suite
 <source lang=sql>
 CREATE TABLE brun (
     brun_id             INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msjob_command_id    INT UNSIGNED NOT NULL,
     build_id            INT UNSIGNED NOT NULL,
     conf_id             INT UNSIGNED NOT NULL,
+    rep_path_id         INT UNSIGNED DEFAULT NULL,
+    rev_id              INT UNSIGNED DEFAULT NULL,
     INDEX i_msjob_command_id (msjob_command_id),
     INDEX i_build_id (build_id),
     INDEX i_conf_id (conf_id),
+    INDEX i_rev_id (rev_id),
+    INDEX i_rep_path_id (rep_path_id),
     CONSTRAINT fk_brun_msjob_command_id FOREIGN KEY (msjob_command_id) REFERENCES msjob_command (msjob_command_id),
     CONSTRAINT fk_brun_build_id FOREIGN KEY (build_id) REFERENCES build (build_id),
-    CONSTRAINT fk_brun_conf_id FOREIGN KEY (conf_id) REFERENCES brun_conf (brun_conf_id)
+    CONSTRAINT fk_brun_conf_id FOREIGN KEY (conf_id) REFERENCES brun_conf (brun_conf_id),
+    CONSTRAINT fk_brun_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
+    CONSTRAINT fk_brun_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -732,7 +752,7 @@ Test file summary results - summary result for all tests in file. All_passed is 
 * rep_file_id
 * all_passed -- (in Harness::Straps max == seen == ok)
 * tskippall_msg_id (can be null)
-* hang -- if test hang and was killed
+* hang - if test hang and was killed
 <source lang=sql>
 CREATE TABLE tfile (
     tfile_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -813,7 +833,7 @@ Bench file results.
 * brun_id
 * rep_file_id
 * run_time
-* hang -- if test hang and was killed
+* hang - if test hang and was killed
 <source lang=sql>
 CREATE TABLE bfile (
     bfile_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -830,7 +850,7 @@ CREATE TABLE bfile (
 ==== fspath ====
 List of directories with files.
 * fspath_id
-* path -- full path from root, e.g. /tmp/taptinder/patches/parrot-01/
+* path - full path from root, e.g. /tmp/taptinder/patches/parrot-01/
 * web_path
 * public
 * created
@@ -941,7 +961,7 @@ commit;
 <!-- PARSE PART DBCREATE END -->
 
 === ToDo ===
-* tests_num -- plan, total tests which should have been run, null -> this isn't test file
+* tests_num - plan, total tests which should have been run, null -> this isn't test file
 
 === Repository changes ===
 * rev_num_from = 100, rev_num_to = 100 -> file inserted in rev 100 and deleted in 101
