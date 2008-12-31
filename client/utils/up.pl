@@ -10,16 +10,16 @@ use File::Spec::Functions;
 
 my $is_win32 = ( $^O eq 'MSWin32' );
 
-if ( $is_win32  ) {
+if ( ! $is_win32  ) {
     $ENV{PERL5LIB} = '/home2/scripts/mj41/taptinder/libcpan';
 }
 
 my $dh;
 opendir( $dh, './' ) || die $!;
 while ( my $dir = readdir($dh) ) {
-    print "dir: $dir\n";
     next if $dir eq '.' || $dir eq '..';
     next unless -d $dir;
+    print "dir: $dir\n";
     my $res_fp = catfile( $dir,  'taptinder-results.yaml' );
 
     my $base_cmd;
