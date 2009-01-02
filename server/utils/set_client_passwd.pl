@@ -67,20 +67,26 @@ my $sth;
 
 my @bv = ( $client_new_passwd );
 my $sql = 'UPDATE machine SET passwd=substring(MD5(?), -8) WHERE ';
+my $info_msg = "Password set for ";
 if ( $machine_id ) {
+    $info_msg .= 'machine.machine_id=' . $machine_id;
     $sql .= 'machine_id=?';
     push @bv, $machine_id;
 } else {
+    $info_msg .= 'machine.name=' . $machine_id;
     $sql .= 'name=?';
     push @bv, $machine_name;
 }
+$info_msg .= ".\n";
 $sth = $dbh->prepare($sql);
 $sth->execute( @bv );
+# TODO
+#print $DBI::errstr;
 
 $dbh->commit;
 $dbh->disconnect;
 
-print "Password set.\n";
+print $info_msg;
 
 __END__
 
