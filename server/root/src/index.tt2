@@ -10,6 +10,7 @@
 <h2>Browsing:</h2>
 <ul class=menu>
 <li><a href="/report">Reports</a></li>
+<li><a href="/clientmonitor">Client monitor</a></li>
 <li><a href="/table">Table browser</a></li>
 </ul>
 
