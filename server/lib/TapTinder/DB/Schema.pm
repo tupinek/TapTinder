@@ -1674,15 +1674,6 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'build_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'build_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
     'conf_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
@@ -2462,15 +2453,6 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'build_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'build_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
     'conf_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
@@ -2970,8 +2952,6 @@ package TapTinder::DB::Schema::brun;
 
 __PACKAGE__->belongs_to('msjob_command_id','TapTinder::DB::Schema::msjob_command','msjob_command_id');
 
-__PACKAGE__->belongs_to('build_id','TapTinder::DB::Schema::build','build_id');
-
 __PACKAGE__->belongs_to('conf_id','TapTinder::DB::Schema::brun_conf','conf_id');
 
 __PACKAGE__->belongs_to('rep_path_id','TapTinder::DB::Schema::rep_path','rep_path_id',{join_type => 'left'});
@@ -3055,8 +3035,6 @@ __PACKAGE__->belongs_to('patch_id','TapTinder::DB::Schema::patch','patch_id',{jo
 
 __PACKAGE__->belongs_to('conf_id','TapTinder::DB::Schema::build_conf','conf_id');
 
-__PACKAGE__->has_many('get_trun', 'TapTinder::DB::Schema::trun', 'build_id');
-__PACKAGE__->has_many('get_brun', 'TapTinder::DB::Schema::brun', 'build_id');
 
 package TapTinder::DB::Schema::job;
 
@@ -3091,8 +3069,6 @@ __PACKAGE__->has_many('get_patch', 'TapTinder::DB::Schema::patch', 'author_id');
 package TapTinder::DB::Schema::trun;
 
 __PACKAGE__->belongs_to('msjob_command_id','TapTinder::DB::Schema::msjob_command','msjob_command_id');
-
-__PACKAGE__->belongs_to('build_id','TapTinder::DB::Schema::build','build_id');
 
 __PACKAGE__->belongs_to('conf_id','TapTinder::DB::Schema::trun_conf','conf_id');
 

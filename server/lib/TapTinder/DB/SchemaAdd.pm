@@ -101,7 +101,7 @@ package TapTinder::DB::Schema::project;
 __PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
 
 package TapTinder::DB::Schema::rep;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
+__PACKAGE__->cols_in_foreign_tables( [ qw/name rep_id/ ] );
 
 package TapTinder::DB::Schema::rep_author;
 __PACKAGE__->cols_in_foreign_tables( [ qw/rep_login/ ] );
