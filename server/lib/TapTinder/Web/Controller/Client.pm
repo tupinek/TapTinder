@@ -2,9 +2,8 @@ package TapTinder::Web::Controller::Client;
 
 use strict;
 use warnings;
-use base 'Catalyst::Controller::BindLex';
+use base 'TapTinder::Web::ControllerBase';
 
-use DBIx::Dumper qw/Dumper dump_row/;
 use Digest::MD5 qw(md5);
 use DateTime;
 
@@ -17,24 +16,6 @@ TapTinder::Web::Controller::Client - Catalyst Controller
 Catalyst controller for TapTinder client services.
 
 =head1 METHODS
-
-=cut
-
-sub dadd {
-    my $self = shift;
-    my $c = shift;
-    my $str = shift;
-    $c->stash->{ot} .= $str;
-}
-
-
-sub dumper {
-    my $self = shift;
-    my $c = shift;
-    return unless $c->log->is_debug;
-    $c->stash->{ot} .= Dumper( @_ );
-}
-
 
 =head2 login_ok
 
@@ -262,7 +243,7 @@ sub process_action {
         $self->dumper( $c, $params );
 
         # [% dumper(data) | html %]
-        $c->stash->{dumper} = sub { Dumper( $_[0] ); };
+        $c->stash->{dumper} = sub { DBIx::Dumper::Dumper( $_[0] ); };
     }
 
     my $param_msid_checks;

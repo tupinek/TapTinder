@@ -2,10 +2,7 @@ package TapTinder::Web::Controller::Report;
 
 use strict;
 use warnings;
-use base 'Catalyst::Controller::BindLex';
-
-use Data::Page::HTML qw/get_pager_html/;
-use DBIx::Dumper qw/Dumper dump_row/;
+use base 'TapTinder::Web::ControllerBase';
 
 =head1 NAME
 
@@ -59,22 +56,6 @@ sub CreateMyResultSets {
     $schema->register_source('ActiveRepPathList' => $new_source);
 
     return 1;
-}
-
-
-sub dadd {
-    my $self = shift;
-    my $c = shift;
-    my $str = shift;
-    $c->stash->{ot} .= $str;
-}
-
-
-sub dumper {
-    my $self = shift;
-    my $c = shift;
-    return unless $c->log->is_debug;
-    $c->stash->{ot} .= Dumper( @_ );
 }
 
 
@@ -339,53 +320,8 @@ sub index : Path  {
     my ( $self, $c, $p_project, $par1, $par2, @args ) = @_;
     my $ot : Stashed = '';
 
-    my $params;
-    #$self->dumper( $c, { p_project => $p_project, par1 => $par1, par2 => $par2, args => \@args } );
-
-    my $project_name = undef;
-
-    my $is_index = 0;
-    $is_index = 1 if !$p_project; # project list
-    # project name found
-    if ( $p_project ) {
-        $project_name = $p_project;
-        $project_name =~ s{^pr-}{};
-        $c->stash->{project_name} = $project_name;
-    }
-    $c->stash->{project_uri} = $c->uri_for( '/report/pr-'.$project_name.'/' );
-
-    # project name, nothing else
-    if ( !$par1 ) {
-        $is_index = 1;
-    # project name and parameters
-    } elsif ( $par1 =~ /^(page|rows|offset)\-/ ) {
-        $params = $par1;
-        $is_index = 1;
-    # probably rep_path name
-    } else {
-        $params = $par2 if $par2;
-    }
-
-    # default page listing values
-    my $pr = {
-        page => 1,
-    };
-    if ( $params ) {
-        # try to set page, rows, ... values from url params
-        my @parts = split( ',', $params );
-        foreach my $part ( @parts ) {
-            if ( $part =~ m/^ page-(\d+) $/x ) {
-                $pr->{page} = $1;
-                next;
-            }
-            if ( $part =~ m/^ (rows|offset)-(\d+) $/x ) {
-                $pr->{$1} = $2;
-                next;
-            }
-        }
-        $pr->{page} = 1 if $pr->{page} < 1;
-    }
-
+    my ( $is_index, $project_name, $params ) = $self->get_projname_params( $c, $p_project, $par1, $par2 );
+    my $pr = $self->get_page_params( $params );
 
     $c->model('WebDB')->storage->debug(1);
 
@@ -424,7 +360,7 @@ sub index : Path  {
             if ( $project_name ) {
                 my $base_uri = '/' . $c->action->namespace . '/pr-' . $project_name . '/page-';
                 my $page_uri_prefix = $c->uri_for( $base_uri )->as_string;
-                $c->stash->{pager_html} = get_pager_html( $rs_rp->pager, $page_uri_prefix );
+                $c->stash->{pager_html} = $self->get_pager_html( $rs_rp->pager, $page_uri_prefix );
             }
 
             my $row_project_name = $project_data->{name};
@@ -650,7 +586,7 @@ sub index : Path  {
 
     my $base_uri = '/' . $c->action->namespace . '/' . $p_project . '/' . $p_rep_path . '/page-';
     my $page_uri_prefix = $c->uri_for( $base_uri )->as_string;
-    $c->stash->{pager_html} = get_pager_html( $rs->pager, $page_uri_prefix );
+    $c->stash->{pager_html} = $self->get_pager_html( $rs->pager, $page_uri_prefix );
 }
 
 
