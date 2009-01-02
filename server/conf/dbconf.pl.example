@@ -5,9 +5,10 @@ return {
         password => 'taptinderpasswd',
     },
     project => {
-        parrot => {
+        Parrot => {
             repository => 'http://svn.perl.org/parrot/',
             log_dump_refresh => 5*60, # seconds
+            repository_default_layout => 1,
         },
     }
 };

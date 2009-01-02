@@ -1,7 +1,12 @@
-use strict;
+#! perl
 
+use strict;
+use warnings;
 use Carp qw(carp croak verbose);
 use FindBin qw($RealBin);
+
+use Getopt::Long;
+use Pod::Usage;
 
 use Data::Dumper;
 use File::Spec::Functions;
@@ -12,11 +17,28 @@ use SVN::Log;
 use lib '../lib';
 use TapTinder::DB;
 
+my $help = 0;
+my $project_name = undef;
+my $options_ok = GetOptions(
+    'help|h|?' => \$help,
+    'project|p=s' => \$project_name,
+);
+pod2usage(1) if $help || !$options_ok;
+
+unless ( $project_name ) {
+    print "Project name not found.\n\n";
+    pod2usage(1);
+    exit 0;
+}
+
 my $conf_fpath = catfile( $RealBin, '..', 'conf', 'dbconf.pl' );
 my $conf = require $conf_fpath;
 croak "Config loaded from '$conf_fpath' is empty.\n" unless $conf;
 
-my $project_name = 'parrot';
+unless ( $conf->{project}->{ $project_name } ) {
+    croak "Configuration for project '$project_name' not found.";
+}
+
 my $conf_rep = $conf->{project}->{$project_name};
 
 my $log_dump_refresh = $ARGV[0] || $conf_rep->{log_dump_refresh} || 150;
@@ -62,8 +84,8 @@ else {
     $state = {};
     $state->{project_name} = $project_name;
     $state->{create_time} = time();
-    $state->{log_dump_time} => undef;
-    $state->{rev_to_db_saved} => undef;
+    $state->{rep} = {};
+    $state->{rep}->{log_dump_time} = undef;
     save_state();
 }
 
@@ -246,11 +268,27 @@ foreach my $rd ( @$revs ) {
             next;
         }
 
-        my ( $rep_path, $sub_path ) = split_rep_path( $project_name, $path );
-        unless ( defined $rep_path ) {
-            carp "Parsing path '$path' failed.";
+        my $rep_layout_ok = 1;
+        my ( $rep_path, $sub_path );
+
+        if ( $conf_rep->{repository_default_layout} ) {
+            ( $rep_path, $sub_path ) = split_rep_path( $project_name, $path );
+            unless ( defined $rep_path ) {
+                carp "Parsing path '$path' failed.";
+                $rep_layout_ok = 0;
+            }
 
         } else {
+            $rep_path = '';
+            $sub_path = $path;
+            if ( substr($sub_path,0,1) eq '/' ) {
+                $sub_path = substr(  $sub_path, 1 );
+            }
+            #croak "'$sub_path'\n";
+        }
+
+
+        if ( $rep_layout_ok ) {
             unless ( exists $rp_changes->{$rep_path} ) {
                 $rp_changes->{$rep_path} = {
                     sub_paths => {},
@@ -325,11 +363,24 @@ foreach my $rd ( @$revs ) {
             print "  " . $rd->{'paths'}->{$rkey}->{'action'} . " " . $rkey . "\n";
         }
     }
-
-    #$state->{rev_to_db_saved} = $rd->{revisions};
-    # save_state();
-
 }
 
 $db->commit or $db->db_error( "End commit failed." );
 $db->disconnect;
+
+=head1 NAME
+
+repository-update - Save new revisions to database
+
+=head1 SYNOPSIS
+
+repository-update.pl -p project_name [options]
+
+ Options:
+   --help
+
+=head1 DESCRIPTION
+
+B<This program> will save ...
+
+=cut
