@@ -20,11 +20,6 @@ Catalyst controller for TapTinder client services.
 
 =cut
 
-=head2 index
-
-=cut
-
-
 sub dadd {
     my $self = shift;
     my $c = shift;
@@ -40,6 +35,12 @@ sub dumper {
     $c->stash->{ot} .= Dumper( @_ );
 }
 
+
+=head2 login_ok
+
+Check and log login params - machine_id and password.
+
+=cut
 
 sub login_ok {
     my ( $self, $c, $data, $machine_id, $passwd ) = @_;
@@ -60,6 +61,12 @@ sub login_ok {
     return 1;
 }
 
+
+=head2 msession_ok
+
+Check msession_id param.
+
+=cut
 
 sub msession_ok {
     my ( $self, $c, $data, $machine_id, $msession_id ) = @_;
@@ -97,6 +104,12 @@ sub msession_ok {
     return 1;
 }
 
+
+=head2 access_allowed
+
+Default method for all actions. Do base checks (L<login_ok|login_ok>, L<msession_ok|msession_ok>);
+
+=cut
 
 sub access_allowed {
     my ( $self, $c, $data, $params, $param_msid_checks ) = @_;
@@ -136,6 +149,12 @@ sub access_allowed {
 }
 
 
+=head2 check_param
+
+Method checks mandatory param. Sets error message if value is empty.
+
+=cut
+
 sub check_param {
     my ( $self, $c, $data, $params, $action, $key, $key_desc ) = @_;
 
@@ -147,6 +166,12 @@ sub check_param {
     return 1;
 }
 
+
+=head2 cmd_mscreate
+
+Create new machine session (msession).
+
+=cut
 
 sub cmd_mscreate {
     my ( $self, $c, $data, $params ) = @_;
@@ -172,12 +197,20 @@ sub cmd_mscreate {
         return 1;
     }
 
+    # TODO - create mslog
+
     my %cols = $msession_rs->get_columns();
     $data->{mscreate_msid} = $cols{msession_id};
     $data->{mscreate_err} = 0;
     return 1;
 }
 
+
+=head2 cmd_msdestroy
+
+Destroy machine session (msession).
+
+=cut
 
 sub cmd_msdestroy {
     my ( $self, $c, $data, $params ) = @_;
@@ -201,10 +234,21 @@ sub cmd_msdestroy {
         $data->{msdestroy_err_msg} = "Error: ... (ret_val=$ret_val)."; # TODO
         return 1;
     }
+
+    # TODO
+    # * check msjob, ...
+    # * update mslog
+
     $data->{msdestroy_err} = 0;
     return 1;
 }
 
+
+=head2 process_action
+
+Process all params but 'ot'.
+
+=cut
 
 sub process_action {
     my ( $self, $c, $action, $params ) = @_;
@@ -255,6 +299,15 @@ sub process_action {
 
     return 1;
 }
+
+
+=head2 index
+
+Use params:
+
+ot - output type, allowed 'html' and 'json', default 'json'
+
+=cut
 
 
 sub index : Path  {
