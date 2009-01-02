@@ -14,7 +14,7 @@ use Devel::StackTrace;
 
 use SVN::Log;
 
-use lib '../lib';
+use lib "$FindBin::Bin/../lib";
 use TapTinder::DB;
 
 my $help = 0;

@@ -34,22 +34,22 @@ VALUES (
 
 INSERT INTO machine ( machine_id, name, user_id, passwd, `desc` , created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
 VALUES (
-1, 'shreck1', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, 1
+1, 'shreck1', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 0, NULL, 1
 );
 
 INSERT INTO machine ( machine_id, name, user_id, passwd, `desc` , created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
 VALUES (
-2, 'shreck2', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, 1
+2, 'shreck2', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 0, NULL, 1
 );
 
 INSERT INTO machine ( machine_id, name, user_id, passwd, `desc` , created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
 VALUES (
-3, 'shreck3', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, 1
+3, 'shreck3', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90', 'i386', 'linux', 'i386-linux-thread-multi', 0, NULL, 1
 );
 
 INSERT INTO machine ( machine_id, name, user_id, passwd, `desc` , created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
 VALUES (
-4, 'ent', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.49', 'i386', 'linux', 'i386-linux-thread-multi', 1, NULL, 1
+4, 'ent', 1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.49', 'i386', 'linux', 'i386-linux-thread-multi', 0, NULL, NULL
 );
 
 INSERT INTO machine ( machine_id, name, user_id, passwd, `desc` , created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )

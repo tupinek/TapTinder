@@ -647,7 +647,6 @@ CREATE TABLE trun_conf (
 Test run info and test run statistics (cache).
 * trun_id
 * msjob_command_id
-* build_id - cache for build__msjob_id(build.msjob_command_id) == trun__msjob_id(trun.msjob_command_id)
 * conf_id - test configuration id
 * rep_path_id - not null for external test suite
 * rev_id - not null for external test suite
@@ -706,7 +705,6 @@ CREATE TABLE brun_conf (
 ==== brun ====
 * brun_id
 * msjob_command_id
-* build_id - cache
 * conf_id
 * rep_path_id - not null for external test suite
 * rev_id - not null for external test suite
@@ -891,7 +889,7 @@ CREATE TABLE fsfile (
 ) TYPE=InnoDB;
 </source>
 
-==== fsfile_type ===
+==== fsfile_type ====
 * fsfile_type_id
 * name
 ** command output
