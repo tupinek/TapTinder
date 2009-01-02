@@ -58,6 +58,7 @@ sub use_complex_search_by_id {
 
 sub dumper {
     my ( $self, $c, $ra_data, $prefix_text ) = @_;
+    return unless $c->log->is_debug;
     $prefix_text = '' unless defined $prefix_text;
     $c->stash->{ot} .= $prefix_text . Dumper( $ra_data );
 }
