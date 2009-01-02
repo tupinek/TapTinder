@@ -11,6 +11,7 @@ use Pod::Usage;
 use File::Spec::Functions;
 use YAML;
 use DBI;
+use Digest::MD5 qw(md5);
 
 my $help = 0;
 my $machine_id = '';
@@ -65,8 +66,9 @@ my $dbh = DBI->connect(
 
 my $sth;
 
-my @bv = ( $client_new_passwd );
-my $sql = 'UPDATE machine SET passwd=substring(MD5(?), -8) WHERE ';
+my $client_new_passwd_digest = substr( md5($client_new_passwd), -8 );
+my @bv = ( $client_new_passwd_digest );
+my $sql = 'UPDATE machine SET passwd=? WHERE ';
 my $info_msg = "Password set for ";
 if ( $machine_id ) {
     $info_msg .= 'machine.machine_id=' . $machine_id;

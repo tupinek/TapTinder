@@ -5,6 +5,7 @@ use warnings;
 use base 'Catalyst::Controller::BindLex';
 
 use DBIx::Dumper qw/Dumper dump_row/;
+use Digest::MD5 qw(md5);
 
 =head1 NAME
 
@@ -39,12 +40,26 @@ sub dumper {
 
 
 sub access_allowed {
-    my ( $self, $data, $user_id, $passwd ) = @_;
+    my ( $self, $c, $data, $machine_id, $passwd ) = @_;
 
+    my $passwd_md5 = substr( md5($passwd), -8); # TODO - refactor to own module
+    my $rs = $c->model('WebDB::machine')->search(
+        {
+            machine_id => $machine_id,
+            passwd => $passwd_md5,
+        }
+    );
+    my $row = $rs->next;
+    if ( !$row ) {
+        $data->{login_ok} = 0;
+        $data->{login_msg} = 'Error: Bad login or password.';
+        return 0;
+    }
+
+    $self->dumper( $c, { $row->get_columns() } );
     $data->{login_ok} = 1;
-
-    $data->{login_ok} = 0;
     $data->{login_msg} = 'Ok.';
+    return 1;
 }
 
 
@@ -63,7 +78,7 @@ sub process_action {
         $c->stash->{dumper} = sub { Dumper( $_[0] ); };
     }
 
-    $self->access_allowed( $data, $params->{uid}, $params->{pass} ) || return;
+    $self->access_allowed( $c, $data, $params->{mid}, $params->{pass} ) || return;
 
     return;
 }
