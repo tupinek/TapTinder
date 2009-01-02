@@ -661,7 +661,6 @@ Test run info and test run statistics (cache).
 CREATE TABLE trun (
     trun_id             INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msjob_command_id    INT UNSIGNED NOT NULL,
-    build_id            INT UNSIGNED NOT NULL,
     conf_id             INT UNSIGNED NOT NULL,
     rep_path_id         INT UNSIGNED DEFAULT NULL,
     rev_id              INT UNSIGNED DEFAULT NULL,
@@ -673,12 +672,10 @@ CREATE TABLE trun (
     num_skip            INT UNSIGNED NOT NULL,
     num_ok              INT UNSIGNED NOT NULL,
     INDEX i_msjob_command_id (msjob_command_id),
-    INDEX i_build_id (build_id),
     INDEX i_conf_id (conf_id),
     INDEX i_rev_id (rev_id),
     INDEX i_rep_path_id (rep_path_id),
     CONSTRAINT fk_trun_msjob_command_id FOREIGN KEY (msjob_command_id) REFERENCES msjob_command (msjob_command_id),
-    CONSTRAINT fk_trun_build_id FOREIGN KEY (build_id) REFERENCES build (build_id),
     CONSTRAINT fk_trun_conf_id FOREIGN KEY (conf_id) REFERENCES trun_conf (trun_conf_id),
     CONSTRAINT fk_trun_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
     CONSTRAINT fk_trun_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id)
@@ -712,17 +709,14 @@ CREATE TABLE brun_conf (
 CREATE TABLE brun (
     brun_id             INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msjob_command_id    INT UNSIGNED NOT NULL,
-    build_id            INT UNSIGNED NOT NULL,
     conf_id             INT UNSIGNED NOT NULL,
     rep_path_id         INT UNSIGNED DEFAULT NULL,
     rev_id              INT UNSIGNED DEFAULT NULL,
     INDEX i_msjob_command_id (msjob_command_id),
-    INDEX i_build_id (build_id),
     INDEX i_conf_id (conf_id),
     INDEX i_rev_id (rev_id),
     INDEX i_rep_path_id (rep_path_id),
     CONSTRAINT fk_brun_msjob_command_id FOREIGN KEY (msjob_command_id) REFERENCES msjob_command (msjob_command_id),
-    CONSTRAINT fk_brun_build_id FOREIGN KEY (build_id) REFERENCES build (build_id),
     CONSTRAINT fk_brun_conf_id FOREIGN KEY (conf_id) REFERENCES brun_conf (brun_conf_id),
     CONSTRAINT fk_brun_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
     CONSTRAINT fk_brun_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id)
