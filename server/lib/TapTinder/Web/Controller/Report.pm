@@ -73,6 +73,7 @@ sub dadd {
 sub dumper {
     my $self = shift;
     my $c = shift;
+    return unless $c->log->is_debug;
     $c->stash->{ot} .= Dumper( @_ );
 }
 
