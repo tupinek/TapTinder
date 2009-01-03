@@ -137,11 +137,40 @@ Method checks mandatory param. Sets error message if value is empty.
 =cut
 
 sub check_param {
-    my ( $self, $c, $data, $params, $action, $key, $key_desc ) = @_;
+    my ( $self, $c, $data, $action_name, $params, $key, $key_desc ) = @_;
 
     unless ( $params->{$key} ) {
-        $data->{$action . '_err'} = 1;
-        $data->{$action . '_err_msg'} = "Error: Parameter $key ($key_desc) required.";
+        $data->{$action_name . '_err'} = 1;
+        $data->{$action_name . '_err_msg'} = "Error: Parameter $key ($key_desc) required.";
+        return 0;
+    }
+    return 1;
+}
+
+
+=head2 create_mslog
+
+Create new machine session log (mslog) entry.
+
+=cut
+
+sub create_mslog {
+    my (
+        $self, $c, $data, $action_name,
+        $msession_id, $msstatus_id,
+        $attempt_number, $change_time, $estimated_finish_time
+    ) = @_;
+
+    my $rs = $c->model('WebDB::mslog')->create({
+        msession_id             => $msession_id,
+        msstatus_id             => $msstatus_id,
+        attempt_number          => $attempt_number,
+        change_time             => $change_time,
+        estimated_finish_time   => $estimated_finish_time,
+    });
+    unless ( $rs ) {
+        $data->{$action_name.'_err'} = 1;
+        $data->{$action_name.'_err_msg'} = "Error: Create mslog entry failed."; # TODO
         return 0;
     }
     return 1;
@@ -160,10 +189,10 @@ sub cmd_mscreate {
     # $params->{mid} - already checked
     my $machine_id = $params->{mid};
 
-    $self->check_param( $c, $data, $params, 'mscreate', 'crev', 'client code revision' ) || return 0;
+    $self->check_param( $c, $data,'mscreate', $params, 'crev', 'client code revision' ) || return 0;
     my $client_rev = $params->{crev};
 
-    $self->check_param( $c, $data, $params, 'mscreate', 'pid', 'client process ID' ) || return 0;
+    $self->check_param( $c, $data, 'mscreate', $params, 'pid', 'client process ID' ) || return 0;
     my $pid = $params->{pid};
 
     my $msession_rs = $c->model('WebDB::msession')->create({
@@ -175,13 +204,22 @@ sub cmd_mscreate {
     if ( ! $msession_rs ) {
         $data->{mscreate_err} = 1;
         $data->{mscreate_err_msg} = "Error: xxx"; # TODO
-        return 1;
+        return 0;
     }
-
-    # TODO - create mslog
-
     my %cols = $msession_rs->get_columns();
-    $data->{mscreate_msid} = $cols{msession_id};
+    my $msession_id = $cols{msession_id};
+
+    # create mslog
+    my $ret_code = $self->create_mslog(
+        $c, $data, 'mscreate',
+        $msession_id,
+        2, # $msstatus_id, 2 .. msession just created
+        1, # $attempt_number
+        DateTime->now, # $change_time
+        undef # $estimated_finish_time
+    ) || return 0;
+
+    $data->{mscreate_msid} = $msession_id;
     $data->{mscreate_err} = 0;
     return 1;
 }
@@ -213,12 +251,21 @@ sub cmd_msdestroy {
     unless ( $ret_val ) {
         $data->{msdestroy_err} = 1;
         $data->{msdestroy_err_msg} = "Error: ... (ret_val=$ret_val)."; # TODO
-        return 1;
+        return 0;
     }
 
     # TODO
     # * check msjob, ...
-    # * update mslog
+
+    # create mslog
+    my $ret_code = $self->create_mslog(
+        $c, $data, 'msdestroy',
+        $msession_id,
+        6, # $msstatus_id, 6 .. stop by user
+        1, # $attempt_number
+        DateTime->now, # $change_time
+        undef # $estimated_finish_time
+    ) || return 0;
 
     $data->{msdestroy_err} = 0;
     return 1;
