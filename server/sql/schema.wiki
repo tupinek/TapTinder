@@ -523,7 +523,7 @@ Machine session status. Could be part of msession table, but separate table is b
 * msstatus_id
 * attempt_number
 * change_time - time when machine change msession state to this status_id
-* finish_time - time when machine will probably change msession status again
+* estimated_finish_time - time when machine will probably change msession status again
 ** msstatus_id could stay same (waiting for new job) but attempt_number is increased
 <source lang=sql>
 CREATE TABLE mslog (
