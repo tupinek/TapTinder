@@ -1,4 +1,4 @@
-[% DEFAULT title = 'All client states' -%]
+[% DEFAULT title = 'All active client states' -%]
 
 <div class=nav><a href="javascript:history.back();">Back</a>, <a href="[% c.uri_for('/') %]">homepage</a>.</div>
 

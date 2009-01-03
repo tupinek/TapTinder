@@ -65,13 +65,24 @@ sub run_action {
     my $json = from_json( $json_text, {utf8 => 1} );
 
     if ( 1 ) {
-        print "action $action dbug:\n";
+        print "action '$action' debug:\n";
         print Dumper( $request );
         print Dumper( $json );
         print "\n";
     }
 
     my $data = $json->{data};
+    if ( $data->{ag_err} ) {
+        # TODO ag_err_msesion_abort_reason_id
+        carp $data->{ag_err_msg} . "\n";
+        return undef;
+    }
+
+    if ( $data->{err} ) {
+        carp $data->{err_msg} . "\n";
+        return undef;
+    }
+
     return $data;
 }
 
@@ -88,12 +99,9 @@ sub mscreate {
         pid => $$,
     };
     my $data = run_action( $ua, $client_conf, $action, $request );
+    return 0 unless defined $data;
 
-    if ( $data->{ag_err} ) {
-        carp $data->{ag_err_msg} . "\n";
-        return ( 0, undef );
-    }
-    return ( 1, $data->{mscreate_msid} );
+    return ( 1, $data->{msid} );
 }
 
 
@@ -108,13 +116,9 @@ sub msdestroy {
         msid => $msession_id,
     };
     my $data = run_action( $ua, $client_conf, $action, $request );
+    return 0 unless defined $data;
 
-    if ( $data->{ag_err} ) {
-        carp $data->{ag_err_msg} . "\n";
-        return 0;
-    }
     return 1;
-
 }
 
 

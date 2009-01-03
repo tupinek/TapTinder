@@ -71,7 +71,7 @@ sub msession_ok {
 
     if ( $cols{abort_reason_id} ) {
         $data->{ag_err} = 1;
-        $data->{ag_err_msg} = "Error: Msession msession_id=$msession_id was aborted.";
+        $data->{ag_err_msg} = "Error: Msession msession_id=$msession_id was aborted (abort_reason=$cols{abort_reason_id}).";
         $data->{ag_err_msesion_abort_reason_id} = $cols{abort_reason_id};
         return 0;
     }
@@ -137,11 +137,11 @@ Method checks mandatory param. Sets error message if value is empty.
 =cut
 
 sub check_param {
-    my ( $self, $c, $data, $action_name, $params, $key, $key_desc ) = @_;
+    my ( $self, $c, $data, $params, $key, $key_desc ) = @_;
 
     unless ( $params->{$key} ) {
-        $data->{$action_name . '_err'} = 1;
-        $data->{$action_name . '_err_msg'} = "Error: Parameter $key ($key_desc) required.";
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: Parameter $key ($key_desc) required.";
         return 0;
     }
     return 1;
@@ -169,8 +169,8 @@ sub create_mslog {
         estimated_finish_time   => $estimated_finish_time,
     });
     unless ( $rs ) {
-        $data->{$action_name.'_err'} = 1;
-        $data->{$action_name.'_err_msg'} = "Error: Create mslog entry failed."; # TODO
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: Create mslog entry failed."; # TODO
         return 0;
     }
     return 1;
@@ -189,10 +189,10 @@ sub cmd_mscreate {
     # $params->{mid} - already checked
     my $machine_id = $params->{mid};
 
-    $self->check_param( $c, $data,'mscreate', $params, 'crev', 'client code revision' ) || return 0;
+    $self->check_param( $c, $data, $params, 'crev', 'client code revision' ) || return 0;
     my $client_rev = $params->{crev};
 
-    $self->check_param( $c, $data, 'mscreate', $params, 'pid', 'client process ID' ) || return 0;
+    $self->check_param( $c, $data, $params, 'pid', 'client process ID' ) || return 0;
     my $pid = $params->{pid};
 
     my $msession_rs = $c->model('WebDB::msession')->create({
@@ -202,8 +202,8 @@ sub cmd_mscreate {
         start_time  => DateTime->now,
     });
     if ( ! $msession_rs ) {
-        $data->{mscreate_err} = 1;
-        $data->{mscreate_err_msg} = "Error: xxx"; # TODO
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: xxx"; # TODO
         return 0;
     }
     my %cols = $msession_rs->get_columns();
@@ -219,8 +219,7 @@ sub cmd_mscreate {
         undef # $estimated_finish_time
     ) || return 0;
 
-    $data->{mscreate_msid} = $msession_id;
-    $data->{mscreate_err} = 0;
+    $data->{msid} = $msession_id;
     return 1;
 }
 
@@ -249,8 +248,8 @@ sub cmd_msdestroy {
     } );
 
     unless ( $ret_val ) {
-        $data->{msdestroy_err} = 1;
-        $data->{msdestroy_err_msg} = "Error: ... (ret_val=$ret_val)."; # TODO
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: ... (ret_val=$ret_val)."; # TODO
         return 0;
     }
 
@@ -267,7 +266,6 @@ sub cmd_msdestroy {
         undef # $estimated_finish_time
     ) || return 0;
 
-    $data->{msdestroy_err} = 0;
     return 1;
 }
 
