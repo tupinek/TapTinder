@@ -45,10 +45,10 @@ if ( !$machine_selected || !$client_new_passwd ) {
     my $client_conf = $all_client_conf->{$client_project_name};
 
     if ( !$machine_id && !$machine_name ) {
-        $machine_id = $client_conf->{client_id};
+        $machine_id = $client_conf->{machine_id};
     }
     if ( !$client_new_passwd ) {
-        $client_new_passwd = $client_conf->{client_passwd};
+        $client_new_passwd = $client_conf->{machine_passwd};
     }
 }
 
