@@ -16,10 +16,6 @@ Catalyst controller for TapTinder web reports. The actions for reports browsing.
 
 =cut
 
-=head2 index
-
-=cut
-
 # TODO - temporary solution
 # dbix-class bug, see commented code in Taptinder::DB::SchemaAdd
 sub CreateMyResultSets {
@@ -314,7 +310,9 @@ sub action_do_many {
     return;
 }
 
+=head2 index
 
+=cut
 
 sub index : Path  {
     my ( $self, $c, $p_project, $par1, $par2, @args ) = @_;

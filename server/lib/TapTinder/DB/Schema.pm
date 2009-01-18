@@ -940,15 +940,6 @@ __PACKAGE__->add_columns(
       'is_nullable' => 1,
       'size' => '11'
     },
-    'patch_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 1,
-      'name' => 'patch_id',
-      'is_nullable' => 1,
-      'size' => '11'
-    },
     'order' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
@@ -1577,6 +1568,15 @@ __PACKAGE__->add_columns(
       'is_foreign_key' => 1,
       'name' => 'rev_id',
       'is_nullable' => 0,
+      'size' => '11'
+    },
+    'patch_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 1,
+      'name' => 'patch_id',
+      'is_nullable' => 1,
       'size' => '11'
     },
 );
@@ -2361,29 +2361,47 @@ __PACKAGE__->add_columns(
     'rep_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
-      'default_value' => undef,
+      'default_value' => 'NULL',
       'is_foreign_key' => 1,
       'name' => 'rep_id',
-      'is_nullable' => 0,
+      'is_nullable' => 1,
       'size' => '11'
     },
     'rep_path_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
-      'default_value' => undef,
+      'default_value' => 'NULL',
       'is_foreign_key' => 1,
       'name' => 'rep_path_id',
-      'is_nullable' => 0,
+      'is_nullable' => 1,
       'size' => '11'
     },
     'job_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
-      'default_value' => undef,
+      'default_value' => 'NULL',
       'is_foreign_key' => 1,
       'name' => 'job_id',
+      'is_nullable' => 1,
+      'size' => '11'
+    },
+    'priority' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'priority',
       'is_nullable' => 0,
       'size' => '11'
+    },
+    'allow_patches' => {
+      'data_type' => 'BOOLEAN',
+      'is_auto_increment' => 0,
+      'default_value' => '0',
+      'is_foreign_key' => 0,
+      'name' => 'allow_patches',
+      'is_nullable' => 0,
+      'size' => 0
     },
 );
 __PACKAGE__->set_primary_key('machine_job_conf_id');
@@ -2857,8 +2875,6 @@ __PACKAGE__->belongs_to('depends_on_id','TapTinder::DB::Schema::jobp','depends_o
 __PACKAGE__->has_many('get_jobp', 'TapTinder::DB::Schema::jobp', 'depends_on_id');
 __PACKAGE__->belongs_to('rep_path_id','TapTinder::DB::Schema::rep_path','rep_path_id',{join_type => 'left'});
 
-__PACKAGE__->belongs_to('patch_id','TapTinder::DB::Schema::patch','patch_id',{join_type => 'left'});
-
 __PACKAGE__->has_many('get_jobp_cmd', 'TapTinder::DB::Schema::jobp_cmd', 'jobp_id');
 __PACKAGE__->has_many('get_msjobp', 'TapTinder::DB::Schema::msjobp', 'jobp_id');
 
@@ -2897,7 +2913,7 @@ __PACKAGE__->belongs_to('fsfile_id','TapTinder::DB::Schema::fsfile','fsfile_id')
 __PACKAGE__->belongs_to('new_patch_id','TapTinder::DB::Schema::patch','new_patch_id',{join_type => 'left'});
 
 __PACKAGE__->has_many('get_patch', 'TapTinder::DB::Schema::patch', 'new_patch_id');
-__PACKAGE__->has_many('get_jobp', 'TapTinder::DB::Schema::jobp', 'patch_id');
+__PACKAGE__->has_many('get_msjobp', 'TapTinder::DB::Schema::msjobp', 'patch_id');
 
 package TapTinder::DB::Schema::rep_file;
 
@@ -2932,6 +2948,8 @@ __PACKAGE__->belongs_to('msjob_id','TapTinder::DB::Schema::msjob','msjob_id');
 __PACKAGE__->belongs_to('jobp_id','TapTinder::DB::Schema::jobp','jobp_id');
 
 __PACKAGE__->belongs_to('rev_id','TapTinder::DB::Schema::rev','rev_id');
+
+__PACKAGE__->belongs_to('patch_id','TapTinder::DB::Schema::patch','patch_id',{join_type => 'left'});
 
 __PACKAGE__->has_many('get_msjobp_cmd', 'TapTinder::DB::Schema::msjobp_cmd', 'msjobp_id');
 
@@ -3042,11 +3060,11 @@ package TapTinder::DB::Schema::machine_job_conf;
 
 __PACKAGE__->belongs_to('machine_id','TapTinder::DB::Schema::machine','machine_id');
 
-__PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id');
+__PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id',{join_type => 'left'});
 
-__PACKAGE__->belongs_to('rep_path_id','TapTinder::DB::Schema::rep_path','rep_path_id');
+__PACKAGE__->belongs_to('rep_path_id','TapTinder::DB::Schema::rep_path','rep_path_id',{join_type => 'left'});
 
-__PACKAGE__->belongs_to('job_id','TapTinder::DB::Schema::job','job_id');
+__PACKAGE__->belongs_to('job_id','TapTinder::DB::Schema::job','job_id',{join_type => 'left'});
 
 
 package TapTinder::DB::Schema::rep_author;

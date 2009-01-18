@@ -122,9 +122,28 @@ sub msdestroy {
 }
 
 
+sub cget {
+    my ( $ua, $client_conf, $msession_id ) = @_;
+
+    my $action = 'cget';
+    my $request = {
+        ot => 'json',
+        mid => $client_conf->{machine_id},
+        pass => $client_conf->{machine_passwd},
+        msid => $msession_id,
+    };
+    my $data = run_action( $ua, $client_conf, $action, $request );
+    return 0 unless defined $data;
+
+    return 1;
+}
+
+
 my ( $login_rc, $msession_id ) = mscreate( $ua, $client_conf );
 
+
 if ( $login_rc ) {
+    cget( $ua, $client_conf, $msession_id );
     msdestroy( $ua, $client_conf, $msession_id );
 }
 

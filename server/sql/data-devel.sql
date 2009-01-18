@@ -66,13 +66,13 @@ VALUES (
 );
 
 
-INSERT INTO jobp ( jobp_id, job_id, rep_path_id, patch_id, `order`, name, `desc`, depends_on_id, extends )
+INSERT INTO jobp ( jobp_id, job_id, rep_path_id, `order`, name, `desc`, depends_on_id, extends )
 VALUES (
-    1, 1, 1, NULL, 1, 'sole',           NULL, NULL, 0  ), (
-    2, 2, 1, NULL, 1, 'base',           NULL, NULL, 0  ), (
-    3, 2, 2, NULL, 2, 'external tests', NULL, 2,    1  ), (
-    4, 3, 1, NULL, 1, 'base',           NULL, NULL, 0  ), (
-    5, 3, 3, NULL, 2, 'related part',   NULL, 4,    0
+    1, 1, 1, 1, 'sole',           NULL, NULL, 0  ), (
+    2, 2, 1, 1, 'base',           NULL, NULL, 0  ), (
+    3, 2, 2, 2, 'external tests', NULL, 2,    1  ), (
+    4, 3, 1, 1, 'base',           NULL, NULL, 0  ), (
+    5, 3, 3, 2, 'related part',   NULL, 4,    0
 );
 
 INSERT INTO jobp_cmd ( jobp_cmd_id, jobp_id, `order`, cmd_id )
@@ -106,6 +106,13 @@ VALUES (
     21, 5, 3, 4 ), (
     22, 5, 4, 5 ), (
     23, 5, 5, 6
+);
+
+INSERT INTO machine_job_conf ( machine_job_conf_id, machine_id, rep_id, rep_path_id, job_id, priority )
+VALUES (
+    1, 4, 1,    NULL, NULL, 1  ), (
+    2, 4, NULL, NULL, 2,    2  ), (
+    3, 5, NULL, NULL, 1,    1
 );
 
 commit;

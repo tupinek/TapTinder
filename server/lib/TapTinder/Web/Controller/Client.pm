@@ -23,6 +23,90 @@ Check and log login params - machine_id and password.
 
 =cut
 
+# TODO - temporary solution
+# dbix-class bug, see commented code in Taptinder::DB::SchemaAdd
+sub CreateMyResultSets {
+    my ( $self, $c ) = @_;
+
+    my $source = TapTinder::DB::Schema::job->result_source_instance;
+    my $new_source = $source->new($source);
+    $new_source->source_name('NotTestedJobs');
+
+    $new_source->name(\<<'');
+(
+    select a_r.*
+      from (
+            select a_jp.job_id,
+                   a_jp.jobp_id,
+                   a_jp.rep_path_id,
+                   r.rev_id,
+                   r.rev_num,
+                   a_jp.priority,
+                   j.priority as jpriority
+              from (
+                    select distinct sa_jp.*
+                      from (
+                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id
+                                from machine_job_conf mjc,
+                                     rep_path rp,
+                                     jobp jp
+                               where mjc.machine_id = ?
+                                 and rp.rep_id = mjc.rep_id
+                                 and jp.rep_path_id = rp.rep_path_id
+                            )
+                            union all
+                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id
+                                from machine_job_conf mjc,
+                                     jobp jp
+                               where mjc.machine_id = ?
+                                 and mjc.rep_path_id is not null
+                                 and jp.rep_path_id = mjc.rep_path_id
+                            )
+                            union all
+                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id
+                                from machine_job_conf mjc,
+                                     jobp jp
+                               where mjc.machine_id = ?
+                                 and mjc.job_id is not null
+                                 and jp.job_id = mjc.job_id
+                            )
+                           ) sa_jp
+                  ) a_jp,
+                  rev_rep_path rrp,
+                  rev r,
+                  job j
+            where rrp.rep_path_id = a_jp.rep_path_id
+              and r.rev_id = rrp.rev_id
+              and j.job_id = a_jp.job_id
+            order by a_jp.priority, j.priority, r.rev_num desc, a_jp.jobp_id
+          ) a_r
+    where not exists (
+            select 1
+              from msjob msj,
+                   msjobp msjp,
+                   jobp jp
+             where msj.msession_id = ?
+               and msjp.msjob_id = msj.msjob_id
+               and jp.jobp_id = msjp.jobp_id
+               and jp.rep_path_id = a_r.rep_path_id
+               and msjp.rev_id = a_r.rev_id
+          )
+)
+
+
+    my $schema = $c->model('WebDB')->schema;
+    $schema->register_source('NotTestedJobs' => $new_source);
+
+    return 1;
+}
+
+
+=head2 login_ok
+
+Check and log login params - machine_id and password.
+
+=cut
+
 sub login_ok {
     my ( $self, $c, $data, $machine_id, $passwd ) = @_;
 
@@ -270,6 +354,81 @@ sub cmd_msdestroy {
 }
 
 
+=head2 cmd_cget
+
+Insert new row to msjob table if needed.
+
+=cut
+
+sub create_msjob {
+    my ( $self, $c, $data, $machine_id, $msession_id ) = @_;
+
+    $self->CreateMyResultSets( $c );
+
+    my $plus_rows = [ qw/ job_id jobp_id rep_path_id rev_id rev_num priority jpriority /];
+
+    my $search_conf = {
+        'select' => $plus_rows,
+        'as' => $plus_rows,
+        bind  => [ $machine_id, $machine_id, $machine_id, $msession_id ],
+    };
+
+    my $rs = $c->model('WebDB')->schema->resultset( 'NotTestedJobs' )->search( {}, $search_conf );
+    if (my $row = $rs->next) {
+        my $row_data = { $row->get_columns };
+        $self->dumper( $c, $row_data );
+    }
+    return 1;
+}
+
+
+=head2 cmd_cget
+
+Get command to run on client. Insert new row to msjob_command table and new
+row to msjob table if needed.
+
+=cut
+
+sub cmd_cget {
+    my ( $self, $c, $data, $params ) = @_;
+
+    # $params->{mid} - already checked
+    my $machine_id = $params->{mid};
+    # $params->{msid} - already checked
+    my $msession_id = $params->{msid};
+
+    my $start_new_job = 0;
+    if ( ! $params->{mcid} ) {
+         $start_new_job = 1;
+    } else {
+        # check if previous command wasn't last one in job
+        # TODO
+    }
+
+    my $ret_val;
+    if ( $start_new_job ) {
+        my $ret_val = $self->create_msjob( $c, $data, $machine_id, $msession_id );
+        unless ( $ret_val ) {
+            $data->{err} = 1;
+            $data->{err_msg} = "Error: ... (ret_val=$ret_val)."; # TODO
+            return 0;
+        }
+    }
+
+    # create mslog
+    my $ret_code = $self->create_mslog(
+        $c, $data, 'cget',
+        $msession_id,
+        4, # $msstatus_id, 4 .. running command
+        1, # $attempt_number
+        DateTime->now, # $change_time
+        undef # $estimated_finish_time
+    ) || return 0;
+
+    return 1;
+}
+
+
 =head2 process_action
 
 Process all params but 'ot'.
@@ -315,6 +474,7 @@ sub process_action {
             $cmd_ret_code = $self->cmd_msdestroy( $c, $data, $params );
 
         } elsif ( $action eq 'cget' ) {
+            $cmd_ret_code = $self->cmd_cget( $c, $data, $params );
 
         } elsif ( $action eq 'sset' ) {
 

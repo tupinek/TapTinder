@@ -3,7 +3,7 @@
 <!-- perl utils\wiki_schema.pl sql\schema.wiki 1 > sql\schema.sql -->
 <!-- PARSE PART DBCREATE BEGIN -->
 <source lang=sql>
--- schema version: 0.08
+-- schema version: 0.09
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 </source>
@@ -333,14 +333,14 @@ CREATE TABLE rep_test (
 Job. Job table can contain one part or more related parts.
 * job_id
 * client_min_rev - minimal clietn revision number to run this job
-* priority
+*
 * name
 * desc
 <source lang=sql>
 CREATE TABLE job (
     job_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     client_min_rev  INT UNSIGNED DEFAULT 1,
-    priority        INT UNSIGNED NOT NULL,
+    priority        INT UNSIGNED NOT NULL DEFAULT 1,
     name            VARCHAR(25),
     `desc`          TEXT DEFAULT NULL
 ) TYPE=InnoDB;
@@ -351,7 +351,6 @@ Job part.
 * jobp_id
 * job_id
 * rep_path_id
-* patch_id
 * order
 * name
 * desc
@@ -362,7 +361,6 @@ CREATE TABLE jobp (
     jobp_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     job_id          INT UNSIGNED NOT NULL,
     rep_path_id     INT UNSIGNED DEFAULT NULL,
-    patch_id        INT UNSIGNED DEFAULT NULL,
     `order`         INT UNSIGNED NOT NULL,
     name            VARCHAR(25),
     `desc`          TEXT DEFAULT NULL,
@@ -372,8 +370,7 @@ CREATE TABLE jobp (
     INDEX i_rep_path_id (rep_path_id),
     CONSTRAINT fk_jobp_job_id FOREIGN KEY (job_id) REFERENCES job (job_id),
     CONSTRAINT fk_jobp_depedns_on_id FOREIGN KEY (depends_on_id) REFERENCES jobp (jobp_id),
-    CONSTRAINT fk_jobp_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
-    CONSTRAINT fk_jobp_patch_id FOREIGN KEY (patch_id) REFERENCES patch (patch_id)
+    CONSTRAINT fk_jobp_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -431,18 +428,24 @@ CREATE TABLE cmd_status (
 </source>
 
 ==== machine_job_conf ====
+Machine job configuration.
+Defined rep_id is the most general config. Defined job_id the most specific config.
 * machine_job_conf_id
 * machine_id
 * rep_id
 * rep_path_id
 * job_id
+* priority
+* allow_patches
 <source lang=sql>
 CREATE TABLE machine_job_conf (
     machine_job_conf_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     machine_id          INT UNSIGNED NOT NULL,
-    rep_id              INT UNSIGNED NOT NULL,
-    rep_path_id         INT UNSIGNED NOT NULL,
-    job_id              INT UNSIGNED NOT NULL,
+    rep_id              INT UNSIGNED DEFAULT NULL,
+    rep_path_id         INT UNSIGNED DEFAULT NULL,
+    job_id              INT UNSIGNED DEFAULT NULL,
+    priority            INT UNSIGNED NOT NULL DEFAULT 1,
+    allow_patches       BOOLEAN NOT NULL DEFAULT 0,
     INDEX i_machine_id (machine_id),
     CONSTRAINT fk_machine_job_conf_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id),
     CONSTRAINT fk_machine_job_conf_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
@@ -459,7 +462,7 @@ Machine session. Each machine can run more than one processes at a time.
 * pid - system process id on machine
 * start_time - time when machine session was started
 * end_time - time when machine session ended
-* abort_reason_hid - default null, fk to msession_abort_reason
+* abort_reason_id - default null, fk to msession_abort_reason
 <source lang=sql>
 CREATE TABLE msession (
     msession_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -503,18 +506,21 @@ Machine session job part.
 * msjob_id
 * jobp_id
 * rev_id
+* patch_id
 <source lang=sql>
 CREATE TABLE msjobp (
     msjobp_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msjob_id    INT UNSIGNED NOT NULL,
     jobp_id     INT UNSIGNED NOT NULL,
     rev_id      INT UNSIGNED NOT NULL,
+    patch_id    INT UNSIGNED DEFAULT NULL,
     INDEX i_msjob_id (msjob_id),
     INDEX i_jobp_id (jobp_id),
     INDEX i_rev_id (rev_id),
     CONSTRAINT fk_msjobp_msjob_id FOREIGN KEY (msjob_id) REFERENCES msjob (msjob_id),
     CONSTRAINT fk_msjobp_jobp_id FOREIGN KEY (jobp_id) REFERENCES jobp (jobp_id),
-    CONSTRAINT fk_msjobp_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id)
+    CONSTRAINT fk_msjobp_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
+    CONSTRAINT fk_msjobp_patch_id FOREIGN KEY (patch_id) REFERENCES patch (patch_id)
 ) TYPE=InnoDB;
 </source>
 

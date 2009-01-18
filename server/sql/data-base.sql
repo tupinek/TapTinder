@@ -65,7 +65,7 @@ VALUES (
 
 INSERT INTO param ( param_id, param_type_id, value )
 VALUES (
-    1, 1, '0.0.08'
+    1, 1, '0.09'
 );
 
 
