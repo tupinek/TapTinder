@@ -51,10 +51,10 @@ TapTinder::DB::Schema->register_source( 'ActiveRepPathList' => $new_source );
 package TapTinder::DB::Schema::build_conf;
 __PACKAGE__->cols_in_foreign_tables( [ qw/cc devel/ ] );
 
-package TapTinder::DB::Schema::command;
+package TapTinder::DB::Schema::cmd;
 __PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
 
-package TapTinder::DB::Schema::command_status;
+package TapTinder::DB::Schema::cmd_status;
 __PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
 
 package TapTinder::DB::Schema::farm;
@@ -72,11 +72,11 @@ __PACKAGE__->cols_in_foreign_tables( [ qw/path/ ] );
 package TapTinder::DB::Schema::job;
 __PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
 
-package TapTinder::DB::Schema::job_part;
+package TapTinder::DB::Schema::jobp;
 __PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
 
-package TapTinder::DB::Schema::job_part_command;
-__PACKAGE__->cols_in_foreign_tables( [ qw/job_part_id order command_id/ ] );
+package TapTinder::DB::Schema::jobp_cmd;
+__PACKAGE__->cols_in_foreign_tables( [ qw/jobp_id order cmd_id/ ] );
 
 package TapTinder::DB::Schema::machine;
 __PACKAGE__->restricted_cols( { 'passwd' => 1, } );
@@ -90,6 +90,9 @@ __PACKAGE__->restricted_cols( { 'key' => 1, 'pid' => 1, } );
 
 package TapTinder::DB::Schema::msjob;
 __PACKAGE__->cols_in_foreign_tables( [ qw/msession_id job_id/ ] );
+
+package TapTinder::DB::Schema::msjobp;
+__PACKAGE__->cols_in_foreign_tables( [ qw/msjob_id jobp_id/ ] );
 
 package TapTinder::DB::Schema::msstatus;
 __PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );

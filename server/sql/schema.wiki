@@ -3,7 +3,7 @@
 <!-- perl utils\wiki_schema.pl sql\schema.wiki 1 > sql\schema.sql -->
 <!-- PARSE PART DBCREATE BEGIN -->
 <source lang=sql>
--- schema version: 0.07
+-- schema version: 0.08
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 </source>
@@ -94,10 +94,10 @@ Project.
 * desc
 <source lang=sql>
 CREATE TABLE project (
-    project_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name            VARCHAR(255) NOT NULL,
-    url             VARCHAR(255) NOT NULL,
-    `desc`          TEXT DEFAULT NULL
+    project_id  INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(255) NOT NULL,
+    url         VARCHAR(255) NOT NULL,
+    `desc`      TEXT DEFAULT NULL
 ) TYPE=InnoDB;
 </source>
 
@@ -246,10 +246,10 @@ CREATE TABLE rep_change_type (
 * change_type_id
 <source lang=sql>
 CREATE TABLE rep_file_change (
-    rev_id              INT UNSIGNED NOT NULL,
-    rev_num             INT UNSIGNED NOT NULL,
-    rep_file_id         INT UNSIGNED NOT NULL,
-    change_type_id      INT UNSIGNED NOT NULL,
+    rev_id          INT UNSIGNED NOT NULL,
+    rev_num         INT UNSIGNED NOT NULL,
+    rep_file_id     INT UNSIGNED NOT NULL,
+    change_type_id  INT UNSIGNED NOT NULL,
     INDEX i_rev_id (rev_id),
     INDEX i_rev_num (rev_num),
     INDEX i_rev_id_rep_file_id (rev_id, rep_file_id),
@@ -330,9 +330,8 @@ CREATE TABLE rep_test (
 </source>
 
 ==== job ====
+Job. Job table can contain one part or more related parts.
 * job_id
-* rep_id
-* rep_path_id
 * client_min_rev - minimal clietn revision number to run this job
 * priority
 * name
@@ -340,75 +339,83 @@ CREATE TABLE rep_test (
 <source lang=sql>
 CREATE TABLE job (
     job_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    rep_id          INT UNSIGNED NOT NULL,
-    rep_path_id     INT UNSIGNED DEFAULT NULL,
     client_min_rev  INT UNSIGNED DEFAULT 1,
     priority        INT UNSIGNED NOT NULL,
     name            VARCHAR(25),
-    `desc`          TEXT DEFAULT NULL,
-    INDEX i_rep_id (rep_id),
-    CONSTRAINT fk_job_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
-    CONSTRAINT fk_job_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id)
+    `desc`          TEXT DEFAULT NULL
 ) TYPE=InnoDB;
 </source>
 
-==== job_part ====
-* job_part_id
+==== jobp ====
+Job part.
+* jobp_id
 * job_id
+* rep_path_id
+* patch_id
 * order
 * name
 * desc
-* depends_on_id - Depends on job_part.job_part_id. Job part (job_part_id) can't start if job_part.depends_on_id doesn't finished ok.
+* depends_on_id - Depends on jobp.jobp_id. Job part (jobp_id) can't start if jobp.depends_on_id doesn't finished ok.
+* extends - Default 0. 1 if this part extends part defined in depends_on_id.
 <source lang=sql>
-CREATE TABLE job_part (
-    job_part_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE jobp (
+    jobp_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     job_id          INT UNSIGNED NOT NULL,
+    rep_path_id     INT UNSIGNED DEFAULT NULL,
+    patch_id        INT UNSIGNED DEFAULT NULL,
     `order`         INT UNSIGNED NOT NULL,
     name            VARCHAR(25),
     `desc`          TEXT DEFAULT NULL,
-    depends_on_id  INT UNSIGNED DEFAULT NULL,
+    depends_on_id   INT UNSIGNED DEFAULT NULL,
+    extends         BOOLEAN NOT NULL DEFAULT 0,
     INDEX i_job_id (job_id),
-    CONSTRAINT fk_job_part_job_id FOREIGN KEY (job_id) REFERENCES job (job_id),
-    CONSTRAINT fk_job_part_depedns_on_id FOREIGN KEY (depends_on_id) REFERENCES job_part (job_part_id)
+    INDEX i_rep_path_id (rep_path_id),
+    CONSTRAINT fk_jobp_job_id FOREIGN KEY (job_id) REFERENCES job (job_id),
+    CONSTRAINT fk_jobp_depedns_on_id FOREIGN KEY (depends_on_id) REFERENCES jobp (jobp_id),
+    CONSTRAINT fk_jobp_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
+    CONSTRAINT fk_jobp_patch_id FOREIGN KEY (patch_id) REFERENCES patch (patch_id)
 ) TYPE=InnoDB;
 </source>
 
-==== command ====
-* command_id
+==== cmd ====
+Command.
+* cmd_id
 * name
 * desc
 * params
-Client should known what to run for each command_id. E.g. 1 (perlconf) means run 'perl Configure.pl' or 'perl.exe Configure.pl' (under win32). Server shoul know, which params client needs.
+Client should known what to run for each cmd_id. E.g. 1 (perlconf) means run 'perl Configure.pl' or 'perl.exe Configure.pl' (under win32). Server shoul know, which params client needs.
 <source lang=sql>
-CREATE TABLE command (
-    command_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name            VARCHAR(25),
-    `desc`          TEXT DEFAULT NULL,
-    params          TEXT DEFAULT NULL
+CREATE TABLE cmd (
+    cmd_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(25),
+    `desc`      TEXT DEFAULT NULL,
+    params      TEXT DEFAULT NULL
 ) TYPE=InnoDB;
 </source>
 
-==== job_part_command ====
-* job_part_command_id
-* job_part_id
+==== jobp_cmd ====
+Job part command.
+* jobp_cmd_id
+* jobp_id
 * order
-* command_id
-* parameters
+* cmd_id
+* params
 <source lang=sql>
-CREATE TABLE job_part_command (
-    job_part_command_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    job_part_id         INT UNSIGNED NOT NULL,
-    `order`             INT UNSIGNED NOT NULL,
-    command_id          INT UNSIGNED NOT NULL,
-    parameters          TEXT,
-    INDEX i_job_part_id (job_part_id),
-    CONSTRAINT fk_job_part_command_job_part_id FOREIGN KEY (job_part_id) REFERENCES job_part (job_part_id),
-    CONSTRAINT fk_job_part_command_command_id FOREIGN KEY (command_id) REFERENCES command (command_id)
+CREATE TABLE jobp_cmd (
+    jobp_cmd_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    jobp_id         INT UNSIGNED NOT NULL,
+    `order`         INT UNSIGNED NOT NULL,
+    cmd_id          INT UNSIGNED NOT NULL,
+    params          TEXT,
+    INDEX i_jobp_id (jobp_id),
+    CONSTRAINT fk_jobp_cmd_jobp_id FOREIGN KEY (jobp_id) REFERENCES jobp (jobp_id),
+    CONSTRAINT fk_jobp_cmd_cmd_id FOREIGN KEY (cmd_id) REFERENCES cmd (cmd_id)
 ) TYPE=InnoDB;
 </source>
 
-==== command_status ====
-* command_status_id
+==== cmd_status ====
+Command status.
+* cmd_status_id
 * name
 * 1 .. running
 * 2 .. ok -- finished ok
@@ -416,10 +423,10 @@ CREATE TABLE job_part_command (
 * 4 .. error -- finished with error
 * desc
 <source lang=sql>
-CREATE TABLE command_status (
-    command_status_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name                VARCHAR(25),
-    `desc`              TEXT DEFAULT NULL
+CREATE TABLE cmd_status (
+    cmd_status_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(25),
+    `desc`          TEXT DEFAULT NULL
 ) TYPE=InnoDB;
 </source>
 
@@ -469,6 +476,7 @@ CREATE TABLE msession (
 </source>
 
 ==== msjob ====
+Machine session job part.
 * msjob_id
 * msession_id
 * job_id
@@ -489,35 +497,58 @@ CREATE TABLE msjob (
 ) TYPE=InnoDB;
 </source>
 
-==== msjob_command ====
-* msjob_command_id
-* job_command_id
+==== msjobp ====
+Machine session job part.
+* msjobp_id
 * msjob_id
-* command_status_id
+* jobp_id
+* rev_id
+<source lang=sql>
+CREATE TABLE msjobp (
+    msjobp_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msjob_id    INT UNSIGNED NOT NULL,
+    jobp_id     INT UNSIGNED NOT NULL,
+    rev_id      INT UNSIGNED NOT NULL,
+    INDEX i_msjob_id (msjob_id),
+    INDEX i_jobp_id (jobp_id),
+    INDEX i_rev_id (rev_id),
+    CONSTRAINT fk_msjobp_msjob_id FOREIGN KEY (msjob_id) REFERENCES msjob (msjob_id),
+    CONSTRAINT fk_msjobp_jobp_id FOREIGN KEY (jobp_id) REFERENCES jobp (jobp_id),
+    CONSTRAINT fk_msjobp_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id)
+) TYPE=InnoDB;
+</source>
+
+==== msjobp_cmd ====
+Machine session job part command.
+* msjobp_cmd_id
+* jobp_cmd_id
+* msjobp_id
+* cmd_status_id
 * pid
 * start_time
 * end_time
 * output_id
 <source lang=sql>
-CREATE TABLE msjob_command (
-    msjob_command_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    job_part_command_id INT UNSIGNED NOT NULL,
-    msjob_id            INT UNSIGNED NOT NULL,
-    status_id           INT UNSIGNED NOT NULL,
-    pid                 INT UNSIGNED NOT NULL,
-    start_time          DATETIME NOT NULL,
-    end_time            DATETIME DEFAULT NULL,
-    output_id           INT UNSIGNED NOT NULL,
-    INDEX i_job_part_command_id (job_part_command_id),
-    CONSTRAINT fk_msjob_command_job_part_command_id FOREIGN KEY (job_part_command_id) REFERENCES job_part_command (job_part_command_id),
-    CONSTRAINT fk_msjob_command_msjob_id FOREIGN KEY (msjob_id) REFERENCES msjob (msjob_id),
-    CONSTRAINT fk_msjob_command_job_status_id FOREIGN KEY (status_id) REFERENCES command_status (command_status_id),
-    CONSTRAINT fk_msjob_command_output_id FOREIGN KEY (output_id) REFERENCES fsfile (fsfile_id)
+CREATE TABLE msjobp_cmd (
+    msjobp_cmd_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    jobp_cmd_id     INT UNSIGNED NOT NULL,
+    msjobp_id       INT UNSIGNED NOT NULL,
+    status_id       INT UNSIGNED NOT NULL,
+    pid             INT UNSIGNED NOT NULL,
+    start_time      DATETIME NOT NULL,
+    end_time        DATETIME DEFAULT NULL,
+    output_id       INT UNSIGNED NOT NULL,
+    INDEX i_jobp_cmd_id (jobp_cmd_id),
+    INDEX i_msjobp_id (msjobp_id),
+    CONSTRAINT fk_msjobp_cmd_jobp_cmd_id FOREIGN KEY (jobp_cmd_id) REFERENCES jobp_cmd (jobp_cmd_id),
+    CONSTRAINT fk_msjobp_cmd_msjobp_id FOREIGN KEY (msjobp_id) REFERENCES msjobp (msjobp_id),
+    CONSTRAINT fk_msjobp_cmd_job_status_id FOREIGN KEY (status_id) REFERENCES cmd_status (cmd_status_id),
+    CONSTRAINT fk_msjobp_cmd_output_id FOREIGN KEY (output_id) REFERENCES fsfile (fsfile_id)
 ) TYPE=InnoDB;
 </source>
- 
+
 ==== mslog ====
-Machine session status. Could be part of msession table, but separate table is better for logging (and log cleaning).
+Machine session log. Could be part of msession table, but separate table is better for logging (and log cleaning).
 * mslog_id
 * msession_id
 * msstatus_id
@@ -601,27 +632,16 @@ CREATE TABLE build_conf (
 
 ==== build ====
 * build_id
-* rep_path_id
-* rev_id
-* patch_id
-* msjob_command_id
+* msjobp_cmd_id
 * conf_id - build configuration id
 <source lang=sql>
 CREATE TABLE build (
-    build_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    msjob_command_id    INT UNSIGNED NOT NULL,
-    rep_path_id         INT UNSIGNED NOT NULL,
-    rev_id              INT UNSIGNED NOT NULL,
-    patch_id            INT UNSIGNED DEFAULT NULL,
-    conf_id             INT UNSIGNED NOT NULL,
-    INDEX i_msjob_command_id (msjob_command_id),
-    INDEX i_rev_id (rev_id),
-    INDEX i_rep_path_id (rep_path_id),
+    build_id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msjobp_cmd_id   INT UNSIGNED NOT NULL,
+    conf_id         INT UNSIGNED NOT NULL,
+    INDEX i_msjobp_cmd_id (msjobp_cmd_id),
     INDEX i_conf_id (conf_id),
-    CONSTRAINT fk_build_msjob_command_id FOREIGN KEY (msjob_command_id) REFERENCES msjob_command (msjob_command_id),
-    CONSTRAINT fk_build_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
-    CONSTRAINT fk_build_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
-    CONSTRAINT fk_build_patch_id FOREIGN KEY (patch_id) REFERENCES patch (patch_id),
+    CONSTRAINT fk_build_msjobp_cmd_id FOREIGN KEY (msjobp_cmd_id) REFERENCES msjobp_cmd (msjobp_cmd_id),
     CONSTRAINT fk_build_conf_id FOREIGN KEY (conf_id) REFERENCES build_conf (build_conf_id)
 ) TYPE=InnoDB;
 </source>
@@ -646,10 +666,8 @@ CREATE TABLE trun_conf (
 ==== trun ====
 Test run info and test run statistics (cache).
 * trun_id
-* msjob_command_id
+* msjobp_cmd_id
 * conf_id - test configuration id
-* rep_path_id - not null for external test suite
-* rev_id - not null for external test suite
 * num_notseen - cache
 * num_failed - cache
 * num_unknown - cache
@@ -659,26 +677,20 @@ Test run info and test run statistics (cache).
 * num_ok - cache
 <source lang=sql>
 CREATE TABLE trun (
-    trun_id             INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    msjob_command_id    INT UNSIGNED NOT NULL,
-    conf_id             INT UNSIGNED NOT NULL,
-    rep_path_id         INT UNSIGNED DEFAULT NULL,
-    rev_id              INT UNSIGNED DEFAULT NULL,
-    num_notseen         INT UNSIGNED NOT NULL,
-    num_failed          INT UNSIGNED NOT NULL,
-    num_unknown         INT UNSIGNED NOT NULL,
-    num_todo            INT UNSIGNED NOT NULL,
-    num_bonus           INT UNSIGNED NOT NULL,
-    num_skip            INT UNSIGNED NOT NULL,
-    num_ok              INT UNSIGNED NOT NULL,
-    INDEX i_msjob_command_id (msjob_command_id),
+    trun_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msjobp_cmd_id   INT UNSIGNED NOT NULL,
+    conf_id         INT UNSIGNED NOT NULL,
+    num_notseen     INT UNSIGNED NOT NULL,
+    num_failed      INT UNSIGNED NOT NULL,
+    num_unknown     INT UNSIGNED NOT NULL,
+    num_todo        INT UNSIGNED NOT NULL,
+    num_bonus       INT UNSIGNED NOT NULL,
+    num_skip        INT UNSIGNED NOT NULL,
+    num_ok          INT UNSIGNED NOT NULL,
+    INDEX i_msjobp_cmd_id (msjobp_cmd_id),
     INDEX i_conf_id (conf_id),
-    INDEX i_rev_id (rev_id),
-    INDEX i_rep_path_id (rep_path_id),
-    CONSTRAINT fk_trun_msjob_command_id FOREIGN KEY (msjob_command_id) REFERENCES msjob_command (msjob_command_id),
-    CONSTRAINT fk_trun_conf_id FOREIGN KEY (conf_id) REFERENCES trun_conf (trun_conf_id),
-    CONSTRAINT fk_trun_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
-    CONSTRAINT fk_trun_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id)
+    CONSTRAINT fk_trun_msjobp_cmd_id FOREIGN KEY (msjobp_cmd_id) REFERENCES msjobp_cmd (msjobp_cmd_id),
+    CONSTRAINT fk_trun_conf_id FOREIGN KEY (conf_id) REFERENCES trun_conf (trun_conf_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -701,25 +713,17 @@ CREATE TABLE brun_conf (
 
 ==== brun ====
 * brun_id
-* msjob_command_id
+* msjobp_cmd_id
 * conf_id
-* rep_path_id - not null for external test suite
-* rev_id - not null for external test suite
 <source lang=sql>
 CREATE TABLE brun (
-    brun_id             INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    msjob_command_id    INT UNSIGNED NOT NULL,
-    conf_id             INT UNSIGNED NOT NULL,
-    rep_path_id         INT UNSIGNED DEFAULT NULL,
-    rev_id              INT UNSIGNED DEFAULT NULL,
-    INDEX i_msjob_command_id (msjob_command_id),
+    brun_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msjobp_cmd_id   INT UNSIGNED NOT NULL,
+    conf_id         INT UNSIGNED NOT NULL,
+    INDEX i_msjobp_cmd_id (msjobp_cmd_id),
     INDEX i_conf_id (conf_id),
-    INDEX i_rev_id (rev_id),
-    INDEX i_rep_path_id (rep_path_id),
-    CONSTRAINT fk_brun_msjob_command_id FOREIGN KEY (msjob_command_id) REFERENCES msjob_command (msjob_command_id),
-    CONSTRAINT fk_brun_conf_id FOREIGN KEY (conf_id) REFERENCES brun_conf (brun_conf_id),
-    CONSTRAINT fk_brun_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
-    CONSTRAINT fk_brun_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id)
+    CONSTRAINT fk_brun_msjobp_cmd_id FOREIGN KEY (msjobp_cmd_id) REFERENCES msjobp_cmd (msjobp_cmd_id),
+    CONSTRAINT fk_brun_conf_id FOREIGN KEY (conf_id) REFERENCES brun_conf (brun_conf_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -761,7 +765,7 @@ CREATE TABLE tfile (
 </source>
 
 ==== trest ====
-Test result info. 
+Test result info.
 * tresult_id
 * name
 ** 0 .. not seen

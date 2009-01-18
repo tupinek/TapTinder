@@ -17,11 +17,11 @@ delete from msabort_reason;
 delete from fsfile_type;
 
 -- delete job tables
+delete from cmd;
+delete from cmd_status;
 delete from job;
-delete from job_part;
-delete from command;
-delete from job_part_command;
-delete from command_status;
+delete from jobp;
+delete from jobp_cmd;
 
 -- delete data from tables imported by cron/repository-update.pl
 delete from rep_author;
@@ -41,7 +41,8 @@ delete from fspath_select;
 -- delete submited tests
 delete from msession;
 delete from msjob;
-delete from msjob_command;
+delete from msjobp;
+delete from msjobp_cmd;
 delete from mslog;
 
 delete from build;
@@ -59,140 +60,116 @@ SET FOREIGN_KEY_CHECKS=1;
 
 INSERT INTO param_type ( param_type_id, name, `desc` )
 VALUES (
-1, 'db_version', 'Version number of TapTinder database.'
+    1, 'db_version', 'Version number of TapTinder database.'
 );
 
 INSERT INTO param ( param_id, param_type_id, value )
 VALUES (
-1, 1, '0.0.07'
+    1, 1, '0.0.08'
 );
 
 
 INSERT INTO trest ( trest_id, name, `desc` )
 VALUES (
-0, 'not seen', NULL
-), (
-1, 'failed', NULL
-), (
-2, 'unknown', NULL
-), (
-3, 'todo', NULL
-), (
-4, 'bonus', NULL
-), (
-5, 'skip', NULL
-), (
-'6', 'ok', NULL
+    0, 'not seen',  NULL ), (
+    1, 'failed',    NULL ), (
+    2, 'unknown',   NULL ), (
+    3, 'todo',      NULL ), (
+    4, 'bonus',     NULL ), (
+    5, 'skip',      NULL ), (
+    6, 'ok',        NULL
 );
 
 
 INSERT INTO rep_change_type ( rep_change_type_id, abbr, `desc` )
 VALUES (
-1, 'A', 'added'
-), (
-2, 'M', 'modified'
-), (
-3, 'D', 'deleted'
-), (
-4, 'R', 'replacing'
+    1, 'A', 'added'     ), (
+    2, 'M', 'modified'  ), (
+    3, 'D', 'deleted'   ), (
+    4, 'R', 'replacing'
 );
 
 
 INSERT INTO msstatus ( msstatus_id, name, `desc` )
 VALUES (
-1, 'unknown status', NULL
-), (
-2, 'msession just created', NULL
-), (
-3, 'waiting for new job', NULL
-), (
-4, 'running command', NULL
-), (
-5, 'paused by user', NULL
-), (
-6, 'stop by user', NULL
-), (
-7, 'stop by web server', NULL
-), (
-8, 'stop by anything else', NULL
+    1, 'unknown status',        NULL ), (
+    2, 'msession just created', NULL ), (
+    3, 'waiting for new job',   NULL ), (
+    4, 'running command',       NULL ), (
+    5, 'paused by user',        NULL ), (
+    6, 'stop by user',          NULL ), (
+    7, 'stop by web server',    NULL ), (
+    8, 'stop by anything else', NULL
 );
 
 
 INSERT INTO msabort_reason ( msabort_reason_id, name, `desc` )
 VALUES (
-1, 'unknown reason', NULL
-), (
-2, 'deprecated client revision', NULL
-), (
-3, 'machine was disabled', NULL
-), (
-4, 'bad client behavior', NULL
-), (
-5, 'iterrupted by user', NULL
+    1, 'unknown reason',                NULL ), (
+    2, 'deprecated client revision',    NULL ), (
+    3, 'machine was disabled',          NULL ), (
+    4, 'bad client behavior',           NULL ), (
+    5, 'iterrupted by user',            NULL
 );
 
 
 INSERT INTO fsfile_type ( fsfile_type_id, name, `desc` )
 VALUES (
-1, 'command output', NULL
-), (
-2, 'patch', NULL
+    1, 'command output', NULL ), (
+    2, 'patch', NULL
 );
 
 
-INSERT INTO command ( command_id, name, `desc`, params )
+INSERT INTO cmd ( cmd_id, name, `desc`, params )
 VALUES (
-1, 'get_src',
-'clean source code checkout/update',
-'rep_path_id, rev_id'
+    1, 'get_src',
+    'clean source code checkout/update',
+    'rep_path_id, rev_id'
 ), (
-2, 'prepare',
-'preparing job environment (copy clean -> temp, check temp, create dir for results, chdir)',
-null
+    2, 'prepare',
+    'preparing job environment (copy clean -> temp, check temp, create dir for results, chdir)',
+    null
 ), (
-3, 'patch',
-'applying patch',
-'patch_id'
+    3, 'patch',
+    'applying patch',
+    'patch_id'
 ), (
-4, 'perl_configure',
-'running command - perl Configure.pl',
-null
+    4, 'perl_configure',
+    'running command - perl Configure.pl',
+    null
 ), (
-5, 'make',
-'running command - make',
-null
+    5, 'make',
+    'running command - make',
+    null
 ), (
-6, 'trun ',
-'running command - perl t/taptinder_harness --yaml',
-null
+    6, 'trun ',
+    'running command - perl t/taptinder_harness --yaml',
+    null
 ), (
-7, 'test',
-'running command - make test',
-null
+    7, 'test',
+    'running command - make test',
+    null
 ), (
-8, 'bench',
-'running command - perl utils/benchmark.pl',
-null
+    8, 'bench',
+    'running command - perl utils/benchmark.pl',
+    null
 ), (
-9, 'install',
-'running command - make install',
-null
+    9, 'install',
+    'running command - make install',
+    null
 ), (
-10, 'clean',
-'cleaning machine, e.g. after install',
-null
+    10, 'clean',
+    'cleaning machine, e.g. after install',
+    null
 );
 
 
-INSERT INTO command_status ( command_status_id, name, `desc` )
+INSERT INTO cmd_status ( cmd_status_id, name, `desc` )
 VALUES (
-1, 'running', NULL
-), (
-2, 'ok', 'finished ok'
-), (
-3, 'stopped', NULL
-), (
-4, 'error', 'finished with error'
+    1, 'running',   NULL                    ), (
+    2, 'ok',        'finished ok'           ), (
+    3, 'stopped',   NULL                    ), (
+    4, 'error',     'finished with error'
 );
 
 commit;

@@ -75,5 +75,3 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         to             => 'DiaUml',
     ) or die SQL::Translator->error;
 }
-
-
