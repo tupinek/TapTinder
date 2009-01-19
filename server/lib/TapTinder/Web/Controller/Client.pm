@@ -23,84 +23,6 @@ Check and log login params - machine_id and password.
 
 =cut
 
-# TODO - temporary solution
-# dbix-class bug, see commented code in Taptinder::DB::SchemaAdd
-sub CreateMyResultSets {
-    my ( $self, $c ) = @_;
-
-    my $source = TapTinder::DB::Schema::job->result_source_instance;
-    my $new_source = $source->new($source);
-    $new_source->source_name('NotTestedJobs');
-
-    $new_source->name(\<<'');
-(
-    select a_r.*
-      from (
-            select a_jp.job_id,
-                   a_jp.jobp_id,
-                   a_jp.rep_path_id,
-                   r.rev_id,
-                   r.rev_num,
-                   a_jp.priority,
-                   j.priority as jpriority
-              from (
-                    select distinct sa_jp.*
-                      from (
-                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id
-                                from machine_job_conf mjc,
-                                     rep_path rp,
-                                     jobp jp
-                               where mjc.machine_id = ?
-                                 and rp.rep_id = mjc.rep_id
-                                 and jp.rep_path_id = rp.rep_path_id
-                            )
-                            union all
-                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id
-                                from machine_job_conf mjc,
-                                     jobp jp
-                               where mjc.machine_id = ?
-                                 and mjc.rep_path_id is not null
-                                 and jp.rep_path_id = mjc.rep_path_id
-                            )
-                            union all
-                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id
-                                from machine_job_conf mjc,
-                                     jobp jp
-                               where mjc.machine_id = ?
-                                 and mjc.job_id is not null
-                                 and jp.job_id = mjc.job_id
-                            )
-                           ) sa_jp
-                  ) a_jp,
-                  rev_rep_path rrp,
-                  rev r,
-                  job j
-            where rrp.rep_path_id = a_jp.rep_path_id
-              and r.rev_id = rrp.rev_id
-              and j.job_id = a_jp.job_id
-            order by a_jp.priority, j.priority, r.rev_num desc, a_jp.jobp_id
-          ) a_r
-    where not exists (
-            select 1
-              from msjob msj,
-                   msjobp msjp,
-                   jobp jp
-             where msj.msession_id = ?
-               and msjp.msjob_id = msj.msjob_id
-               and jp.jobp_id = msjp.jobp_id
-               and jp.rep_path_id = a_r.rep_path_id
-               and msjp.rev_id = a_r.rev_id
-          )
-)
-
-
-    my $schema = $c->model('WebDB')->schema;
-    $schema->register_source('NotTestedJobs' => $new_source);
-
-    return 1;
-}
-
-
 =head2 login_ok
 
 Check and log login params - machine_id and password.
@@ -290,8 +212,7 @@ sub cmd_mscreate {
         $data->{err_msg} = "Error: xxx"; # TODO
         return 0;
     }
-    my %cols = $msession_rs->get_columns();
-    my $msession_id = $cols{msession_id};
+    my $msession_id = $msession_rs->get_column('msession_id');
 
     # create mslog
     my $ret_code = $self->create_mslog(
@@ -354,30 +275,177 @@ sub cmd_msdestroy {
 }
 
 
-=head2 cmd_cget
+=head2 get_new_job
 
-Insert new row to msjob table if needed.
+Return new job description for client.
+
+=cut
+
+sub get_new_job {
+    my ( $self, $c, $data, $machine_id, $msession_id ) = @_;
+
+    my $plus_rows = [ qw/ job_id jobp_id rep_path_id rev_id rev_num priority jpriority /];
+    my $search_conf = {
+        'select' => $plus_rows,
+        'as'     => $plus_rows,
+        'bind'   => [ $machine_id, $machine_id, $machine_id, $msession_id ],
+    };
+
+    my $rs = $c->model('WebDB')->schema->resultset( 'NotTestedJobs' )->search( {}, $search_conf );
+
+    my $row = $rs->next;
+    return undef unless $row;
+    my $row_data = { $row->get_columns };
+    #$self->dumper( $c, $row_data );
+    return $row_data;
+}
+
+
+=head2 create_msjob
+
+Insert new row to msjob table.
 
 =cut
 
 sub create_msjob {
-    my ( $self, $c, $data, $machine_id, $msession_id ) = @_;
+    my ( $self, $c, $data, $msession_id, $job_id ) = @_;
 
-    $self->CreateMyResultSets( $c );
+    my $new_rs = $c->model('WebDB::msjob')->create({
+        msession_id => $msession_id,
+        job_id      => $job_id,
+        start_time  => DateTime->now,
+        end_time    => undef,
+        pid         => undef,
+    });
+    if ( ! $new_rs ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: xxx"; # TODO
+        return undef;
+    }
+    my $msjob_id = $new_rs->get_column('msjob_id');
+    return $msjob_id;
+}
 
-    my $plus_rows = [ qw/ job_id jobp_id rep_path_id rev_id rev_num priority jpriority /];
 
+=head2 create_msjobp
+
+Insert new row to msjobp table.
+
+=cut
+
+sub create_msjobp {
+    my ( $self, $c, $data, $msjob_id, $jobp_id, $rev_id, $patch_id ) = @_;
+
+    my $new_rs = $c->model('WebDB::msjobp')->create({
+        msjob_id    => $msjob_id,
+        jobp_id     => $jobp_id,
+        rev_id      => $rev_id,
+        patch_id    => $patch_id,
+        start_time  => DateTime->now,
+        end_time    => undef,
+    });
+    if ( ! $new_rs ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: xxx"; # TODO
+        return undef;
+    }
+    my $msjobp_id = $new_rs->get_column('msjobp_id');
+    return $msjobp_id;
+}
+
+
+=head2 create_msjobp_cmd
+
+Insert new row to msjobp_cmd table.
+
+=cut
+
+sub create_msjobp_cmd {
+    my ( $self, $c, $data, $msjobp_id, $jobp_cmd_id ) = @_;
+
+    my $new_rs = $c->model('WebDB::msjobp_cmd')->create({
+        msjobp_id   => $msjobp_id,
+        jobp_cmd_id => $jobp_cmd_id,
+        status_id   => 1,
+        pid         => undef,
+        start_time  => DateTime->now,
+        end_time    => undef,
+        output_id   => undef,
+    });
+    if ( ! $new_rs ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: xxx"; # TODO
+        return undef;
+    }
+    my $msjobp_cmd_id = $new_rs->get_column('msjobp_cmd_id');
+    return $msjobp_cmd_id;
+}
+
+
+
+=head2 get_next_cmd
+
+Get new job and insert new rows to apropriate tables.
+
+=cut
+
+sub get_next_cmd {
+    my ( $self, $c, $data, $job_id, $jobp_order, $jobp_cmd_order ) = @_;
+
+    my $plus_rows = [ qw/ jobp_id jobp_cmd_id /];
     my $search_conf = {
         'select' => $plus_rows,
-        'as' => $plus_rows,
-        bind  => [ $machine_id, $machine_id, $machine_id, $msession_id ],
+        'as'     => $plus_rows,
+        'bind'   => [
+            $job_id,
+            $jobp_order, $jobp_order,
+            $jobp_cmd_order, $jobp_cmd_order,
+        ],
     };
 
-    my $rs = $c->model('WebDB')->schema->resultset( 'NotTestedJobs' )->search( {}, $search_conf );
-    if (my $row = $rs->next) {
-        my $row_data = { $row->get_columns };
-        $self->dumper( $c, $row_data );
+    my $rs = $c->model('WebDB')->schema->resultset( 'NextJobCmd' )->search( {}, $search_conf );
+
+    my $row = $rs->next;
+    return undef unless $row;
+    my $row_data = { $row->get_columns };
+    #$self->dumper( $c, $row_data );
+    return $row_data;
+}
+
+
+=head2 start_new_job
+
+Get new job and insert new rows to apropriate tables.
+
+=cut
+
+sub start_new_job {
+    my ( $self, $c, $data, $machine_id, $msession_id ) = @_;
+
+    my $new_job = $self->get_new_job( $c, $data, $machine_id, $msession_id );
+    unless ( defined $new_job ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: get_new_job return nothing error"; # TODO
+        return 0;
     }
+    my $job_id = $new_job->{job_id};
+    my $rev_id = $new_job->{rev_id};
+    my $patch_id = undef; # TODO, patch testing not implemented yet
+
+    my $next_cmd = $self->get_next_cmd( $c, $data, $job_id, undef, undef );
+    return 0 unless defined $next_cmd;
+    my $jobp_id = $next_cmd->{jobp_id};
+    my $jobp_cmd_id = $next_cmd->{jobp_cmd_id};
+
+    my $msjob_id = $self->create_msjob( $c, $data, $msession_id, $job_id );
+    return 0 unless defined $msjob_id;
+
+    my $msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rev_id, $patch_id );
+    return 0 unless defined $msjobp_id;
+
+    my $msjobp_cmd_id = $self->create_msjobp_cmd( $c, $data, $msjobp_id, $jobp_cmd_id );
+    return 0 unless defined $msjobp_cmd_id;
+
     return 1;
 }
 
@@ -407,7 +475,7 @@ sub cmd_cget {
 
     my $ret_val;
     if ( $start_new_job ) {
-        my $ret_val = $self->create_msjob( $c, $data, $machine_id, $msession_id );
+        my $ret_val = $self->start_new_job( $c, $data, $machine_id, $msession_id );
         unless ( $ret_val ) {
             $data->{err} = 1;
             $data->{err_msg} = "Error: ... (ret_val=$ret_val)."; # TODO

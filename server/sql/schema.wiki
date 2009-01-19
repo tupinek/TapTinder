@@ -468,7 +468,7 @@ CREATE TABLE msession (
     msession_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     machine_id          INT UNSIGNED NOT NULL,
     client_rev          VARCHAR(21) NOT NULL,
-    pid                 INT UNSIGNED NOT NULL,
+    pid                 INT UNSIGNED DEFAULT NULL,
     start_time          DATETIME NOT NULL,
     end_time            DATETIME DEFAULT NULL,
     abort_reason_id     INT UNSIGNED DEFAULT NULL,
@@ -483,7 +483,8 @@ Machine session job part.
 * msjob_id
 * msession_id
 * job_id
-* number - job number inside session
+* start_time - time when machine job was created
+* end_time - time when machine job ended
 * pid
 Abort reason is determined by msession.
 <source lang=sql>
@@ -491,7 +492,8 @@ CREATE TABLE msjob (
     msjob_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msession_id         INT UNSIGNED NOT NULL,
     job_id              INT UNSIGNED NOT NULL,
-    number              INT UNSIGNED NOT NULL,
+    start_time          DATETIME NOT NULL,
+    end_time            DATETIME DEFAULT NULL,
     pid                 INT UNSIGNED DEFAULT NULL,
     INDEX i_msession_id (msession_id),
     INDEX i_job_id (job_id),
@@ -507,13 +509,17 @@ Machine session job part.
 * jobp_id
 * rev_id
 * patch_id
+* start_time - time when machine job part was created
+* end_time - time when machine job part ended
 <source lang=sql>
 CREATE TABLE msjobp (
-    msjobp_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    msjob_id    INT UNSIGNED NOT NULL,
-    jobp_id     INT UNSIGNED NOT NULL,
-    rev_id      INT UNSIGNED NOT NULL,
-    patch_id    INT UNSIGNED DEFAULT NULL,
+    msjobp_id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msjob_id        INT UNSIGNED NOT NULL,
+    jobp_id         INT UNSIGNED NOT NULL,
+    rev_id          INT UNSIGNED NOT NULL,
+    patch_id        INT UNSIGNED DEFAULT NULL,
+    start_time      DATETIME NOT NULL,
+    end_time        DATETIME DEFAULT NULL,
     INDEX i_msjob_id (msjob_id),
     INDEX i_jobp_id (jobp_id),
     INDEX i_rev_id (rev_id),
@@ -527,8 +533,8 @@ CREATE TABLE msjobp (
 ==== msjobp_cmd ====
 Machine session job part command.
 * msjobp_cmd_id
-* jobp_cmd_id
 * msjobp_id
+* jobp_cmd_id
 * cmd_status_id
 * pid
 * start_time
@@ -537,17 +543,17 @@ Machine session job part command.
 <source lang=sql>
 CREATE TABLE msjobp_cmd (
     msjobp_cmd_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    jobp_cmd_id     INT UNSIGNED NOT NULL,
     msjobp_id       INT UNSIGNED NOT NULL,
+    jobp_cmd_id     INT UNSIGNED NOT NULL,
     status_id       INT UNSIGNED NOT NULL,
-    pid             INT UNSIGNED NOT NULL,
+    pid             INT UNSIGNED DEFAULT NULL,
     start_time      DATETIME NOT NULL,
     end_time        DATETIME DEFAULT NULL,
-    output_id       INT UNSIGNED NOT NULL,
-    INDEX i_jobp_cmd_id (jobp_cmd_id),
+    output_id       INT UNSIGNED DEFAULT NULL,
     INDEX i_msjobp_id (msjobp_id),
-    CONSTRAINT fk_msjobp_cmd_jobp_cmd_id FOREIGN KEY (jobp_cmd_id) REFERENCES jobp_cmd (jobp_cmd_id),
+    INDEX i_jobp_cmd_id (jobp_cmd_id),
     CONSTRAINT fk_msjobp_cmd_msjobp_id FOREIGN KEY (msjobp_id) REFERENCES msjobp (msjobp_id),
+    CONSTRAINT fk_msjobp_cmd_jobp_cmd_id FOREIGN KEY (jobp_cmd_id) REFERENCES jobp_cmd (jobp_cmd_id),
     CONSTRAINT fk_msjobp_cmd_job_status_id FOREIGN KEY (status_id) REFERENCES cmd_status (cmd_status_id),
     CONSTRAINT fk_msjobp_cmd_output_id FOREIGN KEY (output_id) REFERENCES fsfile (fsfile_id)
 ) TYPE=InnoDB;

@@ -8,42 +8,99 @@ package TapTinder::DB::Schema::rev_rep_path;
 
 __PACKAGE__->add_unique_constraint([ qw/rev_id rep_path_id/ ]);
 
-=pod
 
 # own resultsets
-package TapTinder::DB::Schema::rep_path;
+package TapTinder::DB::Schema::job;
 
 my $source = __PACKAGE__->result_source_instance();
 my $new_source = $source->new( $source );
-$new_source->source_name( 'ActiveRepPathList' );
+$new_source->source_name( 'NotTestedJobs' );
 
 $new_source->name(\<<'');
 (
-   SELECT rp.*,
-          mr.max_rev_num,
-          r.rev_id, r.author_id, r.date,
-          ra.rep_login
-     FROM rep_path rp,
-        ( SELECT rrp.rep_path_id, max(r.rev_num) as max_rev_num
-           FROM rev_rep_path  rrp, rev r
-          WHERE r.rev_id = rrp.rev_id
-          GROUP BY rrp.rep_path_id
-        ) mr,
-        rev r,
-        rep_author ra
-    WHERE rp.rep_id = ?
-      and rp.rev_num_to is null -- optimalization
-      and rp.path not like "tags/%"
-      and mr.rep_path_id = rp.rep_path_id
-      and r.rev_num = mr.max_rev_num
-      and ra.rep_author_id = r.author_id
-    ORDER BY max_rev_num DESC
+    select a_r.*
+      from (
+            select a_jp.job_id,
+                   a_jp.jobp_id,
+                   a_jp.rep_path_id,
+                   r.rev_id,
+                   r.rev_num,
+                   a_jp.priority,
+                   j.priority as jpriority
+              from (
+                    select distinct sa_jp.*
+                      from (
+                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id
+                                from machine_job_conf mjc,
+                                     rep_path rp,
+                                     jobp jp
+                               where mjc.machine_id = ?
+                                 and rp.rep_id = mjc.rep_id
+                                 and jp.rep_path_id = rp.rep_path_id
+                            )
+                            union all
+                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id
+                                from machine_job_conf mjc,
+                                     jobp jp
+                               where mjc.machine_id = ?
+                                 and mjc.rep_path_id is not null
+                                 and jp.rep_path_id = mjc.rep_path_id
+                            )
+                            union all
+                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id
+                                from machine_job_conf mjc,
+                                     jobp jp
+                               where mjc.machine_id = ?
+                                 and mjc.job_id is not null
+                                 and jp.job_id = mjc.job_id
+                            )
+                           ) sa_jp
+                  ) a_jp,
+                  rev_rep_path rrp,
+                  rev r,
+                  job j
+            where rrp.rep_path_id = a_jp.rep_path_id
+              and r.rev_id = rrp.rev_id
+              and j.job_id = a_jp.job_id
+            order by a_jp.priority, j.priority, r.rev_num desc, a_jp.jobp_id
+          ) a_r
+    where not exists (
+            select 1
+              from msjob msj,
+                   msjobp msjp,
+                   jobp jp
+             where msj.msession_id = ?
+               and msjp.msjob_id = msj.msjob_id
+               and jp.jobp_id = msjp.jobp_id
+               and jp.rep_path_id = a_r.rep_path_id
+               and msjp.rev_id = a_r.rev_id
+          )
 )
 
 
-TapTinder::DB::Schema->register_source( 'ActiveRepPathList' => $new_source );
+TapTinder::DB::Schema->register_source( 'NotTestedJobs' => $new_source );
 
-=cut
+
+my $source2 = __PACKAGE__->result_source_instance();
+my $new_source2 = $source->new( $source2 );
+$new_source2->source_name( 'NextJobCmd' );
+
+$new_source2->name(\<<'');
+(
+    select jp.jobp_id,
+           c.jobp_cmd_id
+      from jobp jp,
+           jobp_cmd c
+     where jp.job_id = ?
+       and c.jobp_id = jp.jobp_id
+       and (    ( ? is null or c.order > ? )
+             or ( ? is null or jp.order > ? )
+           )
+     order by jp.order, c.order
+)
+
+
+TapTinder::DB::Schema->register_source( 'NextJobCmd' => $new_source2 );
 
 
 # ViewMD - view metadata

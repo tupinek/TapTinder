@@ -407,10 +407,10 @@ __PACKAGE__->add_columns(
     'pid' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
-      'default_value' => undef,
+      'default_value' => 'NULL',
       'is_foreign_key' => 0,
       'name' => 'pid',
-      'is_nullable' => 0,
+      'is_nullable' => 1,
       'size' => '11'
     },
     'start_time' => {
@@ -590,14 +590,23 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'number' => {
-      'data_type' => 'int',
+    'start_time' => {
+      'data_type' => 'DATETIME',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'number',
+      'name' => 'start_time',
       'is_nullable' => 0,
-      'size' => '11'
+      'size' => 0
+    },
+    'end_time' => {
+      'data_type' => 'DATETIME',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'end_time',
+      'is_nullable' => 1,
+      'size' => 0
     },
     'pid' => {
       'data_type' => 'int',
@@ -1579,6 +1588,24 @@ __PACKAGE__->add_columns(
       'is_nullable' => 1,
       'size' => '11'
     },
+    'start_time' => {
+      'data_type' => 'DATETIME',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'start_time',
+      'is_nullable' => 0,
+      'size' => 0
+    },
+    'end_time' => {
+      'data_type' => 'DATETIME',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'end_time',
+      'is_nullable' => 1,
+      'size' => 0
+    },
 );
 __PACKAGE__->set_primary_key('msjobp_id');
 
@@ -1833,21 +1860,21 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'jobp_cmd_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'jobp_cmd_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
     'msjobp_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 1,
       'name' => 'msjobp_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'jobp_cmd_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'jobp_cmd_id',
       'is_nullable' => 0,
       'size' => '11'
     },
@@ -1863,10 +1890,10 @@ __PACKAGE__->add_columns(
     'pid' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
-      'default_value' => undef,
+      'default_value' => 'NULL',
       'is_foreign_key' => 0,
       'name' => 'pid',
-      'is_nullable' => 0,
+      'is_nullable' => 1,
       'size' => '11'
     },
     'start_time' => {
@@ -1890,10 +1917,10 @@ __PACKAGE__->add_columns(
     'output_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
-      'default_value' => undef,
+      'default_value' => 'NULL',
       'is_foreign_key' => 1,
       'name' => 'output_id',
-      'is_nullable' => 0,
+      'is_nullable' => 1,
       'size' => '11'
     },
 );
@@ -2302,7 +2329,7 @@ __PACKAGE__->add_columns(
     'priority' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
-      'default_value' => undef,
+      'default_value' => '1',
       'is_foreign_key' => 0,
       'name' => 'priority',
       'is_nullable' => 0,
@@ -2388,7 +2415,7 @@ __PACKAGE__->add_columns(
     'priority' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
-      'default_value' => undef,
+      'default_value' => '1',
       'is_foreign_key' => 0,
       'name' => 'priority',
       'is_nullable' => 0,
@@ -2986,13 +3013,13 @@ __PACKAGE__->has_many('get_bfile', 'TapTinder::DB::Schema::bfile', 'brun_id');
 
 package TapTinder::DB::Schema::msjobp_cmd;
 
-__PACKAGE__->belongs_to('jobp_cmd_id','TapTinder::DB::Schema::jobp_cmd','jobp_cmd_id');
-
 __PACKAGE__->belongs_to('msjobp_id','TapTinder::DB::Schema::msjobp','msjobp_id');
+
+__PACKAGE__->belongs_to('jobp_cmd_id','TapTinder::DB::Schema::jobp_cmd','jobp_cmd_id');
 
 __PACKAGE__->belongs_to('status_id','TapTinder::DB::Schema::cmd_status','status_id');
 
-__PACKAGE__->belongs_to('output_id','TapTinder::DB::Schema::fsfile','output_id');
+__PACKAGE__->belongs_to('output_id','TapTinder::DB::Schema::fsfile','output_id',{join_type => 'left'});
 
 __PACKAGE__->has_many('get_build', 'TapTinder::DB::Schema::build', 'msjobp_cmd_id');
 __PACKAGE__->has_many('get_trun', 'TapTinder::DB::Schema::trun', 'msjobp_cmd_id');
