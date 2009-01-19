@@ -288,7 +288,7 @@ sub get_new_job {
     my $search_conf = {
         'select' => $plus_rows,
         'as'     => $plus_rows,
-        'bind'   => [ $machine_id, $machine_id, $machine_id, $msession_id ],
+        'bind'   => [ $machine_id, $machine_id, $machine_id, $machine_id ],
     };
 
     my $rs = $c->model('WebDB')->schema->resultset( 'NotTestedJobs' )->search( {}, $search_conf );
@@ -445,6 +445,10 @@ sub start_new_job {
 
     my $msjobp_cmd_id = $self->create_msjobp_cmd( $c, $data, $msjobp_id, $jobp_cmd_id );
     return 0 unless defined $msjobp_cmd_id;
+
+    $self->dumper( $c, "job_id: $job_id, rev_id: $rev_id, patch_id: $patch_id");
+    $self->dumper( $c, "jobp_id: $jobp_id, jobp_cmd_id: $jobp_cmd_id");
+    $self->dumper( $c, "msjob_id: $msjob_id, msjobp_id: $msjobp_id, msjobp_cmd_id: $msjobp_cmd_id" );
 
     return 1;
 }

@@ -66,10 +66,12 @@ $new_source->name(\<<'');
           ) a_r
     where not exists (
             select 1
-              from msjob msj,
+              from msession ms,
+                   msjob msj,
                    msjobp msjp,
                    jobp jp
-             where msj.msession_id = ?
+             where ms.machine_id = ?
+               and msj.msession_id = ms.msession_id
                and msjp.msjob_id = msj.msjob_id
                and jp.jobp_id = msjp.jobp_id
                and jp.rep_path_id = a_r.rep_path_id
@@ -179,7 +181,7 @@ package TapTinder::DB::Schema::rep_test;
 __PACKAGE__->cols_in_foreign_tables( [ qw/rep_file_id number/ ] );
 
 package TapTinder::DB::Schema::rev;
-__PACKAGE__->cols_in_foreign_tables( [ qw/rev_num/ ] );
+__PACKAGE__->cols_in_foreign_tables( [ qw/rep_id rev_num/ ] );
 
 package TapTinder::DB::Schema::trest;
 __PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
