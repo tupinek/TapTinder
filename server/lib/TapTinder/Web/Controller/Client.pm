@@ -17,11 +17,22 @@ Catalyst controller for TapTinder client services.
 
 =head1 METHODS
 
-=head2 login_ok
+=head2 dump_rs
 
-Check and log login params - machine_id and password.
+Dump result set.
 
 =cut
+
+sub dump_rs {
+    my ( $self, $c, $rs ) = @_;
+
+    while ( my $row = $rs->next ) {
+        my $row_data = { $row->get_columns };
+        $self->dumper( $c, $row_data );
+    }
+    return 1;
+}
+
 
 =head2 login_ok
 
@@ -366,7 +377,7 @@ sub create_msjobp_cmd {
     my $new_rs = $c->model('WebDB::msjobp_cmd')->create({
         msjobp_id   => $msjobp_id,
         jobp_cmd_id => $jobp_cmd_id,
-        status_id   => 1,
+        status_id   => 1, # created
         pid         => undef,
         start_time  => DateTime->now,
         end_time    => undef,
@@ -385,7 +396,7 @@ sub create_msjobp_cmd {
 
 =head2 get_next_cmd
 
-Get new job and insert new rows to apropriate tables.
+Get next cmd info.
 
 =cut
 
@@ -398,8 +409,8 @@ sub get_next_cmd {
         'as'     => $plus_rows,
         'bind'   => [
             $job_id,
-            $jobp_order, $jobp_order,
             $jobp_cmd_order, $jobp_cmd_order,
+            $jobp_order, $jobp_order,
         ],
     };
 
@@ -409,7 +420,46 @@ sub get_next_cmd {
     return undef unless $row;
     my $row_data = { $row->get_columns };
     #$self->dumper( $c, $row_data );
+    #TODO, if jobp_cmd_id changed, then
+
     return $row_data;
+}
+
+
+=head2 get_next_cmd_mcid
+
+Get next cmd info for previous $msjobp_cmd_id.
+
+=cut
+
+sub get_next_cmd_pmcid {
+    my ( $self, $c, $data, $msjobp_cmd_id ) = @_;
+
+    my $rs = $c->model('WebDB::msjobp_cmd')->search( {
+        msjobp_cmd_id => $msjobp_cmd_id,
+    }, {
+        select => [ 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.jobp_id', 'jobp_id.order', 'jobp_cmd_id.order', ],
+        as => [ 'msjobp_id', 'job_id', 'jobp_id', 'jobp_order', 'jobp_cmd_order', ],
+        join => [ { 'msjobp_id' => [ 'msjob_id', 'jobp_id', ] }, 'jobp_cmd_id', ],
+    }
+    );
+    #$self->dump_rs( $c, $rs );
+
+    my $row = $rs->next;
+    if ( !$row ) {
+        $data->{ag_err} = 1;
+        $data->{ag_err_msg} = "Error: Machine session job part command id (msjobp_cmd_id=$msjobp_cmd_id) not found.";
+        return 0;
+    }
+
+    my $prev_data = { $row->get_columns() };
+    my $next_cmd = $self->get_next_cmd( $c, $data, $prev_data->{job_id}, $prev_data->{jobp_order}, $prev_data->{jobp_cmd_order} );
+    # TODO, get rev_id, ...
+
+    return {
+        'new' => $next_cmd,
+        'prev' => $prev_data,
+    };
 }
 
 
@@ -432,6 +482,7 @@ sub start_new_job {
     my $rev_id = $new_job->{rev_id};
     my $patch_id = undef; # TODO, patch testing not implemented yet
 
+    # TODO, use SQL with jobp.order=1, jobp_cmd.order=1
     my $next_cmd = $self->get_next_cmd( $c, $data, $job_id, undef, undef );
     return 0 unless defined $next_cmd;
     my $jobp_id = $next_cmd->{jobp_id};
@@ -450,6 +501,15 @@ sub start_new_job {
     $self->dumper( $c, "jobp_id: $jobp_id, jobp_cmd_id: $jobp_cmd_id");
     $self->dumper( $c, "msjob_id: $msjob_id, msjobp_id: $msjobp_id, msjobp_cmd_id: $msjobp_cmd_id" );
 
+    $data->{job_id} = $job_id;
+    $data->{rev_id} = $rev_id;
+    $data->{patch_id} = $patch_id;
+    $data->{jobp_id} = $jobp_id;
+    $data->{jobp_cmd_id} = $jobp_cmd_id;
+    $data->{msjob_id} = $msjob_id;
+    $data->{msjobp_id} = $msjobp_id;
+    $data->{msjobp_cmd_id} = $msjobp_cmd_id;
+    # TODO, rep_path.name, ....
     return 1;
 }
 
@@ -470,11 +530,32 @@ sub cmd_cget {
     my $msession_id = $params->{msid};
 
     my $start_new_job = 0;
-    if ( ! $params->{mcid} ) {
+    if ( ! $params->{pmcid} ) {
          $start_new_job = 1;
     } else {
         # check if previous command wasn't last one in job
-        # TODO
+        my $cmds_data = $self->get_next_cmd_pmcid( $c, $data, $params->{pmcid} );
+        if ( $cmds_data && $cmds_data->{new}->{jobp_cmd_id} ) {
+            my $jobp_cmd_id = $cmds_data->{new}->{jobp_cmd_id};
+
+            my $msjobp_id = $cmds_data->{prev}->{msjobp_id};
+            if ( $jobp_cmd_id != $cmds_data->{prev}->{jobp_cmd_id} ) {
+                # TODO
+                #my $msjob_id = $cmds_data->{prev}->{msjob_id};
+                #$msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rev_id, $patch_id );
+                #return 0 unless defined $msjobp_id;
+                #$data->{msjobp_id} = $msjobp_id;
+            }
+
+            my $msjobp_cmd_id = $self->create_msjobp_cmd( $c, $data, $msjobp_id, $jobp_cmd_id );
+            return 0 unless defined $msjobp_cmd_id;
+
+
+            $self->dumper( $c, "jobp_cmd_id: $jobp_cmd_id, msjobp_cmd_id: $msjobp_cmd_id" );
+            $data->{msjobp_cmd_id} = $msjobp_cmd_id;
+        } else {
+            $start_new_job = 1;
+        }
     }
 
     my $ret_val;

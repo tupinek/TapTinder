@@ -414,10 +414,11 @@ CREATE TABLE jobp_cmd (
 Command status.
 * cmd_status_id
 * name
-* 1 .. running
-* 2 .. ok -- finished ok
-* 3 .. interrupted
-* 4 .. error -- finished with error
+* 1 .. created -- created in DB, not started yet
+* 2 .. running
+* 3 .. ok -- finished ok
+* 4 .. interrupted
+* 5 .. error -- finished with error
 * desc
 <source lang=sql>
 CREATE TABLE cmd_status (

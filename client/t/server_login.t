@@ -123,7 +123,8 @@ sub msdestroy {
 
 
 sub cget {
-    my ( $ua, $client_conf, $msession_id ) = @_;
+    my ( $ua, $client_conf, $msession_id, $run_number, $attempt_number,
+         $estimated_finish_time, $prev_msjobp_cmd_id ) = @_;
 
     my $action = 'cget';
     my $request = {
@@ -131,21 +132,46 @@ sub cget {
         mid => $client_conf->{machine_id},
         pass => $client_conf->{machine_passwd},
         msid => $msession_id,
+        rn => $run_number,
+        an => $attempt_number,
+        eftime => $estimated_finish_time,
+        pmcid => $prev_msjobp_cmd_id,
     };
     my $data = run_action( $ua, $client_conf, $action, $request );
-    return 0 unless defined $data;
-
-    return 1;
+    return $data;
 }
 
 
 my ( $login_rc, $msession_id ) = mscreate( $ua, $client_conf );
 
 
-if ( $login_rc ) {
-    cget( $ua, $client_conf, $msession_id );
-    msdestroy( $ua, $client_conf, $msession_id );
+if ( ! $login_rc ) {
+    croak "Login failed\n";
 }
+
+my $prev_msjobp_cmd_id = undef;
+for my $num ( 1..7 ) {
+    my $run_number = $num;
+    my $attempt_number = 1;
+    my $estimated_finish_time = undef;
+    my $data = cget(
+        $ua, $client_conf, $msession_id, $run_number, $attempt_number,
+        $estimated_finish_time, $prev_msjobp_cmd_id,
+    );
+    #print Dumper( $data );
+
+    croak "cmd error\n" unless defined $data;
+    if ( $data->{err} ) {
+        croak $data->{err_msg};
+    }
+    if ( $data->{msjobp_cmd_id} ) {
+        $prev_msjobp_cmd_id = $data->{msjobp_cmd_id};
+    } else {
+        carp "New msjobp_cmd_id not found.\n";
+    }
+}
+
+msdestroy( $ua, $client_conf, $msession_id );
 
 
 
