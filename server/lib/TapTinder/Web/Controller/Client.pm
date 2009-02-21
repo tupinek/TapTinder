@@ -421,10 +421,10 @@ sub get_next_cmd {
 
     my $row = $rs->next;
     return undef unless $row;
+
     my $row_data = { $row->get_columns };
     #$self->dumper( $c, $row_data );
     #TODO, if jobp_cmd_id changed, then
-
     return $row_data;
 }
 
@@ -480,11 +480,8 @@ sub start_new_job {
     my ( $self, $c, $data, $machine_id, $msession_id ) = @_;
 
     my $new_job = $self->get_new_job( $c, $data, $machine_id, $msession_id );
-    unless ( defined $new_job ) {
-        $data->{err} = 1;
-        $data->{err_msg} = "Error: get_new_job return nothing error"; # TODO
-        return 0;
-    }
+    return $new_job unless $new_job; # undef isn't error
+
     my $job_id = $new_job->{job_id};
     my $rep_path_id = $new_job->{rep_path_id};
     my $rev_id = $new_job->{rev_id};
@@ -492,7 +489,8 @@ sub start_new_job {
 
     # TODO, use SQL with jobp.order=1, jobp_cmd.order=1
     my $next_cmd = $self->get_next_cmd( $c, $data, $job_id, $rep_path_id, undef, undef );
-    return 0 unless defined $next_cmd;
+    return $next_cmd unless $next_cmd; # undef isn't error
+
     my $jobp_id = $next_cmd->{jobp_id};
     my $jobp_cmd_id = $next_cmd->{jobp_cmd_id};
 
@@ -536,6 +534,8 @@ sub cmd_cget {
     my $machine_id = $params->{mid};
     # $params->{msid} - already checked
     my $msession_id = $params->{msid};
+    # TODO - is_numeric?
+    my $attempt_number = $params->{an};
 
     my $start_new_job = 0;
     if ( ! $params->{pmcid} ) {
@@ -569,6 +569,18 @@ sub cmd_cget {
     my $ret_val;
     if ( $start_new_job ) {
         my $ret_val = $self->start_new_job( $c, $data, $machine_id, $msession_id );
+        unless ( defined $ret_val ) {
+            # create mslog
+            my $ret_code = $self->create_mslog(
+                $c, $data, 'cget',
+                $msession_id,
+                3, # $msstatus_id, 3 .. waiting for new job
+                $attempt_number,
+                DateTime->now, # $change_time
+                undef # $estimated_finish_time
+            ) || return 0;
+            return 1;
+        }
         unless ( $ret_val ) {
             $data->{err} = 1;
             $data->{err_msg} = "Error: cmd_get ... (ret_val=$ret_val)."; # TODO
@@ -581,7 +593,7 @@ sub cmd_cget {
         $c, $data, 'cget',
         $msession_id,
         4, # $msstatus_id, 4 .. running command
-        1, # $attempt_number
+        $attempt_number,
         DateTime->now, # $change_time
         undef # $estimated_finish_time
     ) || return 0;
