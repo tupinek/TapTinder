@@ -94,6 +94,7 @@ $new_source2->name(\<<'');
       from jobp jp,
            jobp_cmd c
      where jp.job_id = ?
+       and jp.rep_path_id = ?
        and c.jobp_id = jp.jobp_id
        and (    ( ? is null or c.order > ? )
              or ( ? is null or jp.order > ? )

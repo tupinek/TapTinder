@@ -265,7 +265,7 @@ sub cmd_msdestroy {
 
     unless ( $ret_val ) {
         $data->{err} = 1;
-        $data->{err_msg} = "Error: ... (ret_val=$ret_val)."; # TODO
+        $data->{err_msg} = "Error: cmd_destroy ... (ret_val=$ret_val)."; # TODO
         return 0;
     }
 
@@ -303,6 +303,8 @@ sub get_new_job {
     };
 
     my $rs = $c->model('WebDB')->schema->resultset( 'NotTestedJobs' )->search( {}, $search_conf );
+
+    # TODO - new job not found
 
     my $row = $rs->next;
     return undef unless $row;
@@ -401,7 +403,7 @@ Get next cmd info.
 =cut
 
 sub get_next_cmd {
-    my ( $self, $c, $data, $job_id, $jobp_order, $jobp_cmd_order ) = @_;
+    my ( $self, $c, $data, $job_id, $rep_path_id, $jobp_order, $jobp_cmd_order ) = @_;
 
     my $plus_rows = [ qw/ jobp_id jobp_cmd_id /];
     my $search_conf = {
@@ -409,6 +411,7 @@ sub get_next_cmd {
         'as'     => $plus_rows,
         'bind'   => [
             $job_id,
+            $rep_path_id,
             $jobp_cmd_order, $jobp_cmd_order,
             $jobp_order, $jobp_order,
         ],
@@ -438,8 +441,8 @@ sub get_next_cmd_pmcid {
     my $rs = $c->model('WebDB::msjobp_cmd')->search( {
         msjobp_cmd_id => $msjobp_cmd_id,
     }, {
-        select => [ 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.jobp_id', 'jobp_id.order', 'jobp_cmd_id.order', ],
-        as => [ 'msjobp_id', 'job_id', 'jobp_id', 'jobp_order', 'jobp_cmd_order', ],
+        select => [ 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.rep_path_id', 'jobp_id.jobp_id', 'jobp_id.order', 'jobp_cmd_id.order', ],
+        as => [ 'msjobp_id', 'job_id', 'jobp_id', 'rep_path_id', 'jobp_order', 'jobp_cmd_order', ],
         join => [ { 'msjobp_id' => [ 'msjob_id', 'jobp_id', ] }, 'jobp_cmd_id', ],
     }
     );
@@ -453,7 +456,11 @@ sub get_next_cmd_pmcid {
     }
 
     my $prev_data = { $row->get_columns() };
-    my $next_cmd = $self->get_next_cmd( $c, $data, $prev_data->{job_id}, $prev_data->{jobp_order}, $prev_data->{jobp_cmd_order} );
+
+    my $next_cmd = $self->get_next_cmd(
+        $c, $data,
+        $prev_data->{job_id}, $prev_data->{rep_path_id}, $prev_data->{jobp_order}, $prev_data->{jobp_cmd_order}
+    );
     # TODO, get rev_id, ...
 
     return {
@@ -479,11 +486,12 @@ sub start_new_job {
         return 0;
     }
     my $job_id = $new_job->{job_id};
+    my $rep_path_id = $new_job->{rep_path_id};
     my $rev_id = $new_job->{rev_id};
     my $patch_id = undef; # TODO, patch testing not implemented yet
 
     # TODO, use SQL with jobp.order=1, jobp_cmd.order=1
-    my $next_cmd = $self->get_next_cmd( $c, $data, $job_id, undef, undef );
+    my $next_cmd = $self->get_next_cmd( $c, $data, $job_id, $rep_path_id, undef, undef );
     return 0 unless defined $next_cmd;
     my $jobp_id = $next_cmd->{jobp_id};
     my $jobp_cmd_id = $next_cmd->{jobp_cmd_id};
@@ -563,7 +571,7 @@ sub cmd_cget {
         my $ret_val = $self->start_new_job( $c, $data, $machine_id, $msession_id );
         unless ( $ret_val ) {
             $data->{err} = 1;
-            $data->{err_msg} = "Error: ... (ret_val=$ret_val)."; # TODO
+            $data->{err_msg} = "Error: cmd_get ... (ret_val=$ret_val)."; # TODO
             return 0;
         }
     }
