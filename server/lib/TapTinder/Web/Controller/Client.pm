@@ -436,10 +436,11 @@ Get next cmd info for previous $msjobp_cmd_id.
 =cut
 
 sub get_next_cmd_pmcid {
-    my ( $self, $c, $data, $msjobp_cmd_id ) = @_;
+    my ( $self, $c, $data, $msession_id, $msjobp_cmd_id ) = @_;
 
     my $rs = $c->model('WebDB::msjobp_cmd')->search( {
-        msjobp_cmd_id => $msjobp_cmd_id,
+        'msjobp_cmd_id' => $msjobp_cmd_id,
+        'msjob_id.msession_id' => $msession_id,
     }, {
         select => [ 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.rep_path_id', 'jobp_id.jobp_id', 'jobp_id.order', 'jobp_cmd_id.order', ],
         as => [ 'msjobp_id', 'job_id', 'jobp_id', 'rep_path_id', 'jobp_order', 'jobp_cmd_order', ],
@@ -542,7 +543,7 @@ sub cmd_cget {
          $start_new_job = 1;
     } else {
         # check if previous command wasn't last one in job
-        my $cmds_data = $self->get_next_cmd_pmcid( $c, $data, $params->{pmcid} );
+        my $cmds_data = $self->get_next_cmd_pmcid( $c, $data, $msession_id, $params->{pmcid} );
         if ( $cmds_data && $cmds_data->{new}->{jobp_cmd_id} ) {
             my $jobp_cmd_id = $cmds_data->{new}->{jobp_cmd_id};
 
@@ -602,6 +603,39 @@ sub cmd_cget {
 }
 
 
+=head2 cmd_sset
+
+Set msjobp_cmd.status_id.
+
+=cut
+
+sub cmd_sset {
+    my ( $self, $c, $data, $params ) = @_;
+
+    # $params->{mid} - already checked
+    my $machine_id = $params->{mid};
+    # $params->{msid} - already checked
+    my $msession_id = $params->{msid};
+    # TODO - is_numeric?
+    my $msjobp_cmd_id = $params->{mcid};
+    my $cmd_status_id = $params->{csid};
+
+    return 1;
+}
+
+
+=head2 cmd_alog
+
+Add row to mslog table.
+
+=cut
+
+sub cmd_alog {
+    my ( $self, $c, $data, $params ) = @_;
+    return 1;
+}
+
+
 =head2 process_action
 
 Process all params but 'ot'.
@@ -624,12 +658,14 @@ sub process_action {
     }
 
     my $param_msid_checks;
-         if ( $action eq 'login' )      { $param_msid_checks = 0;
-    } elsif ( $action eq 'mscreate' )   { $param_msid_checks = 0;
-    } elsif ( $action eq 'msdestroy' )  { $param_msid_checks = 1;
-    } elsif ( $action eq 'cget' )       { $param_msid_checks = 1;
-    } elsif ( $action eq 'sset' )       { $param_msid_checks = 1;
-    } elsif ( $action eq 'rset' )       { $param_msid_checks = 1;
+         if ( $action eq 'mscreate' )   { $param_msid_checks = 0;   # msession create
+    } elsif ( $action eq 'msdestroy' )  { $param_msid_checks = 1;   # msession destroy
+    } elsif ( $action eq 'cget' )       { $param_msid_checks = 1;   # get command
+    } elsif ( $action eq 'sset' )       { $param_msid_checks = 1;   # set status
+    } elsif ( $action eq 'rset' )       { $param_msid_checks = 1;   # set results
+    # debug commands
+    } elsif ( $action eq 'login' )      { $param_msid_checks = 0;   # login
+    } elsif ( $action eq 'alog' )       { $param_msid_checks = 1;   # add mslog
     } else {
         $data->{err} = 1;
         $data->{err_msg} = "Error: Unknow action '$action'.";
@@ -650,6 +686,7 @@ sub process_action {
             $cmd_ret_code = $self->cmd_cget( $c, $data, $params );
 
         } elsif ( $action eq 'sset' ) {
+            $cmd_ret_code = $self->cmd_sset( $c, $data, $params );
 
         } elsif ( $action eq 'rset' ) {
 

@@ -123,8 +123,8 @@ sub msdestroy {
 
 
 sub cget {
-    my ( $ua, $client_conf, $msession_id, $run_number, $attempt_number,
-         $estimated_finish_time, $prev_msjobp_cmd_id ) = @_;
+    my ( $ua, $client_conf, $msession_id, $attempt_number, $estimated_finish_time,
+         $prev_msjobp_cmd_id ) = @_;
 
     my $action = 'cget';
     my $request = {
@@ -132,10 +132,26 @@ sub cget {
         mid => $client_conf->{machine_id},
         pass => $client_conf->{machine_passwd},
         msid => $msession_id,
-        rn => $run_number,
         an => $attempt_number,
         eftime => $estimated_finish_time,
         pmcid => $prev_msjobp_cmd_id,
+    };
+    my $data = run_action( $ua, $client_conf, $action, $request );
+    return $data;
+}
+
+
+sub sset {
+    my ( $ua, $client_conf, $msession_id, $msjobp_cmd_id, $cmd_status_id ) = @_;
+
+    my $action = 'sset';
+    my $request = {
+        ot => 'json',
+        mid => $client_conf->{machine_id},
+        pass => $client_conf->{machine_passwd},
+        msid => $msession_id,
+        mcid => $msjobp_cmd_id,
+        csid => $cmd_status_id,
     };
     my $data = run_action( $ua, $client_conf, $action, $request );
     return $data;
@@ -151,12 +167,11 @@ if ( ! $login_rc ) {
 
 my $prev_msjobp_cmd_id = undef;
 my $attempt_number = 1;
-for my $num ( 1..4 ) {
-    my $run_number = $num;
+for my $num ( 1..15 ) {
     my $estimated_finish_time = undef;
     my $data = cget(
-        $ua, $client_conf, $msession_id, $run_number, $attempt_number,
-        $estimated_finish_time, $prev_msjobp_cmd_id,
+        $ua, $client_conf, $msession_id, $attempt_number, $estimated_finish_time,
+        $prev_msjobp_cmd_id,
     );
     #print Dumper( $data );
 
@@ -167,6 +182,16 @@ for my $num ( 1..4 ) {
     if ( $data->{msjobp_cmd_id} ) {
         $prev_msjobp_cmd_id = $data->{msjobp_cmd_id};
         $attempt_number = 1;
+
+        $data = sset(
+            $ua, $client_conf, $msession_id,
+            $prev_msjobp_cmd_id, # $msjobp_cmd_id
+            2 # running, $cmd_status_id
+        );
+        if ( $data->{err} ) {
+            croak $data->{err_msg};
+        }
+
     } else {
         carp "New msjobp_cmd_id not found.\n";
         $attempt_number++;
