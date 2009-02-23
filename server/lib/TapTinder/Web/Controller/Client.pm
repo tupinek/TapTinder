@@ -442,17 +442,16 @@ sub get_next_cmd_pmcid {
         'msjobp_cmd_id' => $msjobp_cmd_id,
         'msjob_id.msession_id' => $msession_id,
     }, {
-        select => [ 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.rep_path_id', 'jobp_id.jobp_id', 'jobp_id.order', 'jobp_cmd_id.order', ],
+        select => [ 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.jobp_id', 'jobp_id.rep_path_id', 'jobp_id.order', 'jobp_cmd_id.order', ],
         as => [ 'msjobp_id', 'job_id', 'jobp_id', 'rep_path_id', 'jobp_order', 'jobp_cmd_order', ],
         join => [ { 'msjobp_id' => [ 'msjob_id', 'jobp_id', ] }, 'jobp_cmd_id', ],
-    }
-    );
+    } );
     #$self->dump_rs( $c, $rs );
 
     my $row = $rs->next;
     if ( !$row ) {
-        $data->{ag_err} = 1;
-        $data->{ag_err_msg} = "Error: Machine session job part command id (msjobp_cmd_id=$msjobp_cmd_id) not found.";
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: Machine session job part command id (msjobp_cmd_id=$msjobp_cmd_id) not found.";
         return 0;
     }
 

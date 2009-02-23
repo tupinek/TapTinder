@@ -167,7 +167,7 @@ if ( ! $login_rc ) {
 
 my $prev_msjobp_cmd_id = undef;
 my $attempt_number = 1;
-for my $num ( 1..15 ) {
+for my $num ( 1..40 ) {
     my $estimated_finish_time = undef;
     my $data = cget(
         $ua, $client_conf, $msession_id, $attempt_number, $estimated_finish_time,
@@ -195,6 +195,7 @@ for my $num ( 1..15 ) {
     } else {
         carp "New msjobp_cmd_id not found.\n";
         $attempt_number++;
+        $prev_msjobp_cmd_id = undef;
     }
 }
 
