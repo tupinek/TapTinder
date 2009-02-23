@@ -167,7 +167,7 @@ if ( ! $login_rc ) {
 
 my $prev_msjobp_cmd_id = undef;
 my $attempt_number = 1;
-for my $num ( 1..40 ) {
+for my $num ( 1..5 ) {
     my $estimated_finish_time = undef;
     my $data = cget(
         $ua, $client_conf, $msession_id, $attempt_number, $estimated_finish_time,
@@ -187,6 +187,15 @@ for my $num ( 1..40 ) {
             $ua, $client_conf, $msession_id,
             $prev_msjobp_cmd_id, # $msjobp_cmd_id
             2 # running, $cmd_status_id
+        );
+        if ( $data->{err} ) {
+            croak $data->{err_msg};
+        }
+
+        $data = sset(
+            $ua, $client_conf, $msession_id,
+            $prev_msjobp_cmd_id, # $msjobp_cmd_id
+            3+(($num-1)%3) # ok, stopped or error
         );
         if ( $data->{err} ) {
             croak $data->{err_msg};

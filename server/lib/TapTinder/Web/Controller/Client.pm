@@ -602,6 +602,35 @@ sub cmd_cget {
 }
 
 
+=head2 get_msjobp_cmd_info
+
+Return row with msjobp_id and msjob_id for $msession_id and $msjobp_cmd_id.
+
+=cut
+
+sub get_msjobp_cmd_info {
+    my ( $self, $c, $data, $msession_id, $msjobp_cmd_id ) = @_;
+
+    my $rs = $c->model('WebDB::msjobp_cmd')->search( {
+        'me.msjobp_cmd_id' => $msjobp_cmd_id,
+        'msjob_id.msession_id' => $msession_id,
+    }, {
+        select => [ 'msjobp_id.msjobp_id', 'msjob_id.msjob_id', ],
+        as => [ 'msjobp_id', 'msjob_id' ],
+        join => { 'msjobp_id' => 'msjob_id' },
+    } );
+
+    my $row = $rs->next;
+    if ( !$row ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: Machine session job part command id (msession_id=$msession_id, msjobp_cmd_id=$msjobp_cmd_id) not found.";
+        return 0;
+    }
+    my $row = { $row->get_columns() };
+    return $row;
+}
+
+
 =head2 cmd_sset
 
 Set msjobp_cmd.status_id.
@@ -617,7 +646,25 @@ sub cmd_sset {
     my $msession_id = $params->{msid};
     # TODO - is_numeric?
     my $msjobp_cmd_id = $params->{mcid};
+    # TODO is valid status_id?
     my $cmd_status_id = $params->{csid};
+
+    my $msjob_info = $self->get_msjobp_cmd_info( $c, $data, $msession_id, $msjobp_cmd_id );
+    return 0 unless $msjob_info;
+
+    my $msjobp_cmd_rs = $c->model('WebDB::msjobp_cmd')->search( {
+        msjobp_cmd_id => $msjobp_cmd_id,
+    } );
+
+    my $ret_val = $msjobp_cmd_rs->update( {
+        status_id => $cmd_status_id,
+    } );
+
+    unless ( $ret_val ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: cmd_sset update ... (ret_val=$ret_val)."; # TODO
+        return 0;
+    }
 
     return 1;
 }
