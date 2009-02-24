@@ -176,7 +176,7 @@ package TapTinder::DB::Schema::rep_file;
 __PACKAGE__->cols_in_foreign_tables( [ qw/rep_path_id sub_path rev_num_from rev_num_to/ ] );
 
 package TapTinder::DB::Schema::rep_path;
-__PACKAGE__->cols_in_foreign_tables( [ qw/path rev_num_from rev_num_to/ ] );
+__PACKAGE__->cols_in_foreign_tables( [ qw/rep_id path rev_num_from rev_num_to/ ] );
 
 package TapTinder::DB::Schema::rep_test;
 __PACKAGE__->cols_in_foreign_tables( [ qw/rep_file_id number/ ] );
