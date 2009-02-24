@@ -916,7 +916,7 @@ CREATE TABLE fsfile_type (
 
 ==== fspath_select ====
 Default fsfile_path to save files for each rep_path and file_type.
-* file_default_conf_id
+* fspath_select_id
 * fsfile_type_id
 * rep_path_id
 * fspath_id

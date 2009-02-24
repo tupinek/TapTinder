@@ -115,4 +115,20 @@ VALUES (
     3, 5, NULL, NULL, 1,    1
 );
 
+INSERT INTO fspath ( fspath_id, path, web_path, public, created, deleted, name, `desc` )
+VALUES (
+    1, '/home/cvis/vyvoj/tmp/ttfiles/cmdout', 'file/cmdout', 1, NOW(), null, 'dir-cmdout', 'dir for command outputs'  ), (
+    2, '/home/cvis/vyvoj/tmp/ttfiles/patch',  'file/patch',  1, NOW(), null, 'dir-patch',  'dir for patches'
+);
+
+INSERT INTO fspath_select ( fspath_select_id, fsfile_type_id, rep_path_id, fspath_id )
+VALUES (
+    1, 1, 1, 1  ), (
+    2, 1, 2, 1  ), (
+    3, 1, 3, 1  ), (
+    4, 2, 1, 2  ), (
+    5, 2, 2, 2  ), (
+    6, 2, 3, 2
+);
+
 commit;
