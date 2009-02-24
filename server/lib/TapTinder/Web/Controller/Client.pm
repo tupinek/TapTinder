@@ -626,8 +626,8 @@ sub get_msjobp_cmd_info {
         $data->{err_msg} = "Error: Machine session job part command id (msession_id=$msession_id, msjobp_cmd_id=$msjobp_cmd_id) not found.";
         return 0;
     }
-    my $row = { $row->get_columns() };
-    return $row;
+    my $row_data = { $row->get_columns() };
+    return $row_data;
 }
 
 
@@ -638,7 +638,7 @@ Set msjobp_cmd.status_id.
 =cut
 
 sub cmd_sset {
-    my ( $self, $c, $data, $params ) = @_;
+    my ( $self, $c, $data, $params, $upload ) = @_;
 
     # $params->{mid} - already checked
     my $machine_id = $params->{mid};
@@ -655,10 +655,25 @@ sub cmd_sset {
     my $msjobp_cmd_rs = $c->model('WebDB::msjobp_cmd')->search( {
         msjobp_cmd_id => $msjobp_cmd_id,
     } );
-
-    my $ret_val = $msjobp_cmd_rs->update( {
+    my $to_set = {
         status_id => $cmd_status_id,
-    } );
+    };
+    if ( $params->{etime} ) {
+        # TODO validate params
+        my $end_time = $params->{etime};
+        my $outfile = $c->request->upload('outf');
+        #$self->dumper( $c, $c->request );
+        unless ( $outfile ) {
+            $data->{err} = 1;
+            $data->{err_msg} = "Error: cmd_sset upload file failed ... ."; # TODO
+            return 0;
+        }
+
+        my $output_file_id = 1;
+        $to_set->{end_time} = DateTime->from_epoch( epoch => $end_time );
+        #$to_set->{output_id} = $output_file_id;
+    }
+    my $ret_val = $msjobp_cmd_rs->update( $to_set );
 
     unless ( $ret_val ) {
         $data->{err} = 1;
@@ -689,8 +704,9 @@ Process all params but 'ot'.
 =cut
 
 sub process_action {
-    my ( $self, $c, $action, $params ) = @_;
+    my ( $self, $c, $action ) = @_;
 
+    my $params = $c->request->params;
     my $data : Stashed = {};
 
     $data->{is_debug} = 1 if $c->log->is_debug;
@@ -732,7 +748,7 @@ sub process_action {
             $cmd_ret_code = $self->cmd_cget( $c, $data, $params );
 
         } elsif ( $action eq 'sset' ) {
-            $cmd_ret_code = $self->cmd_sset( $c, $data, $params );
+            $cmd_ret_code = $self->cmd_sset( $c, $data, $params, $c->request->upload );
 
         } elsif ( $action eq 'rset' ) {
 
@@ -755,9 +771,9 @@ ot - output type, allowed 'html' and 'json', default 'json'
 sub index : Path  {
     my ( $self, $c, $action, @args ) = @_;
 
-    my $params = $c->request->params;
-    $self->process_action( $c, $action, $params );
+    $self->process_action( $c, $action );
 
+    my $params = $c->request->params;
     if ( $params->{ot} eq 'html' ) {
         return;
     }

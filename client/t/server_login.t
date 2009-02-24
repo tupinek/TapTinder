@@ -52,10 +52,15 @@ $ua->env_proxy;
 
 
 sub run_action {
-     my ( $ua, $client_conf, $action, $request ) = @_;
+     my ( $ua, $client_conf, $action, $request, $form_data ) = @_;
 
     my $taptinder_server_url = $client_conf->{taptinderserv} . 'client/' . $action;
-    my $resp = $ua->post( $taptinder_server_url => $request );
+    my $resp;
+    if ( $form_data ) {
+        $resp = $ua->post( $taptinder_server_url, Content_Type => 'form-data', Content => $request );
+    } else {
+        $resp = $ua->post( $taptinder_server_url, $request );
+    }
     if ( !$resp->is_success ) {
         debug "error: " . $resp->status_line . ' --- ' . $resp->content . "\n";
         exit 1;
@@ -142,9 +147,12 @@ sub cget {
 
 
 sub sset {
-    my ( $ua, $client_conf, $msession_id, $msjobp_cmd_id, $cmd_status_id ) = @_;
+    my ( $ua, $client_conf, $msession_id, $msjobp_cmd_id, $cmd_status_id,
+         $end_time, $file_path
+    ) = @_;
 
     my $action = 'sset';
+    my $request_upload = 0;
     my $request = {
         ot => 'json',
         mid => $client_conf->{machine_id},
@@ -153,13 +161,17 @@ sub sset {
         mcid => $msjobp_cmd_id,
         csid => $cmd_status_id,
     };
-    my $data = run_action( $ua, $client_conf, $action, $request );
+    if ( $end_time ) {
+        $request_upload = 1;
+        $request->{etime} = $end_time;
+        $request->{outf} = [ $file_path, 'aa' ];
+    }
+    my $data = run_action( $ua, $client_conf, $action, $request, $request_upload );
     return $data;
 }
 
 
 my ( $login_rc, $msession_id ) = mscreate( $ua, $client_conf );
-
 
 if ( ! $login_rc ) {
     croak "Login failed\n";
@@ -167,7 +179,7 @@ if ( ! $login_rc ) {
 
 my $prev_msjobp_cmd_id = undef;
 my $attempt_number = 1;
-for my $num ( 1..5 ) {
+for my $num ( 1..2) {
     my $estimated_finish_time = undef;
     my $data = cget(
         $ua, $client_conf, $msession_id, $attempt_number, $estimated_finish_time,
@@ -192,11 +204,25 @@ for my $num ( 1..5 ) {
             croak $data->{err_msg};
         }
 
-        $data = sset(
-            $ua, $client_conf, $msession_id,
-            $prev_msjobp_cmd_id, # $msjobp_cmd_id
-            3+(($num-1)%3) # ok, stopped or error
-        );
+        # 3..ok,  4..stopped, 5..error
+        my $status = 3 + ( ($num-1) % 3 );
+
+        if ( $status == 3 ) {
+            $data = sset(
+                $ua, $client_conf, $msession_id,
+                $prev_msjobp_cmd_id, # $msjobp_cmd_id
+                $status
+            );
+        } else {
+            my $output_file_path = '/home2/scripts/sprava_shrecku/mj41/taptinder-dev/client/README';
+            $data = sset(
+                $ua, $client_conf, $msession_id,
+                $prev_msjobp_cmd_id, # $msjobp_cmd_id
+                $status,
+                time(), # $end_time, TODO - is GMT?
+                $output_file_path
+            );
+        }
         if ( $data->{err} ) {
             croak $data->{err_msg};
         }
@@ -209,7 +235,3 @@ for my $num ( 1..5 ) {
 }
 
 msdestroy( $ua, $client_conf, $msession_id );
-
-
-
-
