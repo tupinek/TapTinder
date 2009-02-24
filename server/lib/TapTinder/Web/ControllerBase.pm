@@ -6,6 +6,7 @@ use base 'Catalyst::Controller::BindLex';
 
 use Data::Page::HTML qw();
 use DBIx::Dumper qw();
+use Data::Dumper qw();
 
 =head1 NAME
 
@@ -31,7 +32,16 @@ sub dumper {
     my $self = shift;
     my $c = shift;
     #return unless $c->log->is_debug;
-    $c->stash->{ot} .= DBIx::Dumper::Dumper( @_ );
+    foreach my $val ( @_ ) {
+        my $var_type = ref($val);
+        if ( $var_type =~ /^TapTinder\:\:Web\:\:Model/ ) {
+            $c->stash->{ot} .= "dump_row:\n";
+            $c->stash->{ot} .= DBIx::Dumper::dump_row( $val );
+        } else {
+            #$c->stash->{ot} .= "normal dumper: \n";
+            $c->stash->{ot} .= Data::Dumper::Dumper( $val );
+        }
+    }
 }
 
 

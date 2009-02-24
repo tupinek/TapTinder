@@ -2,9 +2,9 @@ package DBIx::Dumper;
 
 use strict;
 use warnings;
-our $VERSION = '0.001';
+our $VERSION = '0.01';
 
-our @EXPORT_OK = qw/dump_row Dumper/;
+our @EXPORT_OK = qw/dump_row/;
 
 use Data::Dumper;
 
@@ -14,7 +14,7 @@ DBIx::Dumper
 
 =head1 SYNOPSIS
 
-  use DBIx::Dumper qw/Dumper dump_row/;
+  use DBIx::Dumper qw/dump_row/;
 
   my $rs = ...;
   while ( $row = $rs->next ) {
