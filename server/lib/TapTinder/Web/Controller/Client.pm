@@ -6,6 +6,9 @@ use base 'TapTinder::Web::ControllerBase';
 
 use Digest::MD5 qw(md5);
 use DateTime;
+use File::Spec;
+use File::Copy;
+
 
 =head1 NAME
 
@@ -615,9 +618,9 @@ sub get_msjobp_cmd_info {
         'me.msjobp_cmd_id' => $msjobp_cmd_id,
         'msjob_id.msession_id' => $msession_id,
     }, {
-        select => [ 'msjobp_id.msjobp_id', 'msjob_id.msjob_id', ],
-        as => [ 'msjobp_id', 'msjob_id' ],
-        join => { 'msjobp_id' => 'msjob_id' },
+        select => [ 'msjobp_id.msjobp_id', 'msjob_id.msjob_id', 'jobp_id.rep_path_id', ],
+        as => [ 'msjobp_id', 'msjob_id', 'rep_path_id', ],
+        join => { 'msjobp_id' => [ 'msjob_id', 'jobp_id', ] },
     } );
 
     my $row = $rs->next;
@@ -628,6 +631,71 @@ sub get_msjobp_cmd_info {
     }
     my $row_data = { $row->get_columns() };
     return $row_data;
+}
+
+
+=head2 get_fspath_info
+
+Select fspath info for fsfile_type_id and rep_path_id.
+
+=cut
+
+sub get_fspath_info {
+    my ( $self, $c, $data, $fsfile_type_id, $rep_path_id ) = @_;
+
+    my $rs = $c->model('WebDB::fspath_select')->search( {
+        'me.fsfile_type_id' => $fsfile_type_id,
+        'me.rep_path_id'    => $rep_path_id,
+    }, {
+        select => [ 'fspath_id.fspath_id', 'fspath_id.path', 'fspath_id.name',  ],
+        as => [ 'fspath_id', 'path', 'name',  ],
+        join => [ 'fspath_id' ],
+    } );
+    my $row = $rs->next;
+    if ( !$row ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: Fspath id (fsfile_type_id=$fsfile_type_id, rep_path_id=$rep_path_id) not found.";
+        return 0;
+    }
+    my $row_data = { $row->get_columns() };
+    return $row_data;
+}
+
+
+=head2 move_uploaded_file
+
+Create new machine session log (mslog) entry.
+
+=cut
+
+sub move_uploaded_file {
+    my ( $self, $c, $data, $upload_req, $fspath_id, $fspath, $file_name  ) = @_;
+
+    my $old_path = $upload_req->tempname;
+    my $new_path = File::Spec->catfile( $fspath, $file_name );
+    unless ( move( $old_path, $new_path ) ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: Move file failed ( '$old_path', '$new_path' ):\n$!";
+        return 0;
+    }
+
+    my $size = $upload_req->size(); # in bytes
+    my $created = DateTime->now;
+
+    my $fsfile_rs = $c->model('WebDB::fsfile')->create({
+        fspath_id   => $fspath_id,
+        name        => $file_name,
+        size        => $size,
+        created     => $created,
+        deleted     => undef,
+    });
+    unless ( $fsfile_rs ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: Create fsfile entry failed."; # TODO
+        return 0;
+    }
+    my $fsfile_id = $fsfile_rs->get_column('fsfile_id');
+    return $fsfile_id;
 }
 
 
@@ -661,17 +729,34 @@ sub cmd_sset {
     if ( $params->{etime} ) {
         # TODO validate params
         my $end_time = $params->{etime};
-        my $outfile = $c->request->upload('outf');
+        my $outf_upload_req = $c->request->upload('outf');
         #$self->dumper( $c, $c->request );
-        unless ( $outfile ) {
+        unless ( $outf_upload_req ) {
             $data->{err} = 1;
             $data->{err_msg} = "Error: cmd_sset upload file failed ... ."; # TODO
             return 0;
         }
 
-        my $output_file_id = 1;
+        my $fsfile_type_id = 1; # 1..command output
+        my $rep_path_id = $msjob_info->{rep_path_id};
+        my $fspath_info = $self->get_fspath_info( $c, $data, $fsfile_type_id, $rep_path_id );
+        return 0 unless $fspath_info;
+
+        $self->dumper( $c, $fspath_info );
+
+        my $file_name = $msjobp_cmd_id . '.txt';
+        my $fsfile_id = $self->move_uploaded_file(
+            $c,
+            $data,
+            $outf_upload_req,           # $upload_req
+            $fspath_info->{fspath_id},  # $fspath_id
+            $fspath_info->{path},       # $fspath
+            $file_name
+        );
+        return 0 unless $fsfile_id;
+
         $to_set->{end_time} = DateTime->from_epoch( epoch => $end_time );
-        #$to_set->{output_id} = $output_file_id;
+        $to_set->{output_id} = $fsfile_id;
     }
     my $ret_val = $msjobp_cmd_rs->update( $to_set );
 

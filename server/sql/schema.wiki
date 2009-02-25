@@ -884,7 +884,7 @@ List of saved files.
 * fsfile_id
 * fspath_id
 * name
-* size
+* size -- in bytes
 * created
 * deleted
 <source lang=sql>
@@ -929,7 +929,7 @@ CREATE TABLE fspath_select (
     INDEX i_fsfile_type_id_rep_path_id (fsfile_type_id,rep_path_id),
     CONSTRAINT fk_fspath_select_fsfile_type_id FOREIGN KEY (fsfile_type_id) REFERENCES fsfile_type (fsfile_type_id),
     CONSTRAINT fk_fspath_select_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
-    CONSTRAINT fk_fsfile_default_conf_fspath_id FOREIGN KEY (fspath_id) REFERENCES fspath (fspath_id)
+    CONSTRAINT fk_fspath_select_fspath_id FOREIGN KEY (fspath_id) REFERENCES fspath (fspath_id)
 ) TYPE=InnoDB;
 </source>
 

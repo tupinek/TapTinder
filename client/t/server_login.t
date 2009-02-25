@@ -207,13 +207,8 @@ for my $num ( 1..2) {
         # 3..ok,  4..stopped, 5..error
         my $status = 3 + ( ($num-1) % 3 );
 
+        # ok
         if ( $status == 3 ) {
-            $data = sset(
-                $ua, $client_conf, $msession_id,
-                $prev_msjobp_cmd_id, # $msjobp_cmd_id
-                $status
-            );
-        } else {
             my $output_file_path = '/home2/scripts/sprava_shrecku/mj41/taptinder-dev/client/README';
             $data = sset(
                 $ua, $client_conf, $msession_id,
@@ -221,6 +216,14 @@ for my $num ( 1..2) {
                 $status,
                 time(), # $end_time, TODO - is GMT?
                 $output_file_path
+            );
+
+        # not ok
+        } else {
+            $data = sset(
+                $ua, $client_conf, $msession_id,
+                $prev_msjobp_cmd_id, # $msjobp_cmd_id
+                $status
             );
         }
         if ( $data->{err} ) {
