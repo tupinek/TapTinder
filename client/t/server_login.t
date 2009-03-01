@@ -28,7 +28,7 @@ use constant REVISION => 150;
     }
 }
 
-my $conf_fpath = $ARGV[1] || catfile( $RealBin, '..', '..', 'client-conf', 'client-conf.yaml' );
+my $conf_fpath = $ARGV[1] || catfile( $RealBin, '..', '..', 'client-conf', 'client-conf.yml' );
 my $project_name = $ARGV[0] || 'tt-test-proj';
 
 sub load_client_conf {

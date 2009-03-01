@@ -20,8 +20,7 @@ use lib "$FindBin::Bin/lib";
 use Watchdog qw(sys sys_for_watchdog);
 use SVNShell qw(svnversion svnup svndiff);
 
-use TAPTinder::TestedRevs;
-use TAPTinder::KeyPress qw(process_keypress sleep_and_process_keypress);
+use TapTinder::Client::KeyPress qw(process_keypress sleep_and_process_keypress);
 
 # verbose level
 #  >0 .. print errors
@@ -34,7 +33,7 @@ use TAPTinder::KeyPress qw(process_keypress sleep_and_process_keypress);
 
 my $ver = $ARGV[0] ? $ARGV[0] : 2;
 
-$TAPTinder::KeyPress::ver = 10;
+$TapTinder::Client::KeyPress::ver = 10;
 Term::ReadKey::ReadMode('cbreak');
 select(STDOUT); $| = 1;
 
@@ -44,7 +43,7 @@ print "Working path: '" . $RealBin . "'\n" if $ver > 3;
 
 print "Loading config file.\n" if $ver > 2;
 
-my $fn_client_config = 'client-conf.yaml';
+my $fn_client_config = 'client-conf.yml';
 my $fp_client_conf = catfile( $RealBin, '..', 'client-conf', $fn_client_config );
 print "Client config file path: '" . $fp_client_conf . "'\n" if $ver > 5;
 unless ( -e $fp_client_conf ) {
@@ -55,5 +54,3 @@ unless ( -e $fp_client_conf ) {
 }
 my ( $client_conf ) = YAML::LoadFile( $fp_client_conf );
 dump( $client_conf ) if $ver > 6;
-
-
