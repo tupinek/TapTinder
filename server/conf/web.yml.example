@@ -1,0 +1,10 @@
+---
+name: My TapTinder reports
+
+# Catalyst bug? http://www.mail-archive.com/catalyst@lists.rawmode.org/msg05868.html
+uploadtmp: '/tmp/taptinder/uploads'
+
+session:
+    expires: '3600'
+    rewrite: '0'
+    storage: '/tmp/taptinder/web-sessions'

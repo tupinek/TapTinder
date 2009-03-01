@@ -12,6 +12,7 @@ use Data::Dumper;
 use File::Spec::Functions;
 use Devel::StackTrace;
 
+use Config::Multi;
 use SVN::Log;
 
 use lib "$FindBin::Bin/../lib";
@@ -31,9 +32,24 @@ unless ( $project_name ) {
     exit 0;
 }
 
-my $conf_fpath = catfile( $RealBin, '..', 'conf', 'dbconf.pl' );
-my $conf = require $conf_fpath;
-croak "Config loaded from '$conf_fpath' is empty.\n" unless $conf;
+# use same way as to load config as TapTinder::Web and then delete
+# all but 'project' and 'db' parts (keys)
+my $cm_dir = catfile( $FindBin::Bin , '..', 'conf' );
+my $cm = Config::Multi->new({
+     dir => $cm_dir,
+     prefix => '',
+     app_name => 'web',
+     extension => 'yml',
+});
+my $conf = $cm->load();
+foreach my $key ( keys %$conf ) {
+    if ( $key ne 'project' && $key ne 'db' ) {
+        delete $conf->{$key};
+    }
+}
+# print Dumper($conf); exit();
+croak "Configuration for database is empty.\n" unless $conf->{db};
+croak "Configuration for projects is empty.\n" unless $conf->{project};
 
 unless ( $conf->{project}->{ $project_name } ) {
     croak "Configuration for project '$project_name' not found.";

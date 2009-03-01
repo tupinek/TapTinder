@@ -50,9 +50,9 @@ sub connect {
     } unless defined $params;
 
     return $self->{dbh} = DBI->connect(
-        $conf->{dsn},
+        $conf->{dbi_dsn},
         $conf->{user},
-        $conf->{password},
+        $conf->{pass},
         $params
     ) or croak $DBI::errstr;
 }

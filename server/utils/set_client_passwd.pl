@@ -19,7 +19,7 @@ my $machine_name = '';
 my $client_new_passwd = '';
 my $client_conf_fpath = catfile( $RealBin, '..', '..', 'client-conf', 'client-conf.yaml' );
 my $client_project_name = 'tt-test-proj';
-my $server_conf_fpath = catfile( $RealBin, '..', 'conf', 'dbconf.pl' );
+my $server_conf_fpath = catfile( $RealBin, '..', 'conf', 'web_db.yml' );
 
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
@@ -53,13 +53,13 @@ if ( !$machine_selected || !$client_new_passwd ) {
 }
 
 croak "Can't find server configuration file '$server_conf_fpath'.\n" unless -f $server_conf_fpath;
-my $server_conf = require $server_conf_fpath;
-croak "Config loaded from '$server_conf_fpath' is empty.\n" unless $server_conf;
+my ( $server_conf ) = YAML::LoadFile( $server_conf_fpath );
+croak "Configuration for database loaded from '$server_conf_fpath' is empty.\n" unless $server_conf->{db};
 
 my $dbh = DBI->connect(
-    $server_conf->{db}->{dsn},
+    $server_conf->{db}->{dbi_dsn},
     $server_conf->{db}->{user},
-    $server_conf->{db}->{password},
+    $server_conf->{db}->{pass},
     { RaiseError => 1, AutoCommit => 0 }
 ) or croak $DBI::errstr;
 

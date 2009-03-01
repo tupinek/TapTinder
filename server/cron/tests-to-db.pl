@@ -9,13 +9,29 @@ use File::stat;
 use File::Spec::Functions;
 use File::Basename;
 use File::Copy;
+use Config::Multi;
 
 use lib '../lib';
 use TapTinder::DB;
 
-my $conf_fpath = catfile( $RealBin, '..', 'conf', 'dbconf.pl' );
-my $conf = require $conf_fpath;
-croak "Config loaded from '$conf_fpath' is empty.\n" unless $conf;
+# use same way as to load config as TapTinder::Web and then delete
+# all but 'project' and 'db' parts (keys)
+my $cm_dir = catfile( $FindBin::Bin , '..', 'conf' );
+my $cm = Config::Multi->new({
+     dir => $cm_dir,
+     prefix => '',
+     app_name => 'web',
+     extension => 'yml',
+});
+my $conf = $cm->load();
+foreach my $key ( keys %$conf ) {
+    if ( $key ne 'project' && $key ne 'db' ) {
+        delete $conf->{$key};
+    }
+}
+# print Dumper($conf); exit();
+croak "Configuration for database is empty.\n" unless $conf->{db};
+croak "Configuration for projects is empty.\n" unless $conf->{project};
 
 my $project_name = 'parrot';
 my $conf_rep = $conf->{project}->{$project_name};

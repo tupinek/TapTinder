@@ -1,0 +1,11 @@
+---
+project:
+  TapTinder-tr1:
+    repository: 'http://dev.taptinder.org/svn/taptinder-tr1/'
+    repository_default_layout: 1
+  TapTinder-tr2:
+    repository: 'http://dev.taptinder.org/svn/taptinder-tr2/'
+    repository_default_layout: 0
+  TapTinder-tr3:
+    repository: 'http://dev.taptinder.org/svn/taptinder-tr3/'
+    repository_default_layout: 1

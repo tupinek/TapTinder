@@ -5,17 +5,18 @@ use Carp qw(carp croak verbose);
 use FindBin qw($RealBin);
 
 use File::Spec::Functions;
+use YAML;
 
 my $sql_fpath = $ARGV[0] || undef;
 
-my $conf_fpath = catfile( $RealBin, '..', 'conf', 'dbconf.pl' );
-my $conf = require $conf_fpath;
-croak "Config loaded from '$conf_fpath' is empty.\n" unless $conf;
+my $conf_fpath = catfile( $RealBin, '..', 'conf', 'web_db.yml' );
+my ( $conf ) = YAML::LoadFile( $conf_fpath );
+croak "Configuration for database loaded from '$conf_fpath' is empty.\n" unless $conf->{db};
 
 my $dbh = DBI->connect(
-    $conf->{db}->{dsn},
+    $conf->{db}->{dbi_dsn},
     $conf->{db}->{user},
-    $conf->{db}->{password},
+    $conf->{db}->{pass},
     { RaiseError => 1, AutoCommit => 0 }
 ) or croak $DBI::errstr;
 

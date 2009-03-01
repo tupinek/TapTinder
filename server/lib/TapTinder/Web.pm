@@ -31,6 +31,7 @@ __PACKAGE__->config(
          dir => __PACKAGE__->path_to('./conf'),
          prefix => '',
          app_name => 'web',
+         extension => 'yml',
      }
 );
 
