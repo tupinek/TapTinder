@@ -1,4 +1,4 @@
-package TAPTinder::KeyPress;
+package TapTinder::Client::KeyPress;
 
 use strict;
 use warnings;
@@ -14,7 +14,7 @@ our $ver = 0;
 sub last_pressed_key() {
     my $char = undef;
     my $t_char = undef;
-    while ( defined ($t_char = ReadKey(-1)) ) { 
+    while ( defined ($t_char = ReadKey(-1)) ) {
         $char = $t_char if $t_char;
         #print "|$t_char|\n";
     }
