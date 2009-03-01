@@ -36,7 +36,11 @@ my $ver = $ARGV[0] ? $ARGV[0] : 2;
 $TapTinder::Client::KeyPress::ver = 10;
 Term::ReadKey::ReadMode('cbreak');
 select(STDOUT); $| = 1;
-
+sub my_exit {
+    my $ret_code = shift;
+    Term::ReadKey::ReadMode('normal');
+    exit( $ret_code );
+}
 
 print "Verbose level: $ver\n" if $ver > 2;
 print "Working path: '" . $RealBin . "'\n" if $ver > 3;
@@ -54,3 +58,5 @@ unless ( -e $fp_client_conf ) {
 }
 my ( $client_conf ) = YAML::LoadFile( $fp_client_conf );
 dump( $client_conf ) if $ver > 6;
+my_exit(1);
+

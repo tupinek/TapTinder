@@ -17,7 +17,7 @@ my $help = 0;
 my $machine_id = '';
 my $machine_name = '';
 my $client_new_passwd = '';
-my $client_conf_fpath = catfile( $RealBin, '..', '..', 'client-conf', 'client-conf.yaml' );
+my $client_conf_fpath = catfile( $RealBin, '..', '..', 'client-conf', 'client-conf.yml' );
 my $client_project_name = 'tt-test-proj';
 my $server_conf_fpath = catfile( $RealBin, '..', 'conf', 'web_db.yml' );
 

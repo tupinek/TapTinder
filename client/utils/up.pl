@@ -20,7 +20,7 @@ while ( my $dir = readdir($dh) ) {
     next if $dir eq '.' || $dir eq '..';
     next unless -d $dir;
     print "dir: $dir\n";
-    my $res_fp = catfile( $dir,  'taptinder-results.yaml' );
+    my $res_fp = catfile( $dir,  'taptinder-results.yml' );
 
     my $base_cmd;
     if ( $is_win32 ) {
@@ -34,7 +34,7 @@ while ( my $dir = readdir($dh) ) {
         . ' ' . catfile( $RealBin, '..', '..', 'client', 'upload.pl' )
         . ' ' . 'parrot'
         . ' ' . $res_fp
-        . ' ' . catfile( $RealBin, '..', '..', 'client-conf', 'client-conf.yaml' )
+        . ' ' . catfile( $RealBin, '..', '..', 'client-conf', 'client-conf.yml' )
     ;
     system( $cmd );
     #exit; # debug

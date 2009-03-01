@@ -302,7 +302,7 @@ sub process_test_results {
 
 
 my $mtimes = {};
-my $glob_pattern = $results_dir.'/parrot-smoke-*.yaml';
+my $glob_pattern = $results_dir.'/parrot-smoke-*.yml';
 foreach my $fp ( glob($glob_pattern) ) {
     my $st = stat $fp;
     $mtimes->{ $st->mtime } = $fp;
