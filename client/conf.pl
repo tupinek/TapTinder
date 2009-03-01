@@ -42,40 +42,30 @@ push @$conf, {
     },
 
     'commands' => [
-        { 
+        {
             'name' => 'configure',
             'cmd' => $conf_cmd,
             'mt' => 10*60,
         },
-        { 
+        {
             'name' => 'make',
             'cmd' => $make_cmd,
             'mt'  => 1*60*60,
         },
-        { 
+        {
             'name' => 'harnessnew',
             'cmd'  => 'perl t/harnessnew --yaml',
             'mt'  => 30*60,
             'after'  => sub {
                 my ( $cn, $state, $ver ) = @_;
-                my $rc = copy( 
-                    'taptinder-results.yaml',  
+                my $rc = copy(
+                    'taptinder-results.yaml',
                     catfile($state->{results_path_prefix}, 'taptinder-results.yaml')
                 );
                 print 'ERROR: ' . $! unless $rc;
                 print "make smoke - after return code: $rc\n" if $ver > 1;
                 return $rc;
             },
-        },
-        { 
-            'name' => 'sending to server',
-            'cmd' => 
-                'perl ' . catfile( $RealBin, 'upload.pl' )
-                . ' parrot'
-                . ' taptinder-results.yaml'
-                . ' ' . catfile( $RealBin, '..', 'client-conf', 'client-conf.yaml' )
-            ,
-            'mt'  => 10*60,
         },
     ]
 };
