@@ -9,6 +9,9 @@ our @EXPORT = qw(last_pressed_key process_keypress sleep_and_process_keypress);
 
 use Term::ReadKey;
 our $ver = 0;
+our $sub_before_exit = sub {
+    Term::ReadKey::ReadMode('normal');
+};
 
 
 sub last_pressed_key() {
@@ -39,6 +42,7 @@ sub process_keypress() {
 
             } elsif ( $char eq 'Q' || $char eq 'E' ) {
                 print "User press exit key.\n" if $ver > 2;
+                $sub_before_exit->();
                 exit;
 
             } else {

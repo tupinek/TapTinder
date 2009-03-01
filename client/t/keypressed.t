@@ -2,8 +2,8 @@ use strict;
 use warnings;
 use lib qw( lib . ../lib ../../lib );
 
-use TAPTinder::KeyPress qw(process_keypress sleep_and_process_keypress);
-$TAPTinder::KeyPress::ver = 10;
+use TapTinder::Client::KeyPress qw(process_keypress sleep_and_process_keypress);
+$TapTinder::Client::KeyPress::ver = 10;
 
 Term::ReadKey::ReadMode('cbreak');
 
@@ -20,14 +20,22 @@ sub run_sleep {
 sub sig_handler() {
     my ( $signal ) = @_;
     print("Recieved signal: $signal\n");
-    Term::ReadKey::ReadMode('restore');
+    Term::ReadKey::ReadMode('normal');
     exit;
 }
-#foreach ( keys %SIG ) { $SIG{$_} = \&sig_handler; }
+
+# debug
+if ( 0 ) {
+    foreach ( keys %SIG ) {
+        next if $_ =~ /^(CHLD|CLD)$/;
+        print "$_\n";
+        $SIG{$_} = \&sig_handler;
+    }
+}
+
 $SIG{'KILL'}  = \&sig_handler;
 $SIG{'INT'}  = \&sig_handler;
-$SIG{'QUIT'} = \&sig_handler;  
-
+$SIG{'QUIT'} = \&sig_handler;
 
 select(STDOUT); $| = 1;
 
