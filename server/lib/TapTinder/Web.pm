@@ -18,8 +18,8 @@ use Catalyst qw/
     Session::State::Cookie
 /;
 
+our $VERSION = '0.10';
 
-our $VERSION = '0.03';
 
 # Note that settings in web_*.yml take precedence over this.
 # Thus configuration details given here can function as a default
@@ -41,7 +41,7 @@ __PACKAGE__->setup;
 
 =head1 NAME
 
-TapTinder::Web - TapTinder web application
+TapTinder::Web - TapTinder web server.
 
 =head1 SYNOPSIS
 
@@ -49,7 +49,7 @@ See L<TapTinder::Web>
 
 =head1 DESCRIPTION
 
-TapTinder web base class based on Catalyst::Runtime.
+TapTinder Web server base class based on Catalyst::Runtime.
 
 =head1 SEE ALSO
 

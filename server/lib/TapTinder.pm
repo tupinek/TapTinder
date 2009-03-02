@@ -1,10 +1,10 @@
 package TapTinder;
 
-our $VERSION = '0.03';
+our $VERSION = '0.10';
 
 =head1 NAME
 
-TapTinder - software development tool
+TapTinder - Software development tool.
 
 =head1 DESCRIPTION
 
@@ -40,7 +40,7 @@ L<http://dev.taptinder.org/>
 
 =head1 SEE ALSO
 
-L<TapTinder::Web>
+L<TapTinder::Web>, L<TapTinder::Client>
 
 =cut
 

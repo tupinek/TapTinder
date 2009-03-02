@@ -12,6 +12,8 @@ use DBI;
 use Data::Dumper;
 use Devel::StackTrace;
 
+our $VERSION = '0.10';
+
 
 =head1 NAME
 
@@ -981,7 +983,7 @@ sub prepare_others_and_insert_ttest {
 
 =head1 SEE ALSO
 
-L<TapTinder>
+L<TapTinder>, L<TapTinder::Web>
 
 =head1 AUTHOR
 
