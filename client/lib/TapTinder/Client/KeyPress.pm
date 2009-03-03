@@ -2,6 +2,7 @@ package TapTinder::Client::KeyPress;
 
 use strict;
 use warnings;
+use Carp qw(carp croak verbose);
 
 use base 'Exporter';
 our $VERSION = 0.01;
