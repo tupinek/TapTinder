@@ -55,7 +55,7 @@ for my $num ( 1..2) {
 
         # ok
         if ( $status == 3 ) {
-            my $output_file_path = '/home2/scripts/sprava_shrecku/mj41/taptinder-dev/client/README';
+            my $output_file_path = catfile( $RealBin, '..', 'README' );
             $data = $agent->sset(
                 $msession_id,
                 $prev_msjobp_cmd_id, # $msjobp_cmd_id
