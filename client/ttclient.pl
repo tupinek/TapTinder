@@ -93,14 +93,65 @@ if ( ! $login_rc ) {
 }
 process_keypress();
 
+my $prev_msjobp_cmd_id = undef;
+my $attempt_number = 1;
 while ( 1 ) {
+    my $estimated_finish_time = undef;
+    my $data = $agent->cget(
+        $msession_id, $attempt_number, $estimated_finish_time,
+        $prev_msjobp_cmd_id,
+    );
+    #print Dumper( $data );
 
-    my $sleep_time = 5;
-    sleep_and_process_keypress( $sleep_time );
+    croak "cmd error\n" unless defined $data;
+    if ( $data->{err} ) {
+        croak $data->{err_msg};
+    }
+
+    if ( $data->{msjobp_cmd_id} ) {
+        $prev_msjobp_cmd_id = $data->{msjobp_cmd_id};
+        $attempt_number = 1;
+
+        $data = $agent->sset(
+            $msession_id,
+            $prev_msjobp_cmd_id, # $msjobp_cmd_id
+            2 # running, $cmd_status_id
+        );
+        if ( $data->{err} ) {
+            croak $data->{err_msg};
+        }
+
+        my $status = 3; # todo
+        my $output_file_path = catfile( $RealBin, 'README' );
+        $data = $agent->sset(
+            $msession_id,
+            $prev_msjobp_cmd_id, # $msjobp_cmd_id
+            $status,
+            time(), # $end_time, TODO - is GMT?
+            $output_file_path
+        );
+
+        if ( $data->{err} ) {
+            croak $data->{err_msg};
+        }
+
+        # debug
+        my $sleep_time = 5;
+        print "Debug sleep. Waiting for $sleep_time s ...\n" if $ver >= 1;
+        sleep_and_process_keypress( $sleep_time );
+
+    } else {
+        print "New msjobp_cmd_id not found.\n";
+        $attempt_number++;
+        $prev_msjobp_cmd_id = undef;
+
+        my $sleep_time = 15;
+        print "Waiting for $sleep_time s ...\n" if $ver >= 1;
+        sleep_and_process_keypress( $sleep_time );
+    }
 }
 
-
-my_exit(1);
+exit;
 
 __END__
 
