@@ -1,4 +1,4 @@
-TAPTinder
+TapTinder client
 
 cd taptinder\client
-perl client.pl 10
+perl ttclient.pl --project=parrot
