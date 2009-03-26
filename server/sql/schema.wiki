@@ -79,7 +79,7 @@ Group of machines with same HW, SW or both configurations working in farm.
 <source lang=sql>
 CREATE TABLE farm (
     farm_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name            VARCHAR(20) NOT NULL,
+    name            VARCHAR(30) NOT NULL,
     has_same_hw     BOOLEAN NOT NULL DEFAULT 0,
     has_same_sw     BOOLEAN NOT NULL DEFAULT 0,
     `desc`          TEXT DEFAULT NULL

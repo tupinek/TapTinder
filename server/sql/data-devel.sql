@@ -28,17 +28,20 @@ VALUES (
 
 INSERT INTO farm ( farm_id, name, has_same_hw, has_same_sw, `desc`  )
 VALUES (
-    1, 'vutbr.cz web cluster', 1, 1, 'some computer power is always availible'
+    1, 'vutbr.cz web cluster',   1, 1, 'Some computer power is always available.' ), (
+    2, 'vutbr.cz tapir cluster', 1, 0, 'Dedicated to TapTinder.'
 );
 
 
 INSERT INTO machine ( machine_id, name, user_id, passwd, `desc` , created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
 VALUES (
-    1, 'shreck1',           1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90',  'i386', 'linux',   'i386-linux-thread-multi',  0, NULL, 1      ), (
-    2, 'shreck2',           1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90',  'i386', 'linux',   'i386-linux-thread-multi',  0, NULL, 1      ), (
-    3, 'shreck3',           1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90',  'i386', 'linux',   'i386-linux-thread-multi',  0, NULL, 1      ), (
-    4, 'ent',               1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.49',  'i386', 'linux',   'i386-linux-thread-multi',  0, NULL, NULL   ), (
-    5, 'pc-jurosz (new)',   1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.124', 'i386', 'MSWin32', 'MSWin32-x86-multi-thread', 0, NULL, NULL
+    1, 'shreck1',           1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90',   'i386',   'linux',   'i386-linux-thread-multi',  0, NULL, 1      ), (
+    2, 'shreck2',           1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90',   'i386',   'linux',   'i386-linux-thread-multi',  0, NULL, 1      ), (
+    3, 'shreck3',           1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90',   'i386',   'linux',   'i386-linux-thread-multi',  0, NULL, 1      ), (
+    4, 'ent',               1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.49',   'i386',   'linux',   'i386-linux-thread-multi',  1, NULL, NULL   ), (
+    5, 'pc-jurosz (new)',   1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.124',  'i386',   'MSWin32', 'MSWin32-x86-multi-thread', 0, NULL, NULL   ), (
+    6, 'tapir1',            1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.191.11', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, NULL, 2      ), (
+    7, 'tapir2',            1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.191.12', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, NULL, 2
 );
 
 
@@ -110,8 +113,8 @@ VALUES (
 
 INSERT INTO machine_job_conf ( machine_job_conf_id, machine_id, rep_id, rep_path_id, job_id, priority )
 VALUES (
-    1, 4, 1,    NULL, NULL, 1  ), (
-    2, 4, NULL, NULL, 2,    2  ), (
+    1, 6, 1,    NULL, NULL, 1  ), (
+    2, 6, NULL, NULL, 2,    2  ), (
     3, 5, NULL, NULL, 1,    1
 );
 
