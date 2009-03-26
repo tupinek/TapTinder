@@ -590,11 +590,12 @@ Machine session status messages.
 ** 1 .. unknown status
 ** 2 .. msession just created
 ** 3 .. waiting for new job
-** 4 .. running command
-** 5 .. paused by user
-** 6 .. stop by user
-** 7 .. stop by web server -- see also msabort_reason table
-** 8 .. stop by anything else
+** 4 .. command preparation
+** 5 .. running command
+** 6 .. paused by user
+** 7 .. stop by user
+** 8 .. stop by web server -- see also msabort_reason table
+** 9 .. stop by anything else
 * desc - long description
 <source lang=sql>
 CREATE TABLE msstatus (

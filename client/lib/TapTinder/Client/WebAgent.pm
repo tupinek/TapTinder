@@ -181,4 +181,23 @@ sub sset {
     return $data;
 }
 
+
+sub rriget {
+    my ( $self, $msession_id, $rep_path_id, $rev_id ) = @_;
+
+    my $action = 'rriget';
+    my $request = {
+        ot =>   'json',
+        mid =>  $self->{client_conf}->{machine_id},
+        pass => $self->{client_conf}->{machine_passwd},
+        msid => $msession_id,
+        rpid => $rep_path_id,
+        revid => $rev_id,
+    };
+    my $data = $self->run_action( $action, $request );
+    return $data;
+}
+
+
+
 1;

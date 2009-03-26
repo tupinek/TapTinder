@@ -95,11 +95,12 @@ VALUES (
     1, 'unknown status',        NULL ), (
     2, 'msession just created', NULL ), (
     3, 'waiting for new job',   NULL ), (
-    4, 'running command',       NULL ), (
-    5, 'paused by user',        NULL ), (
-    6, 'stop by user',          NULL ), (
-    7, 'stop by web server',    NULL ), (
-    8, 'stop by anything else', NULL
+    4, 'command preparation',   NULL ), (
+    5, 'running command',       NULL ), (
+    6, 'paused by user',        NULL ), (
+    7, 'stop by user',          NULL ), (
+    8, 'stop by web server',    NULL ), (
+    9, 'stop by anything else', NULL
 );
 
 
@@ -142,7 +143,7 @@ VALUES (
     'running command - make',
     null
 ), (
-    6, 'trun ',
+    6, 'trun',
     'running command - perl t/taptinder_harness --yaml',
     null
 ), (

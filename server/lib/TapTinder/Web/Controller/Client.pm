@@ -279,7 +279,7 @@ sub cmd_msdestroy {
     my $ret_code = $self->create_mslog(
         $c, $data, 'msdestroy',
         $msession_id,
-        6, # $msstatus_id, 6 .. stop by user
+        7, # $msstatus_id, 7 .. stop by user
         1, # $attempt_number
         DateTime->now, # $change_time
         undef # $estimated_finish_time
@@ -408,7 +408,7 @@ Get next cmd info.
 sub get_next_cmd {
     my ( $self, $c, $data, $job_id, $rep_path_id, $jobp_order, $jobp_cmd_order ) = @_;
 
-    my $plus_rows = [ qw/ jobp_id jobp_cmd_id /];
+    my $plus_rows = [ qw/ jobp_id jobp_cmd_id cmd_name /];
     my $search_conf = {
         'select' => $plus_rows,
         'as'     => $plus_rows,
@@ -496,6 +496,7 @@ sub start_new_job {
 
     my $jobp_id = $next_cmd->{jobp_id};
     my $jobp_cmd_id = $next_cmd->{jobp_cmd_id};
+    my $cmd_name = $next_cmd->{cmd_name};
 
     my $msjob_id = $self->create_msjob( $c, $data, $msession_id, $job_id );
     return 0 unless defined $msjob_id;
@@ -510,16 +511,42 @@ sub start_new_job {
     $self->dumper( $c, "jobp_id: $jobp_id, jobp_cmd_id: $jobp_cmd_id");
     $self->dumper( $c, "msjob_id: $msjob_id, msjobp_id: $msjobp_id, msjobp_cmd_id: $msjobp_cmd_id" );
 
-    $data->{job_id} = $job_id;
+    # need to be in sync with
+    $data->{rep_path_id} = $rep_path_id;
     $data->{rev_id} = $rev_id;
     $data->{patch_id} = $patch_id;
-    $data->{jobp_id} = $jobp_id;
-    $data->{jobp_cmd_id} = $jobp_cmd_id;
-    $data->{msjob_id} = $msjob_id;
-    $data->{msjobp_id} = $msjobp_id;
     $data->{msjobp_cmd_id} = $msjobp_cmd_id;
-    # TODO, rep_path.name, ....
+    $data->{cmd_name} = $cmd_name;
     return 1;
+}
+
+
+=head2 get_rep_path_newest_rev_id
+
+Return newest rev_id for rep_path_id found.
+
+=cut
+
+sub get_rep_path_newest_rev_id {
+    my ( $self, $c, $data, $rep_path_id ) = @_;
+
+    # TODO - optimize to limit 1
+    my $rs = $c->model('WebDB::rev_rep_path')->search( {
+        'me.rep_path_id' => $rep_path_id,
+    }, {
+        select => [ 'rev_id' ],
+        as => [ 'rev_id.rev_id',  ],
+        join => [ 'rev_id' ],
+        order_by => [ 'rev_num' ],
+    } );
+    my $row = $rs->next;
+    if ( !$row ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: Rev_rep_path id (rep_path_id=$rep_path_id) not found.";
+        return 0;
+    }
+    my $row_data = { $row->get_columns() };
+    return $row_data->{rev_id};
 }
 
 
@@ -545,25 +572,43 @@ sub cmd_cget {
          $start_new_job = 1;
     } else {
         # check if previous command wasn't last one in job
+        # pmcid - previous msjobp_cmd_id
         my $cmds_data = $self->get_next_cmd_pmcid( $c, $data, $msession_id, $params->{pmcid} );
+        # next command in job found (in same jop part or new job part)
         if ( $cmds_data && $cmds_data->{new}->{jobp_cmd_id} ) {
             my $jobp_cmd_id = $cmds_data->{new}->{jobp_cmd_id};
+            my $cmd_name = $cmds_data->{new}->{cmd_name};
 
-            my $msjobp_id = $cmds_data->{prev}->{msjobp_id};
-            if ( $jobp_cmd_id != $cmds_data->{prev}->{jobp_cmd_id} ) {
-                # TODO
-                #my $msjob_id = $cmds_data->{prev}->{msjob_id};
-                #$msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rev_id, $patch_id );
-                #return 0 unless defined $msjobp_id;
-                #$data->{msjobp_id} = $msjobp_id;
+            # use old msjobp_id or create new
+            my $msjobp_id;
+            # job part id can be same as prev or newly selected
+            my $jobp_id = $cmds_data->{new}->{jobp_id};
+            if ( $jobp_id == $cmds_data->{prev}->{jobp_id} ) {
+                $msjobp_id = $cmds_data->{prev}->{msjobp_id};
+
+            # if job part id is new, than we shoul create new msjobp_id
+            } else {
+                my $msjob_id = $cmds_data->{prev}->{msjob_id};
+                my $patch_id = undef; # TODO
+
+                # find new rev_id
+                my $rep_path_id = $cmds_data->{prev}->{rep_path_id};
+                my $rev_id = $self->get_rep_path_newest_rev_id( $c, $data, $rep_path_id );
+
+                $msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rev_id, $patch_id );
+                return 0 unless defined $msjobp_id;
+                $data->{msjobp_id} = $msjobp_id;
+                $data->{rep_path_id} = $rep_path_id;
+                $data->{rev_id} = $rev_id;
             }
 
             my $msjobp_cmd_id = $self->create_msjobp_cmd( $c, $data, $msjobp_id, $jobp_cmd_id );
             return 0 unless defined $msjobp_cmd_id;
 
-
-            $self->dumper( $c, "jobp_cmd_id: $jobp_cmd_id, msjobp_cmd_id: $msjobp_cmd_id" );
+            #$self->dumper( $c, "jobp_cmd_id: $jobp_cmd_id, msjobp_id: $msjobp_id, msjobp_cmd_id: $msjobp_cmd_id" );
             $data->{msjobp_cmd_id} = $msjobp_cmd_id;
+            $data->{cmd_name} = $cmd_name;
+
         } else {
             $start_new_job = 1;
         }
@@ -595,7 +640,7 @@ sub cmd_cget {
     my $ret_code = $self->create_mslog(
         $c, $data, 'cget',
         $msession_id,
-        4, # $msstatus_id, 4 .. running command
+        5, # $msstatus_id, 5 .. running command
         $attempt_number,
         DateTime->now, # $change_time
         undef # $estimated_finish_time
@@ -770,6 +815,88 @@ sub cmd_sset {
 }
 
 
+=head2 get_rr_info
+
+Select rep_path info and rev info for rep_path_id and rev_id.
+
+=cut
+
+sub get_rr_info {
+    my ( $self, $c, $data, $rep_path_id, $rev_id ) = @_;
+
+    # select from rev_rep_path will validate rep_path_id and rev_id relationship
+    my $rs = $c->model('WebDB::rev_rep_path')->search( {
+        'me.rep_path_id' => $rep_path_id,
+        'me.rev_id' => $rev_id,
+    }, {
+        select => [ 'rep_path_id.path', 'rep_id.path', 'rev_id.rev_num',  ],
+        as => [ 'rep_path_path', 'rep_path', 'rev_num',  ],
+        join => [ { 'rep_path_id' => 'rep_id' }, 'rev_id' ],
+    } );
+    my $row = $rs->next;
+    if ( !$row ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: Rev_rep_path id (rep_path_id=$rep_path_id, rev_id=$rev_id) not found.";
+        return 0;
+    }
+    my $row_data = { $row->get_columns() };
+    return $row_data;
+}
+
+
+=head2 rh_copy_kv_to
+
+Copy/rewrite input hash ref keys/values to output hash ref.
+
+=cut
+
+
+sub rh_copy_kv_to {
+    my ( $self, $rh_in, $rh_out ) = @_;
+
+    foreach my $key ( keys %$rh_in ) {
+        $rh_out->{ $key } = $rh_in->{ $key };
+    }
+    return 1;
+}
+
+
+=head2 cmd_rriget
+
+Get info for rep_path_id an rev_id.
+
+=cut
+
+sub cmd_rriget {
+    my ( $self, $c, $data, $params, $upload ) = @_;
+
+    # $params->{mid} - already checked
+    my $machine_id = $params->{mid};
+    # $params->{msid} - already checked
+    my $msession_id = $params->{msid};
+
+    my $rep_path_id = $params->{rpid};
+    my $rev_id = $params->{revid};
+
+    my $rr_info = $self->get_rr_info( $c, $data, $rep_path_id, $rev_id );
+    return 0 unless $rr_info;
+
+    $self->rh_copy_kv_to( $rr_info, $data );
+
+    # create mslog
+    my $ret_code = $self->create_mslog(
+        $c, $data, 'rriget',
+        $msession_id,
+        4, # $msstatus_id, 4 .. command preparation
+        1,
+        DateTime->now, # $change_time
+        undef # $estimated_finish_time
+    ) || return 0;
+
+    return 1;
+}
+
+
 =head2 cmd_alog
 
 Add row to mslog table.
@@ -810,6 +937,7 @@ sub process_action {
     } elsif ( $action eq 'cget' )       { $param_msid_checks = 1;   # get command
     } elsif ( $action eq 'sset' )       { $param_msid_checks = 1;   # set status
     } elsif ( $action eq 'rset' )       { $param_msid_checks = 1;   # set results
+    } elsif ( $action eq 'rriget' )     { $param_msid_checks = 1;   # rep rev info get
     # debug commands
     } elsif ( $action eq 'login' )      { $param_msid_checks = 0;   # login
     } elsif ( $action eq 'alog' )       { $param_msid_checks = 1;   # add mslog
@@ -836,6 +964,9 @@ sub process_action {
             $cmd_ret_code = $self->cmd_sset( $c, $data, $params, $c->request->upload );
 
         } elsif ( $action eq 'rset' ) {
+
+        } elsif ( $action eq 'rriget' ) {
+            $cmd_ret_code = $self->cmd_rriget( $c, $data, $params );
 
         }
     }

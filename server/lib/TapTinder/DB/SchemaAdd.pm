@@ -90,16 +90,19 @@ $new_source2->source_name( 'NextJobCmd' );
 $new_source2->name(\<<'');
 (
     select jp.jobp_id,
-           c.jobp_cmd_id
+           jpc.jobp_cmd_id,
+           c.name as cmd_name
       from jobp jp,
-           jobp_cmd c
+           jobp_cmd jpc,
+           cmd c
      where jp.job_id = ?
        and jp.rep_path_id = ?
-       and c.jobp_id = jp.jobp_id
-       and (    ( ? is null or c.order > ? )
+       and jpc.jobp_id = jp.jobp_id
+       and (    ( ? is null or jpc.order > ? )
              or ( ? is null or jp.order > ? )
            )
-     order by jp.order, c.order
+       and c.cmd_id = jpc.cmd_id
+     order by jp.order, jpc.order
 )
 
 

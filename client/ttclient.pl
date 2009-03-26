@@ -112,6 +112,20 @@ while ( 1 ) {
         $prev_msjobp_cmd_id = $data->{msjobp_cmd_id};
         $attempt_number = 1;
 
+        my $cmd_name = $data->{cmd_name};
+        if ( $cmd_name eq 'get_src' ) {
+            my $data = $agent->rriget(
+                $msession_id, $data->{rep_path_id}, $data->{rev_id}
+            );
+            croak "cmd error\n" unless defined $data;
+            if ( $data->{err} ) {
+                croak $data->{err_msg};
+            }
+            if ( $ver >= 2 ) {
+                print "Getting revision $data->{rev_num} from $data->{rep_path}$data->{rep_path_path}\n";
+            }
+        }
+
         $data = $agent->sset(
             $msession_id,
             $prev_msjobp_cmd_id, # $msjobp_cmd_id
@@ -121,22 +135,24 @@ while ( 1 ) {
             croak $data->{err_msg};
         }
 
-        my $status = 3; # todo
-        my $output_file_path = catfile( $RealBin, 'README' );
-        $data = $agent->sset(
-            $msession_id,
-            $prev_msjobp_cmd_id, # $msjobp_cmd_id
-            $status,
-            time(), # $end_time, TODO - is GMT?
-            $output_file_path
-        );
+        if ( 1 ) {
+            my $status = 3; # todo
+            my $output_file_path = catfile( $RealBin, 'README' );
+            $data = $agent->sset(
+                $msession_id,
+                $prev_msjobp_cmd_id, # $msjobp_cmd_id
+                $status,
+                time(), # $end_time, TODO - is GMT?
+                $output_file_path
+            );
 
-        if ( $data->{err} ) {
-            croak $data->{err_msg};
+            if ( $data->{err} ) {
+                croak $data->{err_msg};
+            }
         }
 
         # debug
-        my $sleep_time = 5;
+        my $sleep_time = 0;
         print "Debug sleep. Waiting for $sleep_time s ...\n" if $ver >= 1;
         sleep_and_process_keypress( $sleep_time );
 
