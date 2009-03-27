@@ -838,7 +838,7 @@ __PACKAGE__->add_columns(
       'is_foreign_key' => 0,
       'name' => 'name',
       'is_nullable' => 0,
-      'size' => '20'
+      'size' => '30'
     },
     'has_same_hw' => {
       'data_type' => 'BOOLEAN',
