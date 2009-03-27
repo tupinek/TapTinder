@@ -8,9 +8,6 @@ our $VERSION = '0.10';
 
 use File::Spec::Functions;
 
-use Watchdog qw(sys sys_for_watchdog);
-use SVNShell qw(svnversion svnup svndiff);
-
 use TapTinder::Client::KeyPress qw(process_keypress sleep_and_process_keypress cleanup_before_exit);
 use TapTinder::Client::WebAgent;
 use TapTinder::Client::RepManager;
@@ -232,7 +229,8 @@ sub run {
 
         } else {
             print "New msjobp_cmd_id not found.\n";
-            last if $debug;
+            last if $debug; # end forced by debug
+
             $attempt_number++;
             $msjobp_cmd_id = undef;
 
@@ -240,6 +238,7 @@ sub run {
             print "Waiting for $sleep_time s ...\n" if $ver >= 1;
             sleep_and_process_keypress( $sleep_time );
         }
+        last if $debug; # end forced by debug
     }
 
     cleanup_before_exit();
