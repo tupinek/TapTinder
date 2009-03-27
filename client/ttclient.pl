@@ -24,7 +24,7 @@ use lib "$FindBin::Bin/lib";
 use Watchdog qw(sys sys_for_watchdog);
 use SVNShell qw(svnversion svnup svndiff);
 
-use TapTinder::Client::KeyPress qw(process_keypress sleep_and_process_keypress);
+use TapTinder::Client::KeyPress qw(process_keypress sleep_and_process_keypress cleanup_before_exit);
 use TapTinder::Client::WebAgent;
 use TapTinder::Client::Conf qw(load_client_conf);
 
@@ -40,6 +40,7 @@ my $help = 0;
 my $project_name = 'tt-test-proj';
 my $conf_fpath = catfile( $RealBin, '..', 'client-conf', 'client-conf.yml' );
 my $ver = 2; # verbosity level
+my $debug = 1; # debug
 
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
@@ -158,6 +159,7 @@ while ( 1 ) {
 
     } else {
         print "New msjobp_cmd_id not found.\n";
+        last if $debug;
         $attempt_number++;
         $prev_msjobp_cmd_id = undef;
 
@@ -167,6 +169,7 @@ while ( 1 ) {
     }
 }
 
+cleanup_before_exit();
 exit;
 
 __END__

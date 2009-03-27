@@ -6,13 +6,20 @@ use Carp qw(carp croak verbose);
 
 use base 'Exporter';
 our $VERSION = 0.01;
-our @EXPORT = qw(last_pressed_key process_keypress sleep_and_process_keypress);
+our @EXPORT = qw(last_pressed_key process_keypress sleep_and_process_keypress cleanup_before_exit);
 
 use Term::ReadKey;
 our $ver = 0;
+
 our $sub_before_exit = sub {
     Term::ReadKey::ReadMode('normal');
 };
+
+
+sub cleanup_before_exit {
+    $sub_before_exit->();
+    return 1;
+}
 
 
 sub last_pressed_key() {
@@ -43,7 +50,7 @@ sub process_keypress() {
 
             } elsif ( $char eq 'Q' || $char eq 'E' ) {
                 print "User press exit key.\n" if $ver > 2;
-                $sub_before_exit->();
+                cleanup_before_exit();
                 exit;
 
             } else {
