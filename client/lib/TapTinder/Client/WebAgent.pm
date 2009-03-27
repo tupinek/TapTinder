@@ -29,13 +29,17 @@ TapTinder client ...
 
 
 sub new {
-    my $class = shift;
-    my $client_conf = shift;
+    my ( $class, $taptinderserv, $machine_id, $machine_passwd, $debug ) = @_;
+
     my $self  = {};
+    $self->{taptinderserv} = $taptinderserv;
+    $self->{machine_id} = $machine_id;
+    $self->{machine_passwd} = $machine_passwd;
+
+    $debug = 0 unless defined $debug;
+    $self->{debug} = $debug;
 
     $self->{ua} = undef;
-    $self->{debug} = 0;
-    $self->{client_conf} = $client_conf;
 
     bless ($self, $class);
     $self->init_ua();
@@ -65,7 +69,7 @@ sub debug {
 sub run_action {
      my ( $self, $action, $request, $form_data ) = @_;
 
-    my $taptinder_server_url = $self->{client_conf}->{taptinderserv} . 'client/' . $action;
+    my $taptinder_server_url = $self->{taptinderserv} . 'client/' . $action;
     my $resp;
     if ( $form_data ) {
         $resp = $self->{ua}->post( $taptinder_server_url, Content_Type => 'form-data', Content => $request );
@@ -109,8 +113,8 @@ sub mscreate {
     my $action = 'mscreate';
     my $request = {
         ot => 'json',
-        mid => $self->{client_conf}->{machine_id},
-        pass => $self->{client_conf}->{machine_passwd},
+        mid => $self->{machine_id},
+        pass => $self->{machine_passwd},
         crev => REVISION,
         pid => $$,
     };
@@ -127,8 +131,8 @@ sub msdestroy {
     my $action = 'msdestroy';
     my $request = {
         ot => 'json',
-        mid =>  $self->{client_conf}->{machine_id},
-        pass => $self->{client_conf}->{machine_passwd},
+        mid =>  $self->{machine_id},
+        pass => $self->{machine_passwd},
         msid => $msession_id,
     };
     my $data = $self->run_action( $action, $request );
@@ -145,8 +149,8 @@ sub cget {
     my $action = 'cget';
     my $request = {
         ot =>   'json',
-        mid =>  $self->{client_conf}->{machine_id},
-        pass => $self->{client_conf}->{machine_passwd},
+        mid =>  $self->{machine_id},
+        pass => $self->{machine_passwd},
         msid => $msession_id,
         an => $attempt_number,
         eftime => $estimated_finish_time,
@@ -166,8 +170,8 @@ sub sset {
     my $request_upload = 0;
     my $request = {
         ot =>   'json',
-        mid =>  $self->{client_conf}->{machine_id},
-        pass => $self->{client_conf}->{machine_passwd},
+        mid =>  $self->{machine_id},
+        pass => $self->{machine_passwd},
         msid => $msession_id,
         mcid => $msjobp_cmd_id,
         csid => $cmd_status_id,
@@ -188,8 +192,8 @@ sub rriget {
     my $action = 'rriget';
     my $request = {
         ot =>   'json',
-        mid =>  $self->{client_conf}->{machine_id},
-        pass => $self->{client_conf}->{machine_passwd},
+        mid =>  $self->{machine_id},
+        pass => $self->{machine_passwd},
         msid => $msession_id,
         rpid => $rep_path_id,
         revid => $rev_id,
@@ -197,7 +201,6 @@ sub rriget {
     my $data = $self->run_action( $action, $request );
     return $data;
 }
-
 
 
 1;
