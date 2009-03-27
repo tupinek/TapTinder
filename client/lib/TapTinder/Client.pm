@@ -185,6 +185,123 @@ sub ccmd_get_src {
 }
 
 
+=head2 ccmd_prepare
+
+Run prepare client command. Prepare project dir for TapTinder run.
+
+=cut
+
+sub ccmd_prepare {
+    my ( $self, $msjobp_cmd_id ) = @_;
+    print "Client command 'prepare' not implemented yet.\n" if $ver >= 2;
+    return 1;
+}
+
+
+=head2 ccmd_patch
+
+Run patch client command.
+
+=cut
+
+sub ccmd_patch {
+    my ( $self, $msjobp_cmd_id ) = @_;
+    print "Client command 'patch' not implemented yet.\n" if $ver >= 2;
+    return 1;
+}
+
+
+=head2 ccmd_perl_configure
+
+Run perl_configure client command.
+
+=cut
+
+sub ccmd_perl_configure {
+    my ( $self, $msjobp_cmd_id ) = @_;
+    print "Client command 'perl_configure' not implemented yet.\n" if $ver >= 2;
+    return 1;
+}
+
+
+=head2 ccmd_make
+
+Run make client command.
+
+=cut
+
+sub ccmd_make {
+    my ( $self, $msjobp_cmd_id ) = @_;
+    print "Client command 'make' not implemented yet.\n" if $ver >= 2;
+    return 1;
+}
+
+
+=head2 ccmd_trun
+
+Run trun client command.
+
+=cut
+
+sub ccmd_trun {
+    my ( $self, $msjobp_cmd_id ) = @_;
+    print "Client command 'trun' not implemented yet.\n" if $ver >= 2;
+    return 1;
+}
+
+
+=head2 ccmd_test
+
+Run test client command.
+
+=cut
+
+sub ccmd_test {
+    my ( $self, $msjobp_cmd_id ) = @_;
+    print "Client command 'test' not implemented yet.\n" if $ver >= 2;
+    return 1;
+}
+
+
+=head2 ccmd_bench
+
+Run bench client command.
+
+=cut
+
+sub ccmd_bench {
+    my ( $self, $msjobp_cmd_id ) = @_;
+    print "Client command 'bench' not implemented yet.\n" if $ver >= 2;
+    return 1;
+}
+
+
+=head2 ccmd_install
+
+Run install client command.
+
+=cut
+
+sub ccmd_install {
+    my ( $self, $msjobp_cmd_id ) = @_;
+    print "Client command 'install' not implemented yet.\n" if $ver >= 2;
+    return 1;
+}
+
+
+=head2 ccmd_clean
+
+Run clean client command.
+
+=cut
+
+sub ccmd_clean {
+    my ( $self, $msjobp_cmd_id ) = @_;
+    print "Client command 'clean' not implemented yet.\n" if $ver >= 2;
+    return 1;
+}
+
+
 =head2 run
 
 Main run loop.
@@ -202,6 +319,7 @@ sub run {
 
     my $msjobp_cmd_id = undef;
     my $attempt_number = 1;
+    my $cmd_num = 0;
     while ( 1 ) {
         my $estimated_finish_time = undef;
         my $data = $self->{agent}->cget(
@@ -216,8 +334,36 @@ sub run {
             $attempt_number = 1;
 
             my $cmd_name = $data->{cmd_name};
+            $cmd_num++;
             if ( $cmd_name eq 'get_src' ) {
                 $self->ccmd_get_src( $msjobp_cmd_id, $data->{rep_path_id}, $data->{rev_id} );
+
+            } elsif ( $cmd_name eq 'prepare' ) {
+                $self->ccmd_prepare( $msjobp_cmd_id );
+
+            } elsif ( $cmd_name eq 'patch' ) {
+                $self->ccmd_patch( $msjobp_cmd_id );
+
+            } elsif ( $cmd_name eq 'perl_configure' ) {
+                $self->ccmd_perl_configure( $msjobp_cmd_id );
+
+            } elsif ( $cmd_name eq 'make' ) {
+                $self->ccmd_make( $msjobp_cmd_id );
+
+            } elsif ( $cmd_name eq 'trun' ) {
+                $self->ccmd_trun( $msjobp_cmd_id );
+
+            } elsif ( $cmd_name eq 'test' ) {
+                $self->ccmd_test( $msjobp_cmd_id );
+
+            } elsif ( $cmd_name eq 'bench' ) {
+                $self->ccmd_bench( $msjobp_cmd_id );
+
+            } elsif ( $cmd_name eq 'install' ) {
+                $self->ccmd_install( $msjobp_cmd_id );
+
+            } elsif ( $cmd_name eq 'clean' ) {
+                $self->ccmd_clean( $msjobp_cmd_id );
             }
 
             if ( 0 ) {
@@ -251,7 +397,7 @@ sub run {
             print "Waiting for $sleep_time s ...\n" if $ver >= 1;
             sleep_and_process_keypress( $sleep_time );
         }
-        last if $debug; # end forced by debug
+        last if $debug && $cmd_num >= 10; # end forced by debug
     }
 
     cleanup_before_exit();
