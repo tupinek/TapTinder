@@ -237,6 +237,26 @@ sub prepare_temp_from_src {
 }
 
 
+=head2 check_not_modified
+
+Check if directory is in clean (not modified) state.
+
+=cut
+
+sub check_not_modified {
+    my ( $self, $dir_path ) = @_;
+
+    my ( $o_rev, $o_log ) = svnversion( $dir_path );
+    croak "svn svnversion failed: $o_log" unless defined $o_rev;
+    print "Rrevision number of dir '$dir_path': $o_rev\n" if $self->{ver} >= 4;
+    if ( $o_rev !~ /^(\d+)$/ ) {
+        carp "Bad revision number '$dir_path'. Run cleanup dir.\n";
+        return 0;
+    }
+    return 1;
+}
+
+
 =head2 prepare_temp_copy
 
 Prepare temp direcotry with local copy of repository revision.
@@ -273,6 +293,8 @@ sub prepare_temp_copy {
     } else {
         $ret_code = $self->run_svn_up( $src_dir_path, $cmd_output_dir_path, $rr_info->{rev_num} );
     }
+    return undef unless $self->check_not_modified( $src_dir_path );
+
     return undef unless $ret_code;
     process_keypress();
 
@@ -280,6 +302,8 @@ sub prepare_temp_copy {
     my $temp_dir_path = $self->get_dir_path( $rp_dir_base_name, 'temp' );
     my $prep_rc = $self->prepare_temp_from_src( $temp_dir_path, $src_dir_path );
     return undef unless $prep_rc;
+    return undef unless $self->check_not_modified( $temp_dir_path );
+
     return $temp_dir_path;
 }
 
