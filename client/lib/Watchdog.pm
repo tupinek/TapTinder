@@ -17,7 +17,7 @@ sub sys {
     my $output;
     $temp_out_fn = '.out' unless $temp_out_fn;
     open my $oldout, ">&STDOUT"     or carp "Can't dup STDOUT: $!";
-    open OLDERR,     ">&", \*STDERR or carp "Can't dup STDERR: $!";
+    open my $olderr, ">&", \*STDERR or carp "Can't dup STDERR: $!";
 
     open STDOUT, '>', $temp_out_fn or carp "Can't redirect STDOUT to '$temp_out_fn': $! $@";
     open STDERR, ">&STDOUT"     or carp "Can't dup STDOUT: $!";
@@ -31,7 +31,7 @@ sub sys {
     close STDERR;
 
     open STDOUT, ">&", $oldout or carp "Can't dup \$oldout: $!";
-    open STDERR, ">&OLDERR"    or carp "Can't dup OLDERR: $!";
+    open STDERR, ">&", $olderr or carp "Can't dup \$olderr: $!";
 
     unless ( open( FH_STDOUT, "<$temp_out_fn") ) {
         carp("File $temp_out_fn not open!");
@@ -48,7 +48,7 @@ sub sys {
 
 
 sub sys_for_watchdog {
-    my ( $cmd, $log_fn, $timeout, $sleep, $dir ) = @_; 
+    my ( $cmd, $log_fn, $timeout, $sleep, $dir ) = @_;
 
     carp "cmd is mandatory" unless defined $cmd;
     $log_fn = $cmd . '.log' unless defined $log_fn;
