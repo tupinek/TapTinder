@@ -13,7 +13,7 @@ use File::Copy;
 
 use Watchdog qw(sys sys_for_watchdog);
 use SVNShell qw(svnversion svnup svndiff);
-
+use TapTinder::Client::KeyPress qw(process_keypress sleep_and_process_keypress);
 
 =head1 NAME
 
@@ -156,7 +156,7 @@ sub run_svn_co {
         carp "svn co failed, return code: $cmd_rc\n";
         carp "svn co output: '$out'\n";
         croak;
-        return 0;
+        return 0; # not needed
     }
 
     return 1;
@@ -227,6 +227,7 @@ sub prepare_temp_from_src {
 
     $self->remove_dir_loop( $temp_dir_path );
     mkdir( $temp_dir_path ) or croak "Can't mkdir '$temp_dir_path':\n  $!";
+    process_keypress();
 
     print "Copying src '$src_dir_path' to temp '$temp_dir_path' ...\n" if $self->{ver} >= 2;
     dircopy( $src_dir_path, $temp_dir_path ) or croak "Can't copy dir '$src_dir_path' to '$temp_dir_path' $!";
@@ -273,6 +274,7 @@ sub prepare_temp_copy {
         $ret_code = $self->run_svn_up( $src_dir_path, $cmd_output_dir_path, $rr_info->{rev_num} );
     }
     return undef unless $ret_code;
+    process_keypress();
 
     # create temp dir from src dir
     my $temp_dir_path = $self->get_dir_path( $rp_dir_base_name, 'temp' );

@@ -175,12 +175,12 @@ sub ccmd_get_src {
 
     my $temp_dir = $self->{repman}->prepare_temp_copy( $rep_rev_info );
     unless ( $temp_dir ) {
-        $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 3 ); # error, $cmd_status_id
+        $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 5 ); # error, $cmd_status_id
         $self->my_croak( $data->{err_msg} ) if $data->{err};
         return 0; # not needed
     }
 
-    $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 5 ); # ok, $cmd_status_id
+    $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 3 ); # ok, $cmd_status_id
     return 1;
 }
 
@@ -265,6 +265,12 @@ Michal Jurosz <mj@mj41.cz>
 =head1 COPYRIGHT
 
 Copyright (c) 2007-2008 Michal Jurosz. All rights reserved.
+
+=head1 TODO
+
+Refactoring
+* remove direct KeyPress method calls from RepManager
+* ...
 
 =head1 LICENSE
 
