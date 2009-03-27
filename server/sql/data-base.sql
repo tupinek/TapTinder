@@ -124,11 +124,11 @@ VALUES (
 INSERT INTO cmd ( cmd_id, name, `desc`, params )
 VALUES (
     1, 'get_src',
-    'clean source code checkout/update',
+    'clean source code checkout/update, copy clean -> temp, check temp, create dir for results',
     'rep_path_id, rev_id'
 ), (
     2, 'prepare',
-    'preparing job environment (copy clean -> temp, check temp, create dir for results, chdir)',
+    'preparing project for TapTinder, add new files or apply patches',
     null
 ), (
     3, 'patch',
