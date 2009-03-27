@@ -84,7 +84,7 @@ sub run_action {
     my $json_text = $resp->content;
     my $json = from_json( $json_text, {utf8 => 1} );
 
-    if ( 1 ) {
+    if ( $self->{debug} ) {
         print "action '$action' debug:\n";
         print Dumper( $request );
         print Dumper( $json );

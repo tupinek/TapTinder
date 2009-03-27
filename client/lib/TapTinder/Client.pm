@@ -1,16 +1,19 @@
 package TapTinder::Client;
 
+use strict;
+use warnings;
+use Carp qw(carp croak verbose);
+
 our $VERSION = '0.10';
 
-use Carp qw(carp croak verbose);
-use File::Copy::Recursive qw(dircopy);
+use File::Spec::Functions;
 
 use Watchdog qw(sys sys_for_watchdog);
 use SVNShell qw(svnversion svnup svndiff);
 
 use TapTinder::Client::KeyPress qw(process_keypress sleep_and_process_keypress cleanup_before_exit);
 use TapTinder::Client::WebAgent;
-
+use TapTinder::Client::RepManager;
 
 =head1 NAME
 
@@ -21,40 +24,21 @@ TapTinder::Client - Client for TapTinder software development tool.
 TapTinder is software development tool (continuous integration, test
 harness, collect and analyse test results, create reports and diffs).
 
-=head1 AUTHOR
+=head2 $ver
 
-Michal Jurosz <mj@mj41.cz>
+Verbosity level.
 
-=head1 COPYRIGHT
-
-Copyright (c) 2007-2008 Michal Jurosz. All rights reserved.
-
-=head1 LICENSE
-
-TapTinder is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-TapTinder is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
-
-=head1 BUGS
-
-L<http://dev.taptinder.org/>
-
-=head1 SEE ALSO
-
-L<TapTinder>, L<TapTinder::Web>
+* >0 .. print errors only
+* >1 .. print base run info
+* >2 .. all run info (default)
+* >3 .. major debug info
+* >4 .. major and minor debug info
+* >5 .. all debug info
 
 =cut
 
 our $ver = 0;
+
 our $debug = 0;
 
 
@@ -65,18 +49,20 @@ Create Client object.
 =cut
 
 sub new {
-    my ( $class, $client_conf, $t_ver, $t_debug ) = @_;
+    my ( $class, $client_conf, $data_dir, $t_ver, $t_debug ) = @_;
 
     $ver = $t_ver;
     $debug = $t_debug;
 
-    my $self  = {};
+    my $self = {};
     $self->{client_conf} = $client_conf;
+    $self->{data_dir} = $data_dir;
 
     $self->{agent} = undef;
 
     bless ($self, $class);
     $self->init_agent();
+    $self->init_repmanager();
     $self->init_keypress();
 
     return $self;
@@ -93,13 +79,36 @@ sub init_agent {
     my ( $self ) = @_;
 
     print "Starting WebAgent.\n" if $ver >= 3;
-    $agent = TapTinder::Client::WebAgent->new(
+    my $agent_debug = 0;
+    $agent_debug = 1 if $ver >= 4;
+    my $agent = TapTinder::Client::WebAgent->new(
         $self->{client_conf}->{taptinderserv},
         $self->{client_conf}->{machine_id},
-        $self->{client_conf}->{machine_passwd}
+        $self->{client_conf}->{machine_passwd},
+        $agent_debug
     );
 
     $self->{agent} = $agent;
+    return 1;
+}
+
+
+=head2 init_agent
+
+Initialize WebAgent object.
+
+=cut
+
+sub init_repmanager {
+    my ( $self ) = @_;
+
+    print "Starting RepManager.\n" if $ver >= 3;
+    my $repman = TapTinder::Client::RepManager->new(
+        $self->{data_dir},
+        $debug
+    );
+
+    $self->{repman} = $repman;
     return 1;
 }
 
@@ -143,9 +152,10 @@ sub ccmd_get_src {
     if ( $data->{err} ) {
         croak $data->{err_msg};
     }
-    my $rep_info = { %$data };
+    my $rep_rev_info = { %$data };
+    my $rep_full_path = $rep_rev_info->{rep_path} . $rep_rev_info->{rep_path_path};
     if ( $ver >= 2 ) {
-        print "Getting revision $data->{rev_num} from $data->{rep_path}$data->{rep_path_path}\n";
+        print "Getting revision $data->{rev_num} from $rep_full_path.\n";
     }
 
     $data = $self->{agent}->sset(
@@ -153,24 +163,28 @@ sub ccmd_get_src {
         $msjobp_cmd_id,
         2 # running, $cmd_status_id
     );
-    if ( $data->{err} ) {
-        croak $data->{err_msg};
-    }
+    croak $data->{err_msg} if $data->{err};
 
-    # TODO
+    my $temp_dir = $self->{repman}->prepare_temp_copy( $rep_rev_info );
+    return 0 if ! $temp_dir;
 
     return 1;
 }
 
 
+=head2 run
+
+Main run loop.
+
+=cut
+
 sub run {
     my ( $self ) = @_;
 
     print "Creating new machine session.\n" if $ver >= 3;
-    my ( $login_rc, $msession_id ) = $agent->mscreate();
-    if ( ! $login_rc ) {
-        croak "Login failed\n";
-    }
+    my ( $login_rc, $msession_id ) = $self->{agent}->mscreate();
+    croak "Login failed\n" if ! $login_rc;
+
     $self->{msession_id} = $msession_id;
     process_keypress();
 
@@ -185,9 +199,7 @@ sub run {
         #print Dumper( $data );
 
         croak "cmd error\n" unless defined $data;
-        if ( $data->{err} ) {
-            croak $data->{err_msg};
-        }
+        croak $data->{err_msg} if $data->{err};
 
         if ( $data->{msjobp_cmd_id} ) {
             $msjobp_cmd_id = $data->{msjobp_cmd_id};
@@ -195,17 +207,12 @@ sub run {
 
             my $cmd_name = $data->{cmd_name};
             if ( $cmd_name eq 'get_src' ) {
-                $self->ccmd_get_src(
-                    $msjobp_cmd_id,
-                    $data->{rep_path_id},
-                    $data->{rev_id}
-                );
+                $self->ccmd_get_src( $msjobp_cmd_id, $data->{rep_path_id}, $data->{rev_id} );
             }
-
 
             if ( 0 ) {
                 my $status = 3; # todo
-                my $output_file_path = catfile( $RealBin, 'README' );
+                my $output_file_path = catfile( $self->{data_dir}, 'test-output.txt' );
                 $data = $self->{agent}->sset(
                     $msession_id,
                     $msjobp_cmd_id, # $msjobp_cmd_id
@@ -213,10 +220,7 @@ sub run {
                     time(), # $end_time, TODO - is GMT?
                     $output_file_path
                 );
-
-                if ( $data->{err} ) {
-                    croak $data->{err_msg};
-                }
+                croak $data->{err_msg} if $data->{err};
             }
 
             # debug sleep
@@ -240,5 +244,39 @@ sub run {
 
     cleanup_before_exit();
 }
+
+
+=head1 AUTHOR
+
+Michal Jurosz <mj@mj41.cz>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2007-2008 Michal Jurosz. All rights reserved.
+
+=head1 LICENSE
+
+TapTinder is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+TapTinder is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+
+=head1 BUGS
+
+L<http://dev.taptinder.org/>
+
+=head1 SEE ALSO
+
+L<TapTinder>, L<TapTinder::Web>
+
+=cut
 
 1;

@@ -5,11 +5,8 @@ use warnings;
 
 use Carp qw(carp croak verbose);
 use FindBin qw($RealBin);
-use Data::Dump qw(dump);
-
+use Data::Dumper;
 use File::Spec::Functions;
-use File::Path;
-use File::Copy;
 
 # CPAN libs and own libs
 use lib "$FindBin::Bin/../libcpan";
@@ -22,15 +19,6 @@ use Pod::Usage;
 
 use TapTinder::Client;
 use TapTinder::Client::Conf qw(load_client_conf);
-
-
-# verbose level
-#  >0 .. print errors only
-#  >1 .. print base run info
-#  >2 .. all run info (default)
-#  >3 .. major debug info
-#  >4 .. major and minor debug info
-#  >5 .. all debug info
 
 my $help = 0;
 my $project_name = 'tt-test-proj';
@@ -59,11 +47,13 @@ print "Loading config file for project '$project_name'.\n" if $ver >= 3;
 my $client_conf = load_client_conf( $conf_fpath, $project_name );
 
 # debug, will also dump passwd on screen
-# dump( $client_conf ) if $ver >= 5;
+# print Dumper( $client_conf ) if $ver >= 5;
 
 print "Starting Client.\n" if $ver >= 3;
+
+my $data_dir = catdir( $RealBin, '..', 'client-data' );
 my $client = TapTinder::Client->new(
-    $client_conf, $ver, $debug
+    $client_conf, $data_dir, $ver, $debug
 );
 $client->run();
 
