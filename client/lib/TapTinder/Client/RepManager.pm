@@ -34,14 +34,16 @@ Create RepManager object.
 =cut
 
 sub new {
-    my ( $class, $dir, $debug ) = @_;
+    my ( $class, $dir, $ver, $debug ) = @_;
 
     croak "Directory '$dir' not found.\n" unless -d $dir;
 
     my $self  = {};
     $self->{dir} = $dir;
 
+    $ver = 2 unless defined $ver;
     $debug = 0 unless defined $debug;
+    $self->{ver} = $ver;
     $self->{debug} = $debug;
 
     # TODO - separate by PID, many clients
@@ -130,7 +132,7 @@ sub dir_is_empty {
 
 =head2 run_svn_co
 
-Will run svn co command.
+Will run svn checkout command.
 
 =cut
 
@@ -141,7 +143,7 @@ sub run_svn_co {
     $cmd .= " -r $rev_num" if defined $rev_num;
     $cmd .= ' "' . $rep_full_path . '" "' . $src_dir_path . '"';
 
-    my $cmd_output_file_path = catfile( $cmd_output_dir_path. 'svn_co.txt' );
+    my $cmd_output_file_path = catfile( $cmd_output_dir_path, 'svn_co.txt' );
     my ( $cmd_rc, $out ) = sys_for_watchdog(
         $cmd,
         $cmd_output_file_path,
@@ -156,6 +158,79 @@ sub run_svn_co {
         croak;
         return 0;
     }
+
+    return 1;
+}
+
+
+=head2 run_svn_up
+
+Will run svn update command.
+
+=cut
+
+sub run_svn_up {
+    my ( $self, $src_dir_path, $cmd_output_dir_path, $rev_num ) = @_;
+
+    my $to_rev_str = $rev_num;
+    my ( $up_ok, $o_log, $tmp_new_rev ) = svnup(
+        $src_dir_path,
+        $to_rev_str
+    );
+
+    # TODO
+    unless ( $up_ok ) {
+        croak $o_log;
+    }
+
+    return $up_ok;
+}
+
+
+=head2 remove_dir_loop
+
+Will try to recursive remove directory. Will sleep for 5 seconds if directory can't be removed and then try
+to remove it again.
+
+=cut
+
+
+sub remove_dir_loop {
+    my ( $self, $dir_path ) = @_;
+
+    print "Removing dir '$dir_path' ...\n" if $self->{ver} >= 2;
+    if ( -d $dir_path ) {
+        rmtree( $dir_path ) or croak $!;
+        while ( -d $dir_path ) {
+            print "Remove temp dir '$dir_path' failed.\n" if $self->{ver} >= 2;
+            my $wait_time = 5;
+            print "Waiting for ${wait_time}s.\n" if $self->{ver} >= 2;
+            sleep_and_process_keypress( $wait_time );
+            rmtree( $dir_path ) or croak $!;
+        }
+        print "Dir '$dir_path' removed.\n" if $self->{ver} >= 2;
+    } else {
+        print "Dir '$dir_path' not found.\n" if $self->{ver} >= 2;
+    }
+    return 1;
+}
+
+
+=head2 prepare_temp_from_src
+
+Create temp_dir as copy of src_dir.
+
+=cut
+
+sub prepare_temp_from_src {
+    my ( $self, $temp_dir_path, $src_dir_path ) = @_;
+
+    $self->remove_dir_loop( $temp_dir_path );
+    mkdir( $temp_dir_path ) or croak "Can't mkdir '$temp_dir_path':\n  $!";
+
+    print "Copying src '$src_dir_path' to temp '$temp_dir_path' ...\n" if $self->{ver} >= 2;
+    dircopy( $src_dir_path, $temp_dir_path ) or croak "Can't copy dir '$src_dir_path' to '$temp_dir_path' $!";
+    print "Copy src dir to temp dir done.\n" if $self->{ver} >= 3;
 
     return 1;
 }
@@ -184,15 +259,35 @@ sub prepare_temp_copy {
 
     my $src_dir_path = $self->get_dir_path( $rp_dir_base_name, 'src' );
 
+    # update or checkout src dir
     my $svn_co_needed = $self->dir_is_empty( $src_dir_path );
+    my $cmd_output_dir_path = $self->get_dir_path( $rp_dir_base_name, 'results' );
+    my $ret_code;
+    # checkout
     if ( $svn_co_needed ) {
-        my $cmd_output_dir_path = $self->get_dir_path( $rp_dir_base_name, 'results' );
         my $rep_full_path = $rr_info->{rep_path} . $rr_info->{rep_path_path};
-        return $self->run_svn_co( $rep_full_path, $src_dir_path, $cmd_output_dir_path, $rr_info->{rev_num} );
-    }
+        $ret_code = $self->run_svn_co( $rep_full_path, $src_dir_path, $cmd_output_dir_path, $rr_info->{rev_num} );
 
-    return 1;
+    # update
+    } else {
+        $ret_code = $self->run_svn_up( $src_dir_path, $cmd_output_dir_path, $rr_info->{rev_num} );
+    }
+    return undef unless $ret_code;
+
+    # create temp dir from src dir
+    my $temp_dir_path = $self->get_dir_path( $rp_dir_base_name, 'temp' );
+    my $prep_rc = $self->prepare_temp_from_src( $temp_dir_path, $src_dir_path );
+    return undef unless $prep_rc;
+    return $temp_dir_path;
 }
 
+
+=head1 TODO
+
+Full client-data directory managment.
+* quotas, cleanup
+* ...
+
+=cut
 
 1;

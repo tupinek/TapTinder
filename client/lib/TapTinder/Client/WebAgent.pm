@@ -29,14 +29,16 @@ TapTinder client ...
 
 
 sub new {
-    my ( $class, $taptinderserv, $machine_id, $machine_passwd, $debug ) = @_;
+    my ( $class, $taptinderserv, $machine_id, $machine_passwd, $ver, $debug ) = @_;
 
     my $self  = {};
     $self->{taptinderserv} = $taptinderserv;
     $self->{machine_id} = $machine_id;
     $self->{machine_passwd} = $machine_passwd;
 
+    $ver = 2 unless defined $ver;
     $debug = 0 unless defined $debug;
+    $self->{ver} = $ver;
     $self->{debug} = $debug;
 
     $self->{ua} = undef;
@@ -59,13 +61,6 @@ sub init_ua {
 }
 
 
-sub debug {
-    my $self = shift;
-    if (@_) { $self->{debug} = shift }
-    return $self->{debug};
-}
-
-
 sub run_action {
      my ( $self, $action, $request, $form_data ) = @_;
 
@@ -77,14 +72,13 @@ sub run_action {
         $resp = $self->{ua}->post( $taptinder_server_url, $request );
     }
     if ( !$resp->is_success ) {
-        debug "error: " . $resp->status_line . ' --- ' . $resp->content . "\n";
-        exit 1;
+        croak "error: " . $resp->status_line . ' --- ' . $resp->content . "\n";
     }
 
     my $json_text = $resp->content;
     my $json = from_json( $json_text, {utf8 => 1} );
 
-    if ( $self->{debug} ) {
+    if ( $self->{ver} >= 4 ) {
         print "action '$action' debug:\n";
         print Dumper( $request );
         print Dumper( $json );

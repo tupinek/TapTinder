@@ -48,6 +48,8 @@ Create Client object.
 sub new {
     my ( $class, $client_conf, $data_dir, $t_ver, $t_debug ) = @_;
 
+    $t_ver = 2 unless defined $t_ver;
+    $t_debug = 0 unless defined $t_debug;
     $ver = $t_ver;
     $debug = $t_debug;
 
@@ -76,13 +78,12 @@ sub init_agent {
     my ( $self ) = @_;
 
     print "Starting WebAgent.\n" if $ver >= 3;
-    my $agent_debug = 0;
-    $agent_debug = 1 if $ver >= 4;
     my $agent = TapTinder::Client::WebAgent->new(
         $self->{client_conf}->{taptinderserv},
         $self->{client_conf}->{machine_id},
         $self->{client_conf}->{machine_passwd},
-        $agent_debug
+        $ver,
+        $debug
     );
 
     $self->{agent} = $agent;
@@ -102,6 +103,7 @@ sub init_repmanager {
     print "Starting RepManager.\n" if $ver >= 3;
     my $repman = TapTinder::Client::RepManager->new(
         $self->{data_dir},
+        $ver,
         $debug
     );
 
@@ -133,6 +135,19 @@ sub init_keypress {
 }
 
 
+=head2 my_croak
+
+Cleanup and croak.
+
+=cut
+
+sub my_croak {
+    my ( $self, $err_msg ) = @_;
+    cleanup_before_exit();
+    croak $err_msg;
+}
+
+
 =head2 ccmd_get_src
 
 Run get_src client command.
@@ -142,29 +157,30 @@ Run get_src client command.
 sub ccmd_get_src {
     my ( $self, $msjobp_cmd_id, $rep_path_id, $rev_id ) = @_;
 
-    my $data = $self->{agent}->rriget(
+    my $data; # many different uses
+    $data = $self->{agent}->rriget(
         $self->{msession_id}, $rep_path_id, $rev_id
     );
-    croak "cmd error\n" unless defined $data;
-    if ( $data->{err} ) {
-        croak $data->{err_msg};
-    }
+    $self->my_croak("Cmd rriget error.") unless defined $data;
+    $self->my_croak( $data->{err_msg} ) if $data->{err};
+
     my $rep_rev_info = { %$data };
     my $rep_full_path = $rep_rev_info->{rep_path} . $rep_rev_info->{rep_path_path};
     if ( $ver >= 2 ) {
         print "Getting revision $data->{rev_num} from $rep_full_path.\n";
     }
 
-    $data = $self->{agent}->sset(
-        $self->{msession_id},
-        $msjobp_cmd_id,
-        2 # running, $cmd_status_id
-    );
-    croak $data->{err_msg} if $data->{err};
+    $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 2 ); # running, $cmd_status_id
+    $self->my_croak( $data->{err_msg} ) if $data->{err};
 
     my $temp_dir = $self->{repman}->prepare_temp_copy( $rep_rev_info );
-    return 0 if ! $temp_dir;
+    unless ( $temp_dir ) {
+        $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 3 ); # error, $cmd_status_id
+        $self->my_croak( $data->{err_msg} ) if $data->{err};
+        return 0; # not needed
+    }
 
+    $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 5 ); # ok, $cmd_status_id
     return 1;
 }
 
@@ -180,8 +196,7 @@ sub run {
 
     print "Creating new machine session.\n" if $ver >= 3;
     my ( $login_rc, $msession_id ) = $self->{agent}->mscreate();
-    croak "Login failed\n" if ! $login_rc;
-
+    $self->my_croak("Login failed.") unless $login_rc;
     $self->{msession_id} = $msession_id;
     process_keypress();
 
@@ -193,10 +208,8 @@ sub run {
             $self->{msession_id}, $attempt_number, $estimated_finish_time,
             $msjobp_cmd_id,
         );
-        #print Dumper( $data );
-
-        croak "cmd error\n" unless defined $data;
-        croak $data->{err_msg} if $data->{err};
+        $self->my_croak("Cmd cget error.") unless defined $data;
+        $self->my_croak( $data->{err_msg} ) if $data->{err};
 
         if ( $data->{msjobp_cmd_id} ) {
             $msjobp_cmd_id = $data->{msjobp_cmd_id};
@@ -217,7 +230,7 @@ sub run {
                     time(), # $end_time, TODO - is GMT?
                     $output_file_path
                 );
-                croak $data->{err_msg} if $data->{err};
+                $self->my_croak( $data->{err_msg} ) if $data->{err};
             }
 
             # debug sleep
