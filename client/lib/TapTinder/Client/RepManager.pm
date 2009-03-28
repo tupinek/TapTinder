@@ -14,6 +14,8 @@ use File::Copy;
 use Watchdog qw(sys sys_for_watchdog);
 use SVNShell qw(svnversion svnup svndiff);
 use TapTinder::Client::KeyPress qw(process_keypress sleep_and_process_keypress);
+use SVN::PropBug qw(diff_contains_real_change);
+$SVN::PropBug::ver = 0;
 
 =head1 NAME
 
@@ -244,15 +246,31 @@ Check if directory is in clean (not modified) state.
 =cut
 
 sub check_not_modified {
-    my ( $self, $dir_path ) = @_;
+    my ( $self, $dir_path, $bypase_svnbug ) = @_;
 
     my ( $o_rev, $o_log ) = svnversion( $dir_path );
     croak "svn svnversion failed: $o_log" unless defined $o_rev;
-    print "Rrevision number of dir '$dir_path': $o_rev\n" if $self->{ver} >= 4;
-    if ( $o_rev !~ /^(\d+)$/ ) {
-        carp "Bad revision number '$dir_path'. Run cleanup dir.\n";
+    print "Revision number of dir '$dir_path': $o_rev\n" if $self->{ver} >= 4;
+    if ( $o_rev =~ /^(\d+)$/ ) {
+        return 1;
+
+    } elsif ( !$bypase_svnbug || $o_rev !~ /^(\d+)M$/ ) {
+        carp "Bad revision number '$o_rev' on '$dir_path'. Run cleanup dir.\n";
         return 0;
     }
+
+    # bypass Subversion bug, see [perl #49788]
+    my ( $diff, $err ) = svndiff( $dir_path );
+    croak "SVN diff error on dir '$dir_path': $err\n" unless defined $diff;
+
+    my $is_real_modification = diff_contains_real_change( $diff );
+    unless ( defined $is_real_modification ) {
+        croak "SVN::PropBug error on dir '$dir_path': $@.";
+    }
+    if ( $is_real_modification ) {
+        croak "Found modifications in temp directory.\n" . "Diff: $diff\n";
+    }
+    print "Subversion bug bypassed on '$dir_path'.\n" if $self->{ver} >= 3;
     return 1;
 }
 
@@ -293,7 +311,7 @@ sub prepare_temp_copy {
     } else {
         $ret_code = $self->run_svn_up( $src_dir_path, $cmd_output_dir_path, $rr_info->{rev_num} );
     }
-    return undef unless $self->check_not_modified( $src_dir_path );
+    return undef unless $self->check_not_modified( $src_dir_path, 0 );
 
     return undef unless $ret_code;
     process_keypress();
@@ -302,7 +320,7 @@ sub prepare_temp_copy {
     my $temp_dir_path = $self->get_dir_path( $rp_dir_base_name, 'temp' );
     my $prep_rc = $self->prepare_temp_from_src( $temp_dir_path, $src_dir_path );
     return undef unless $prep_rc;
-    return undef unless $self->check_not_modified( $temp_dir_path );
+    return undef unless $self->check_not_modified( $temp_dir_path, 1 );
 
     return $temp_dir_path;
 }
