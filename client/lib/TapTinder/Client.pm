@@ -8,6 +8,7 @@ our $VERSION = '0.10';
 
 use Data::Dumper;
 use File::Spec::Functions;
+use Cwd;
 
 use TapTinder::Client::KeyPress qw(process_keypress sleep_and_process_keypress cleanup_before_exit);
 use TapTinder::Client::WebAgent;
@@ -323,33 +324,81 @@ sub run {
     $self->{msession_id} = $msession_id;
     process_keypress();
 
-    # data shared between commands
-    my $cmd_env = {};
+    my $orginal_cwd = Cwd::getcwd;
+
+    my $msjob_id = undef;
+    my $msjobp_id = undef;
     my $msjobp_cmd_id = undef;
 
+    # data shared between commands
+    my $cmd_env = {};
+
+    my $job_num = 0;
+    my $no_job_num = 0;
+
+    my $debug_loop_num = 0;
     my $attempt_number = 1;
-    my $cmd_num = 0;
+    my $estimated_finish_time = undef;
     while ( 1 ) {
-        my $estimated_finish_time = undef;
+        $debug_loop_num++;
+
         my $data = $self->{agent}->cget(
             $self->{msession_id}, $attempt_number, $estimated_finish_time,
-            $msjobp_cmd_id,
+            $msjobp_cmd_id, # use actual id to get new one
         );
         $self->my_croak("Cmd cget error.") unless defined $data;
         $self->my_croak( $data->{err_msg} ) if $data->{err};
 
-        if ( $data->{msjobp_cmd_id} ) {
-            $msjobp_cmd_id = $data->{msjobp_cmd_id};
+        # new cmd not found
+        if ( ! $data->{msjobp_cmd_id} ) {
+            $no_job_num++;
+            print "New msjobp_cmd_id not found.\n";
+            last if $debug; # end forced by debug
+
+            $attempt_number++;
+
+            my $sleep_time = 15;
+            print "Waiting for $sleep_time s ...\n" if $ver >= 1;
+            sleep_and_process_keypress( $sleep_time );
+
+        } else {
             $attempt_number = 1;
 
-            my $cmd_name = $data->{cmd_name};
-            $cmd_num++;
-            if ( $cmd_name eq 'get_src' ) {
+            # new job
+            if ( !defined($msjob_id) || $msjob_id != $data->{msjob_id} ) {
+                $job_num++;
+                last if $debug && $job_num > 1; # end forced by debug
+
                 $cmd_env = {};
+                $cmd_env->{jobp_num} = 0;
+                $cmd_env->{jobp_cmd_num} = 0;
+                $msjob_id = $data->{msjob_id};
+            }
+            # new job part
+            if ( !defined($msjobp_id) || $msjobp_id != $data->{msjobp_id} ) {
+                $cmd_env->{jobp_num}++;
+                chdir( $orginal_cwd );
+                $cmd_env->{temp_dir} = undef;
+                $msjobp_id = $data->{msjobp_id};
+            }
+            # new command
+            if ( !defined($msjobp_cmd_id) || $msjobp_cmd_id != $data->{msjobp_cmd_id} ) {
+                $cmd_env->{jobp_cmd_num}++;
+                $attempt_number = 1;
+                $msjobp_cmd_id = $data->{msjobp_cmd_id};
+            } else {
+                $self->my_croak("Got the same msjobp_cmd_id $msjobp_cmd_id.");
+            }
+
+            my $cmd_name = $data->{cmd_name};
+            if ( $cmd_name eq 'get_src' ) {
                 $cmd_env->{rep_path_id} = $data->{rep_path_id};
                 $cmd_env->{rev_id} = $data->{rev_id};
                 # will set another keys to $cmd_env
                 $self->ccmd_get_src( $msjobp_cmd_id, $cmd_env );
+
+                # change current working directory (cwd, pwd)
+                chdir( $cmd_env->{temp_dir} );
 
             } elsif ( $cmd_name eq 'prepare' ) {
                 $self->ccmd_prepare( $msjobp_cmd_id, $cmd_env );
@@ -377,7 +426,6 @@ sub run {
 
             } elsif ( $cmd_name eq 'clean' ) {
                 $self->ccmd_clean( $msjobp_cmd_id, $cmd_env );
-                $cmd_env->{temp_dir} = undef;
             }
 
             if ( 0 ) {
@@ -399,19 +447,7 @@ sub run {
                 print "Debug sleep. Waiting for $sleep_time s ...\n" if $ver >= 1;
                 sleep_and_process_keypress( $sleep_time );
             }
-
-        } else {
-            print "New msjobp_cmd_id not found.\n";
-            last if $debug; # end forced by debug
-
-            $attempt_number++;
-            $msjobp_cmd_id = undef;
-
-            my $sleep_time = 15;
-            print "Waiting for $sleep_time s ...\n" if $ver >= 1;
-            sleep_and_process_keypress( $sleep_time );
         }
-        last if $debug && $cmd_num >= 10; # end forced by debug
     }
 
     cleanup_before_exit();
