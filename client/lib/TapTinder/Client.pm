@@ -61,6 +61,9 @@ sub new {
 
     $self->{agent} = undef;
 
+    # current work directory on start
+    $self->{orginal_cwd} = Cwd::getcwd;
+
     bless ($self, $class);
     $self->init_agent();
     $self->init_repmanager();
@@ -127,7 +130,9 @@ sub init_keypress {
     Term::ReadKey::ReadMode('cbreak');
     select(STDOUT); $| = 1;
 
+    # closure - take $self
     $TapTinder::Client::KeyPress::sub_before_exit = sub {
+        chdir( $self->{orginal_cwd} );
         Term::ReadKey::ReadMode('normal');
         if ( $self->{msession_id} ) {
             $self->{agent}->msdestroy( $self->{msession_id} );
@@ -324,27 +329,34 @@ sub run {
     $self->{msession_id} = $msession_id;
     process_keypress();
 
-    my $orginal_cwd = Cwd::getcwd;
-
+    # current (or last successful) ids
     my $msjob_id = undef;
     my $msjobp_id = undef;
     my $msjobp_cmd_id = undef;
 
     # data shared between commands
     my $cmd_env = {};
+    # Keys:
+    # temp_dir - path to working copy (temp), created after ccmd_get_src
+    # jobp_num, jobp_cmd_num - Number of job part in job and number of cmd in job_part.
+    #                          Used as part of local client log file names.
 
+    # number of job runs
     my $job_num = 0;
+    # number of cget runs with "new cmd not found"
     my $no_job_num = 0;
 
-    my $debug_loop_num = 0;
-    my $attempt_number = 1;
+    # Number of next attempt. Reseted to 1 after each successful cget.
+    my $next_attempt_number = 1;
     my $estimated_finish_time = undef;
-    while ( 1 ) {
-        $debug_loop_num++;
 
+    while ( 1 ) {
+        # try to get command from server
         my $data = $self->{agent}->cget(
-            $self->{msession_id}, $attempt_number, $estimated_finish_time,
-            $msjobp_cmd_id, # use actual id to get new one
+            $self->{msession_id},
+            $next_attempt_number, # $attemnt_number
+            $estimated_finish_time,
+            $msjobp_cmd_id # use actual id to get new one
         );
         $self->my_croak("Cmd cget error.") unless defined $data;
         $self->my_croak( $data->{err_msg} ) if $data->{err};
@@ -352,42 +364,43 @@ sub run {
         # new cmd not found
         if ( ! $data->{msjobp_cmd_id} ) {
             $no_job_num++;
-            print "New msjobp_cmd_id not found.\n";
-            last if $debug; # end forced by debug
+            $next_attempt_number++;
 
-            $attempt_number++;
+            print "New msjobp_cmd_id not found.\n";
+            last if $debug; # debug - end forced by debug
 
             my $sleep_time = 15;
             print "Waiting for $sleep_time s ...\n" if $ver >= 1;
             sleep_and_process_keypress( $sleep_time );
 
+        # new cmd found
         } else {
-            $attempt_number = 1;
+            $next_attempt_number = 1;
 
             # new job
-            if ( !defined($msjob_id) || $msjob_id != $data->{msjob_id} ) {
+            if ( !defined($msjob_id) || ( exists($data->{msjob_id}) && $msjob_id != $data->{msjob_id}) ) {
                 $job_num++;
-                last if $debug && $job_num > 1; # end forced by debug
 
                 $cmd_env = {};
                 $cmd_env->{jobp_num} = 0;
                 $cmd_env->{jobp_cmd_num} = 0;
                 $msjob_id = $data->{msjob_id};
+
+                last if $debug && ($job_num > 1); # debug - end forced by debug
             }
             # new job part
-            if ( !defined($msjobp_id) || $msjobp_id != $data->{msjobp_id} ) {
+            if ( !defined($msjobp_id) || ( exists($data->{msjobp_id}) && $msjobp_id != $data->{msjobp_id} ) ) {
                 $cmd_env->{jobp_num}++;
-                chdir( $orginal_cwd );
+                chdir( $self->{orginal_cwd} );
                 $cmd_env->{temp_dir} = undef;
                 $msjobp_id = $data->{msjobp_id};
             }
             # new command
-            if ( !defined($msjobp_cmd_id) || $msjobp_cmd_id != $data->{msjobp_cmd_id} ) {
+            if ( !defined($msjobp_cmd_id) || ( exists($data->{msjobp_cmd_id}) && $msjobp_cmd_id != $data->{msjobp_cmd_id} ) ) {
                 $cmd_env->{jobp_cmd_num}++;
-                $attempt_number = 1;
                 $msjobp_cmd_id = $data->{msjobp_cmd_id};
             } else {
-                $self->my_croak("Got the same msjobp_cmd_id $msjobp_cmd_id.");
+                $self->my_croak("Error new msjobp_cmd_id=$data->{msjobp_cmd_id}.");
             }
 
             my $cmd_name = $data->{cmd_name};
@@ -428,19 +441,6 @@ sub run {
                 $self->ccmd_clean( $msjobp_cmd_id, $cmd_env );
             }
 
-            if ( 0 ) {
-                my $status = 3; # todo
-                my $output_file_path = catfile( $self->{data_dir}, 'test-output.txt' );
-                $data = $self->{agent}->sset(
-                    $msession_id,
-                    $msjobp_cmd_id, # $msjobp_cmd_id
-                    $status,
-                    time(), # $end_time, TODO - is GMT?
-                    $output_file_path
-                );
-                $self->my_croak( $data->{err_msg} ) if $data->{err};
-            }
-
             # debug sleep
             if ( 0 ) {
                 my $sleep_time = 5;
@@ -451,6 +451,7 @@ sub run {
     }
 
     cleanup_before_exit();
+    return 1;
 }
 
 

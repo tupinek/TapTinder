@@ -511,10 +511,12 @@ sub start_new_job {
     $self->dumper( $c, "jobp_id: $jobp_id, jobp_cmd_id: $jobp_cmd_id");
     $self->dumper( $c, "msjob_id: $msjob_id, msjobp_id: $msjobp_id, msjobp_cmd_id: $msjobp_cmd_id" );
 
-    # need to be in sync with
+    # need to be in sync with cmd_cget
+    $data->{msjob_id} = $msjob_id;
     $data->{rep_path_id} = $rep_path_id;
-    $data->{rev_id} = $rev_id;
     $data->{patch_id} = $patch_id;
+    $data->{msjobp_id} = $msjobp_id;
+    $data->{rev_id} = $rev_id;
     $data->{msjobp_cmd_id} = $msjobp_cmd_id;
     $data->{cmd_name} = $cmd_name;
     return 1;
@@ -597,8 +599,12 @@ sub cmd_cget {
 
                 $msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rev_id, $patch_id );
                 return 0 unless defined $msjobp_id;
-                $data->{msjobp_id} = $msjobp_id;
+
+                # need to be in sync with start_new_job
+                $data->{msjob_id} = $msjob_id;
                 $data->{rep_path_id} = $rep_path_id;
+                $data->{patch_id} = $patch_id;
+                $data->{msjobp_id} = $msjobp_id;
                 $data->{rev_id} = $rev_id;
             }
 
