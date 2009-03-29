@@ -108,7 +108,9 @@ sub get_rp_dir_base_name {
     my $fs_valid_rep_path_path = $rep_path_path;
     $fs_valid_rep_path_path =~ s{[^a-zA-Z0-9\-_]}{}g;
 
-    return $fs_valid_rep_name . '-' . $fs_valid_rep_path_path;
+    my $rp_dir_base_name = $fs_valid_rep_name;
+    $rp_dir_base_name .= '-' . $fs_valid_rep_path_path unless $fs_valid_rep_path_path;
+    return $rp_dir_base_name;
 }
 
 
