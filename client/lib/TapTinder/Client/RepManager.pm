@@ -302,16 +302,16 @@ sub prepare_temp_copy {
 
     # update or checkout src dir
     my $svn_co_needed = $self->dir_is_empty( $src_dir_path );
-    my $cmd_output_dir_path = $self->get_dir_path( $rp_dir_base_name, 'results' );
+    my $results_dir_path = $self->get_dir_path( $rp_dir_base_name, 'results' );
     my $ret_code;
     # checkout
     if ( $svn_co_needed ) {
         my $rep_full_path = $rr_info->{rep_path} . $rr_info->{rep_path_path};
-        $ret_code = $self->run_svn_co( $rep_full_path, $src_dir_path, $cmd_output_dir_path, $rr_info->{rev_num} );
+        $ret_code = $self->run_svn_co( $rep_full_path, $src_dir_path, $results_dir_path, $rr_info->{rev_num} );
 
     # update
     } else {
-        $ret_code = $self->run_svn_up( $src_dir_path, $cmd_output_dir_path, $rr_info->{rev_num} );
+        $ret_code = $self->run_svn_up( $src_dir_path, $results_dir_path, $rr_info->{rev_num} );
     }
     return undef unless $self->check_not_modified( $src_dir_path, 0 );
 
@@ -324,7 +324,10 @@ sub prepare_temp_copy {
     return undef unless $prep_rc;
     return undef unless $self->check_not_modified( $temp_dir_path, 1 );
 
-    return $temp_dir_path;
+    return {
+        results_dir => $results_dir_path,
+        temp_dir => $temp_dir_path,
+    };
 }
 
 

@@ -48,7 +48,7 @@ sub sys {
 
 
 sub sys_for_watchdog {
-    my ( $cmd, $log_fn, $timeout, $sleep, $dir ) = @_;
+    my ( $cmd, $log_fn, $timeout, $sleep, $dir, $ver ) = @_;
 
     carp "cmd is mandatory" unless defined $cmd;
     $log_fn = $cmd . '.log' unless defined $log_fn;
@@ -60,7 +60,7 @@ sub sys_for_watchdog {
         print "found '$ipc_fn', probably already running\n";
 #        exit 0;
     }
-    print "running '$cmd' ...\n";
+    print "Running '$cmd' ...\n" if $ver;
 
     my $info = {
         'log_fn'  => $log_fn,
@@ -90,11 +90,13 @@ sub sys_for_watchdog {
 
     unlink $ipc_fn;
     while ( -e $ipc_fn ) {
-        print "trying to unlink $ipc_fn\n";
+        print "Trying to unlink '$ipc_fn' again.\n" if $ver;
         sleep 1;
         unlink $ipc_fn;
     }
-    print ( ( $status ) ? "finished, but exit code is $status\n" : "finished ok\n" );
+    if ( $ver ) {
+        print ( ( $status ) ? "Finished, but exit code is $status\n" : "Finished ok\n" );
+    }
     return ( $status, $output );
 }
 

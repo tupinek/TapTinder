@@ -24,13 +24,14 @@ my $help = 0;
 my $project_name = 'tt-test-proj';
 my $conf_fpath = catfile( $RealBin, '..', 'client-conf', 'client-conf.yml' );
 my $ver = 2; # verbosity level
-my $debug = 1; # debug
+my $debug = 0; # debug
 
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
     'project|p=s' => \$project_name,
     'conf_fpath|cfp=s' => \$conf_fpath,
     'verbose|v=i' => \$ver,
+    'debug|d=i' => \$debug,
 );
 pod2usage(1) if $help || !$options_ok;
 
