@@ -107,6 +107,10 @@ sub svnup {
         if ( my ( $new_rev) = $svnup_log =~ /Updated to revision (\d+)/s ) {
             return ( 1, $svnup_log, $new_rev );
         }
+
+        if ( my ( $new_rev) = $svnup_log =~ /At revision (\d+)/s ) {
+            return ( 1, $svnup_log, $new_rev );
+        }
         return ( 0, $svnup_log );
     }
     return ( 0, $! );
