@@ -113,9 +113,11 @@ VALUES (
 
 INSERT INTO machine_job_conf ( machine_job_conf_id, machine_id, rep_id, rep_path_id, job_id, priority )
 VALUES (
-    1, 6, 1,    NULL, NULL, 1  ), (
-    2, 6, NULL, NULL, 2,    2  ), (
-    3, 5, NULL, NULL, 1,    1
+    1, 5, NULL, NULL, 1,    1  ), (
+    2, 6, 1,    NULL, NULL, 1  ), (
+    3, 6, NULL, NULL, 2,    2  ), (
+    4, 7, 1,    NULL, NULL, 1  ), (
+    5, 7, NULL, NULL, 2,    2
 );
 
 INSERT INTO fspath ( fspath_id, path, web_path, public, created, deleted, name, `desc` )
