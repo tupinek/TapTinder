@@ -246,8 +246,8 @@ sub run_cmd {
         $self->{msession_id},
         $msjobp_cmd_id, # $msjobp_cmd_id
         2, # running
-        time(), # $end_time, TODO - is GMT?
-        undef
+        undef, # $end_time
+        undef  # $file_path
     );
 
     my ( $cmd_rc, $out ) = sys_for_watchdog(
