@@ -302,6 +302,15 @@ sub ccmd_make {
     my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env ) = @_;
 
     my $cmd = 'make';
+    if ( $^O eq 'MSWin32' ) {
+        my $rc = system( "mingw32-make --version > nul" );
+        if ( $rc == 0 ) {
+            $cmd = 'mingw32-make';
+        } else {
+            $cmd = 'nmake';
+        }
+    }
+
     my $cmd_timeout = 5*60; # 5 min
     return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout );
 }
