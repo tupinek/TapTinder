@@ -116,7 +116,6 @@ CREATE TABLE rep (
     project_id      INT UNSIGNED NOT NULL,
     name            VARCHAR(255) NOT NULL,
     path            VARCHAR(255) NOT NULL,
-    subpath         VARCHAR(255) NOT NULL DEFAULT '',
     `desc`          TEXT DEFAULT NULL,
     active          BOOLEAN NOT NULL DEFAULT 1,
     default_layout  BOOLEAN NOT NULL DEFAULT 1,
