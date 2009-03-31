@@ -835,9 +835,9 @@ sub get_rr_info {
         'me.rep_path_id' => $rep_path_id,
         'me.rev_id' => $rev_id,
     }, {
-        select => [ 'rep_id.path', 'rep_id.name', 'rep_path_id.path', 'rev_id.rev_num', ],
-        as => [ 'rep_path', 'rep_name', 'rep_path_path', 'rev_num', ],
-        join => [ { 'rep_path_id' => 'rep_id' }, 'rev_id' ],
+        select => [ 'rep_id.path', 'project_id.name', 'rep_path_id.path', 'rev_id.rev_num', ],
+        as => [ 'rep_path', 'project_name', 'rep_path_path', 'rev_num', ],
+        join => [ { 'rep_path_id' => { 'rep_id' => 'project_id' } }, 'rev_id' ],
     } );
     my $row = $rs->next;
     if ( !$row ) {

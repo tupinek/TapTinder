@@ -94,22 +94,22 @@ sub prepare_rep_path_dirs {
 
 =head2 get_rp_dir_base_name
 
-Returns filesystem valid directory base name for $rep_name, $rep_path_path combination.
+Returns filesystem valid directory base name for $project_name, $rep_path_path combination.
 
 =cut
 
 sub get_rp_dir_base_name {
-    my ( $self, $rep_name, $rep_path_path ) = @_;
+    my ( $self, $project_name, $rep_path_path ) = @_;
 
-    my $fs_valid_rep_name = $rep_name;
-    $fs_valid_rep_name =~ s{[^a-zA-Z0-9\-]}{}g;
-    $fs_valid_rep_name =~ s{^\-+}{};
+    my $fs_valid_project_name = $project_name;
+    $fs_valid_project_name =~ s{[^a-zA-Z0-9\-]}{}g;
+    $fs_valid_project_name =~ s{^\-+}{};
 
     my $fs_valid_rep_path_path = $rep_path_path;
     $fs_valid_rep_path_path =~ s{[^a-zA-Z0-9\-_]}{}g;
 
-    my $rp_dir_base_name = $fs_valid_rep_name;
-    $rp_dir_base_name .= '-' . $fs_valid_rep_path_path unless $fs_valid_rep_path_path;
+    my $rp_dir_base_name = $fs_valid_project_name;
+    $rp_dir_base_name .= '-' . $fs_valid_rep_path_path if $fs_valid_rep_path_path;
     return $rp_dir_base_name;
 }
 
@@ -282,7 +282,7 @@ sub check_not_modified {
 Prepare temp direcotry with local copy of repository revision.
 
 Required keys and example values:
-'rep_name' => 'tr1',
+'project_name' => 'tr1',
 'rep_path' => 'http://dev.taptinder.org/svn/taptinder-tr1/',
 'rep_path_path' => 'trunk/',
 'rev_num' => '6'
@@ -294,7 +294,7 @@ sub prepare_temp_copy {
 
     # use Data::Dumper; print Dumper( $rr_info ); exit;
     my $rp_dir_base_name = $self->get_rp_dir_base_name(
-        $rr_info->{rep_name}, $rr_info->{rep_path_path}
+        $rr_info->{project_name}, $rr_info->{rep_path_path}
     );
     $self->prepare_rep_path_dirs( $rp_dir_base_name );
 

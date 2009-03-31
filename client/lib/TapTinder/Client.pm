@@ -173,7 +173,7 @@ sub ccmd_get_src {
     $self->my_croak( $data->{err_msg} ) if $data->{err};
 
     my $rep_rev_info = { %$data };
-    $cmd_env->{rep_name} = $data->{rep_name};
+    $cmd_env->{project_name} = $data->{project_name};
     $cmd_env->{rep_path} = $data->{rep_path};
     $cmd_env->{rep_path_path} = $data->{rep_path_path};
     $cmd_env->{rev_num} = $data->{rev_num};
