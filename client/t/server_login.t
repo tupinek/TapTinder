@@ -16,7 +16,11 @@ my $project_name = $ARGV[0] || 'tt-test-proj';
 my $conf_fpath = $ARGV[1] || catfile( $RealBin, '..', '..', 'client-conf', 'client-conf.yml' );
 my $client_conf = load_client_conf( $conf_fpath, $project_name );
 
-my $agent = TapTinder::Client::WebAgent->new( $client_conf );
+my $agent = TapTinder::Client::WebAgent->new(
+    $client_conf->{taptinderserv},
+    $client_conf->{machine_id},
+    $client_conf->{machine_passwd},
+);
 my ( $login_rc, $msession_id ) = $agent->mscreate();
 
 if ( ! $login_rc ) {
