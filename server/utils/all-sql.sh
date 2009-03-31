@@ -7,7 +7,7 @@ cat temp/all.sql > temp/all-devel.sql
 cat sql/data-devel.sql >> temp/all-devel.sql
 
 cat temp/all.sql > temp/all-stable.sql
-cat sql/data-devel.sql >> temp/all-stable.sql
+cat sql/data-stable.sql >> temp/all-stable.sql
 echo done
 
 echo -n "updating temp/sel-tables.sql - "
