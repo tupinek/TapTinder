@@ -510,6 +510,7 @@ sub run {
                 sleep_and_process_keypress( $sleep_time );
             }
         }
+        process_keypress(); # after each command
     }
 
     cleanup_before_exit();
