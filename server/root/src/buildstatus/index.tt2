@@ -1,0 +1,42 @@
+[% DEFAULT title = 'Build status' -%]
+
+<div class=nav><a href="javascript:history.back();">Back</a>, <a href="[% c.uri_for('/') %]">homepage</a>.</div>
+
+<table class=data>
+<tr>
+<th colspan=3>Revision</th><th colspan=[% machines.size %]>Builds</th>
+</tr>
+<tr>
+<th>Rev</th>
+<th>Author</th>
+<th>Date</th>
+[% FOREACH machine_id IN machines.keys -%]
+<th><a href="[% c.uri_for( '/table/machine/id-' _ machine_id ) %]">[% machine_id %]</a></th>
+[% END %]
+
+
+</tr>
+
+[% FOREACH rev IN revs -%]
+  <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %]">
+    <td>[% rev.rev_num %]</td>
+    <td>[% rev.rep_login %]</td>
+    <td>[% rev.date %]</td>
+
+[% FOREACH machine_id IN machines.keys -%]
+<td align=center>
+
+    [% res = ress.${rev.rev_id}.$machine_id %]
+    [% IF res.status_name %]
+    <span class="cst_[% res.status_name %]"><a href="[% c.uri_for( '/', res.web_fpath ) %]">[% res.status_name %]</a></span>
+    [% ELSE %]
+    -
+    [% END %]
+
+</td>
+[% END %]
+
+  </tr>
+[% END -%]
+</table>
+[% pager_html %]

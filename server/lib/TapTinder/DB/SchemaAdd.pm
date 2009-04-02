@@ -146,6 +146,53 @@ TapTinder::DB::Schema->register_source( 'MSessionStatus' => $new_source3 );
 
 
 
+package TapTinder::DB::Schema::rev;
+
+my $source4 = __PACKAGE__->result_source_instance();
+my $new_source4 = $source4->new( $source4 );
+$new_source4->source_name( 'BuildStatus' );
+
+$new_source4->name(\<<'');
+(
+   select ms.machine_id,
+          r.rev_id,
+          mjpc.status_id,
+          cs.name as status_name,
+          concat(fsp.web_path, '/', fsf.name) as web_fpath
+     from rev_rep_path rrp,
+          rev r,
+          jobp jp,
+          jobp_cmd jpc,
+          msjobp mjp,
+          msjobp_cmd mjpc,
+          cmd_status cs,
+          msjob mj,
+          msession ms,
+          fsfile fsf,
+          fspath fsp
+    where rrp.rep_path_id = ? -- <
+      and r.rev_id = rrp.rev_id
+      and r.rev_num > ? -- last 100 revs
+      and jp.rep_path_id = ? -- <
+      and jp.order = 1 -- only first part
+      and jpc.jobp_id = jp.jobp_id
+      and jpc.cmd_id = 5 -- only make
+      and mjp.rev_id = r.rev_id
+      and mjp.jobp_id = jp.jobp_id
+      and mjpc.jobp_cmd_id = jpc.jobp_cmd_id
+      and mjpc.msjobp_id = mjp.msjobp_id
+      and cs.cmd_status_id = mjpc.status_id
+      and fsf.fsfile_id = mjpc.output_id
+      and fsp.fspath_id = fsf.fspath_id
+      and mj.msjob_id = mjp.msjobp_id
+      and ms.msession_id = mj.msession_id
+)
+
+
+TapTinder::DB::Schema->register_source( 'BuildStatus' => $new_source4 );
+
+
+
 # ViewMD - view metadata
 
 package TapTinder::DB::Schema::build_conf;
