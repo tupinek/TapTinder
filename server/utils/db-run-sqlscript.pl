@@ -1,11 +1,18 @@
-use DBI;
+#! perl
+
 use strict;
+use warnings;
 
 use Carp qw(carp croak verbose);
 use FindBin qw($RealBin);
 
+use DBI;
 use YAML;
 use File::Spec::Functions;
+
+use lib "$RealBin/../lib";
+use TapTinder::Utils::Cmd qw(run_cmd_ipc);
+
 
 my $sql_fpath = $ARGV[0] || undef;
 my $noipc = $ARGV[1] || 0;
@@ -28,24 +35,10 @@ if ( $noipc ) {
 }
 $cmd .= ' ' . $conf->{db}->{name};
 $cmd .= ' < ' . $sql_fpath;
-
 #print "cmd: '$cmd'\n";
 
 # TODO IPC version (no password on command line or process list)
 
-$! = undef;
-$@ = undef;
-if ( ! $noipc ) {
-    print "Enter database password for user '$conf->{db}->{user}': ";
-}
-my $ret_code = system( $cmd );
-print "Return code: $ret_code - ";
-if ( $ret_code ) {
-    print "error";
-} else {
-    print "ok";
-}
-print "\n";
-
-print $! if $!;
-print $@ if $@;
+print "Running SQL file on database '$conf->{db}->{name}':\n";
+my $msg = "Enter database password for user '$conf->{db}->{user}': ";
+TapTinder::Utils::Cmd::run_cmd_ipc( $cmd, $noipc, $msg );
