@@ -84,7 +84,7 @@ TapTinder::DB::Schema->register_source( 'NotTestedJobs' => $new_source );
 
 
 my $source2 = __PACKAGE__->result_source_instance();
-my $new_source2 = $source->new( $source2 );
+my $new_source2 = $source2->new( $source2 );
 $new_source2->source_name( 'NextJobCmd' );
 
 $new_source2->name(\<<'');
@@ -107,6 +107,43 @@ $new_source2->name(\<<'');
 
 
 TapTinder::DB::Schema->register_source( 'NextJobCmd' => $new_source2 );
+
+
+package TapTinder::DB::Schema::msession;
+
+my $source3 = __PACKAGE__->result_source_instance();
+my $new_source3 = $source3->new( $source3 );
+$new_source3->source_name( 'MSessionStatus' );
+
+$new_source3->name(\<<'');
+(
+    select ms.msession_id,
+           ms.client_rev,
+           ms.start_time,
+           ma.machine_id,
+           ma.name as machine_name,
+           ma.cpuarch,
+           ma.osname,
+           ma.archname,
+           ( select max(msjpc.end_time)
+               from msjob msj,
+                    msjobp msjp,
+                    msjobp_cmd msjpc
+              where msj.msession_id = ms.msession_id
+                and msjp.msjob_id = msj.msjob_id
+                and msjpc.msjobp_id = msjp.msjobp_id
+           ) as last_cmd_finish_time
+      from msession ms,
+           machine ma
+     where ma.machine_id = ms.machine_id
+       and ms.end_time is null
+       and ms.abort_reason_id is null
+     order by ms.machine_id, ms.start_time
+)
+
+
+TapTinder::DB::Schema->register_source( 'MSessionStatus' => $new_source3 );
+
 
 
 # ViewMD - view metadata

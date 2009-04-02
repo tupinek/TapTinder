@@ -4,12 +4,13 @@
 
 <table class=data>
 <tr>
-<th>&nbsp;</th><th colspan=3>MSession</th><th colspan=2>Machine</th>
+<th>&nbsp;</th><th colspan=3>MSession</th><th colspan=2>Machine</th><th colspan=1>Info</th>
 </tr>
 <tr>
 <th>&nbsp;</th>
 <th>&nbsp;</th><th>Start time</th><th>Client rev</th>
 <th>&nbsp</th><th>Name</th>
+<th>Last finished cmd</th>
 </tr>
 
 [% FOREACH st IN states -%]
@@ -23,6 +24,7 @@
     <td><a href="[% c.uri_for( '/table/machine/id-' _ st.machine_id ) %]">[% st.machine_id %]</a></td>
     <td>[% st.machine_name %]</td>
 
+    <td>[% st.last_cmd_finish_time %]</td>
   </tr>
 [% END -%]
 </table>

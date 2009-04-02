@@ -24,46 +24,17 @@ sub index : Path  {
 
     my $pr = $self->get_page_params( $params );
 
-    my $search = {
-        join => [
-            'machine_id',
-        ],
-        'select' => [qw/
-            me.msession_id
-            me.client_rev
-            me.start_time
-
-            machine_id.machine_id
-            machine_id.name
-            machine_id.cpuarch
-            machine_id.osname
-            machine_id.archname
-        /],
-        'as' => [qw/
-            msession_id
-            client_rev
-            start_time
-
-            machine_id
-            machine_name
-            cpuarch
-            osname
-            archname
-        /],
-        order_by => [ 'machine_id', 'start_time' ],
+    my $plus_rows = [ qw/ msession_id client_rev start_time machine_id machine_name cpuarch osname archname last_cmd_finish_time /];
+    my $search_conf = {
+        'select' => $plus_rows,
+        'as'     => $plus_rows,
+        bind   => [],
         page => $pr->{page},
         rows => $pr->{rows} || 5,
         offset => $pr->{offset} || 0,
     };
 
-
-    my $rs = $c->model('WebDB::msession')->search(
-        {
-            'me.end_time' => undef,
-            'me.abort_reason_id' => undef,
-        },
-        $search
-    );
+    my $rs = $c->model('WebDB')->schema->resultset( 'MSessionStatus' )->search( {}, $search_conf );
 
     my @states = ();
     while (my $state = $rs->next) {
