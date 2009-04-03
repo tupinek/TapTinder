@@ -333,8 +333,14 @@ Run trun client command.
 sub ccmd_trun {
     my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env ) = @_;
 
-    print "Client command 'trun' not implemented yet.\n" if $ver >= 2;
-    return 1;
+    my $cmd;
+    if ( $^O eq 'MSWin32' ) {
+        $cmd = 'perl.exe t\taptinder_harness --yaml';
+    } else {
+        $cmd = 'perl t/taptinder_harness --yaml';
+    }
+    my $cmd_timeout = 15*60; # 15 min
+    return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout );
 }
 
 
