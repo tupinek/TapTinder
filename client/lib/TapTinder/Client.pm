@@ -49,7 +49,7 @@ Create Client object.
 =cut
 
 sub new {
-    my ( $class, $client_conf, $data_dir, $t_ver, $t_debug ) = @_;
+    my ( $class, $client_conf, $base_dir, $t_ver, $t_debug ) = @_;
 
     $t_ver = 2 unless defined $t_ver;
     $t_debug = 0 unless defined $t_debug;
@@ -58,7 +58,8 @@ sub new {
 
     my $self = {};
     $self->{client_conf} = $client_conf;
-    $self->{data_dir} = $data_dir;
+    $self->{src_add_dir} = catdir( $base_dir, 'client-src-add' );
+    $self->{data_dir} = catdir( $base_dir, 'client-data' );
 
     $self->{agent} = undef;
 
@@ -207,7 +208,14 @@ Run prepare client command. Prepare project dir for TapTinder run.
 
 sub ccmd_prepare {
     my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env ) = @_;
-    print "Client command 'prepare' not implemented yet.\n" if $ver >= 2;
+
+    my $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 2 ); # running, $cmd_status_id
+
+    my $src_add_project_dir = catdir( $self->{src_add_dir}, $cmd_env->{project_name} );
+    $self->{repman}->add_merge_copy( $src_add_project_dir, $cmd_env->{temp_dir} );
+
+    $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 3 ); # ok, $cmd_status_id
+
     return 1;
 }
 

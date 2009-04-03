@@ -331,6 +331,37 @@ sub prepare_temp_copy {
 }
 
 
+=head2 add_merge_copy
+
+Copy (add) all files from $src_dir to $dest_dir.
+
+=cut
+
+sub add_merge_copy {
+    my ( $self, $src_dir, $dest_dir ) = @_;
+
+    # add-src directory for this project doesn't exist
+    return 1 unless -d $src_dir;
+
+    my $dir_handle;
+    opendir( $dir_handle, $src_dir ) or croak "Cannot open the directory '$src_dir': $!";
+    my @files_dirs = grep { $_ ne '.' and $_ ne '..' } readdir( $dir_handle );
+    closedir( $dir_handle ) or croak "Cannot close the directory '$src_dir': $!";
+
+    return 1 unless @files_dirs;
+
+    foreach my $file_dir ( @files_dirs ) {
+        # TODO - recursive copy
+        next if -d $file_dir;
+
+        my $src_fpath = catfile( $src_dir, $file_dir );
+        my $dest_fpath = catfile( $dest_dir, $file_dir );
+        copy( $src_fpath, $dest_fpath ) or croak "Can't copy '$src_fpath' to '$dest_fpath'.";
+    }
+    return 1;
+}
+
+
 =head1 TODO
 
 Full client-data directory managment.
