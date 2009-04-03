@@ -331,6 +331,51 @@ sub prepare_temp_copy {
 }
 
 
+=head2 add_merge_copy_recursion
+
+Recursive part for add_merge_copy.
+
+=cut
+
+
+sub add_merge_copy_recursion {
+    my ( $self, $src_dir, $dest_dir ) = @_;
+
+    my $dir_handle;
+    opendir( $dir_handle, $src_dir ) or croak "Cannot open the directory '$src_dir': $!";
+    my @files_dirs = grep { $_ ne '.' and $_ ne '..' } readdir( $dir_handle );
+    closedir( $dir_handle ) or croak "Cannot close the directory '$src_dir': $!";
+
+    return 1 unless @files_dirs;
+
+    foreach my $file_dir ( @files_dirs ) {
+
+        # directory - recursive copy
+        # TODO - catdir here?
+        my $full_path = catdir( $src_dir, $file_dir );
+        if ( -d $full_path ) {
+            # Skip clien Subversion metadata
+            next if $file_dir eq '.svn';
+            next if $file_dir eq '_svn';
+
+            my $new_src_dir = catdir( $src_dir, $file_dir );
+            my $new_dest_dir = catdir( $dest_dir, $file_dir );
+            unless ( -d $new_dest_dir ) {
+                mkdir( $new_dest_dir ) or croak "Can't create directory '$new_dest_dir'.\n$!";
+            }
+            $self->add_merge_copy_recursion( $new_src_dir, $new_dest_dir );
+            next;
+        }
+
+        # file
+        my $src_fpath = catfile( $src_dir, $file_dir );
+        my $dest_fpath = catfile( $dest_dir, $file_dir );
+        copy( $src_fpath, $dest_fpath ) or croak "Can't copy '$src_fpath' to '$dest_fpath'.\n$!";
+    }
+    return 1;
+}
+
+
 =head2 add_merge_copy
 
 Copy (add) all files from $src_dir to $dest_dir.
@@ -342,23 +387,7 @@ sub add_merge_copy {
 
     # add-src directory for this project doesn't exist
     return 1 unless -d $src_dir;
-
-    my $dir_handle;
-    opendir( $dir_handle, $src_dir ) or croak "Cannot open the directory '$src_dir': $!";
-    my @files_dirs = grep { $_ ne '.' and $_ ne '..' } readdir( $dir_handle );
-    closedir( $dir_handle ) or croak "Cannot close the directory '$src_dir': $!";
-
-    return 1 unless @files_dirs;
-
-    foreach my $file_dir ( @files_dirs ) {
-        # TODO - recursive copy
-        next if -d $file_dir;
-
-        my $src_fpath = catfile( $src_dir, $file_dir );
-        my $dest_fpath = catfile( $dest_dir, $file_dir );
-        copy( $src_fpath, $dest_fpath ) or croak "Can't copy '$src_fpath' to '$dest_fpath'.";
-    }
-    return 1;
+    return $self->add_merge_copy_recursion( $src_dir, $dest_dir );
 }
 
 

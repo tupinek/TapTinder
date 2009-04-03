@@ -52,9 +52,9 @@ my $client_conf = load_client_conf( $conf_fpath, $project_name );
 
 print "Starting Client.\n" if $ver >= 3;
 
-my $data_dir = catdir( $RealBin, '..', 'client-data' );
+my $base_dir = catdir( $RealBin, '..' );
 my $client = TapTinder::Client->new(
-    $client_conf, $data_dir, $ver, $debug
+    $client_conf, $base_dir, $ver, $debug
 );
 $client->run();
 

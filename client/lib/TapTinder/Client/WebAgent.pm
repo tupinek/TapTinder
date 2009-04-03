@@ -78,7 +78,7 @@ sub run_action {
     my $json_text = $resp->content;
     my $json = from_json( $json_text, {utf8 => 1} );
 
-    if ( $self->{ver} >= 4 ) {
+    if ( $self->{ver} >= 5 ) {
         print "action '$action' debug:\n";
         print Dumper( $request );
         print Dumper( $json );
