@@ -335,9 +335,9 @@ sub ccmd_trun {
 
     my $cmd;
     if ( $^O eq 'MSWin32' ) {
-        $cmd = 'perl.exe t\taptinder_harness --yaml';
+        $cmd = 'perl.exe t\harness --archive';
     } else {
-        $cmd = 'perl t/taptinder_harness --yaml';
+        $cmd = 'perl t/harness --archive';
     }
     my $cmd_timeout = 15*60; # 15 min
     return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout );
