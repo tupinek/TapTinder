@@ -750,6 +750,58 @@ sub move_uploaded_file {
 }
 
 
+=head2 uploaded_file_found
+
+Do all around file uploading.
+
+=cut
+
+sub uploaded_file_found {
+    my ( $self, $c, $data, $input_name, $rep_path_id, $msjobp_cmd_id ) = @_;
+
+    # TODO validate params
+
+    my $output_file_upload_req = $c->request->upload( $input_name );
+    #$self->dumper( $c, $c->request->uploads );
+    unless ( $output_file_upload_req ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: cmd_sset upload output file failed ... ."; # TODO
+        return 0;
+    }
+
+    my $file_name = undef;
+    my $fsfile_type_id = undef;
+    if ( $input_name eq 'output_file' ) {
+        $fsfile_type_id = 1; # command output
+        $file_name = $msjobp_cmd_id . '.txt';
+
+    } elsif ( $input_name eq 'outdata_file' ) {
+        $fsfile_type_id = 2; # command outdata
+        $file_name = $msjobp_cmd_id . '.tar.gz';
+
+    } else {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: Upload output file failed. Unknown input_name '$input_name'."; # TODO
+        return 0;
+    }
+
+    my $fspath_info = $self->get_fspath_info( $c, $data, $fsfile_type_id, $rep_path_id );
+    return 0 unless $fspath_info;
+    #$self->dumper( $c, $fspath_info );
+
+    my $fsfile_id = $self->move_uploaded_file(
+        $c,
+        $data,
+        $output_file_upload_req,    # $upload_req
+        $fspath_info->{fspath_id},  # $fspath_id
+        $fspath_info->{path},       # $fspath
+        $file_name
+    );
+    return 0 unless $fsfile_id;
+    return $fsfile_id;
+}
+
+
 =head2 cmd_sset
 
 Set msjobp_cmd.status_id.
@@ -778,37 +830,31 @@ sub cmd_sset {
         status_id => $cmd_status_id,
     };
     if ( $params->{etime} ) {
-        # TODO validate params
-        my $end_time = $params->{etime};
-        my $outf_upload_req = $c->request->upload('outf');
-        #$self->dumper( $c, $c->request );
-        unless ( $outf_upload_req ) {
-            $data->{err} = 1;
-            $data->{err_msg} = "Error: cmd_sset upload file failed ... ."; # TODO
-            return 0;
-        }
+        $to_set->{end_time} = DateTime->from_epoch( epoch => $params->{etime} );
+    }
 
-        my $fsfile_type_id = 1; # 1..command output
-        my $rep_path_id = $msjob_info->{rep_path_id};
-        my $fspath_info = $self->get_fspath_info( $c, $data, $fsfile_type_id, $rep_path_id );
-        return 0 unless $fspath_info;
-
-        $self->dumper( $c, $fspath_info );
-
-        my $file_name = $msjobp_cmd_id . '.txt';
-        my $fsfile_id = $self->move_uploaded_file(
-            $c,
-            $data,
-            $outf_upload_req,           # $upload_req
-            $fspath_info->{fspath_id},  # $fspath_id
-            $fspath_info->{path},       # $fspath
-            $file_name
+    if ( $params->{output_file} ) {
+        my $fsfile_id = $self->uploaded_file_found(
+            $c, $data,
+            'output_file', # $input_name
+            $msjob_info->{rep_path_id}, # rep_path_id
+            $msjobp_cmd_id
         );
         return 0 unless $fsfile_id;
-
-        $to_set->{end_time} = DateTime->from_epoch( epoch => $end_time );
         $to_set->{output_id} = $fsfile_id;
     }
+
+    if ( $params->{outdata_file} ) {
+        my $fsfile_id = $self->uploaded_file_found(
+            $c, $data,
+            'outdata_file', # $input_name
+            $msjob_info->{rep_path_id}, # rep_path_id
+            $msjobp_cmd_id
+        );
+        return 0 unless $fsfile_id;
+        $to_set->{outdata_id} = $fsfile_id;
+    }
+
     my $ret_val = $msjobp_cmd_rs->update( $to_set );
 
     unless ( $ret_val ) {

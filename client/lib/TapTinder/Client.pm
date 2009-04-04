@@ -9,6 +9,7 @@ our $VERSION = '0.10';
 use Data::Dumper;
 use File::Spec::Functions;
 use Cwd;
+use File::Copy;
 
 use Watchdog qw(sys sys_for_watchdog);
 use TapTinder::Client::KeyPress qw(process_keypress sleep_and_process_keypress cleanup_before_exit);
@@ -240,13 +241,20 @@ Run command.
 =cut
 
 sub run_cmd {
-    my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout ) = @_;
+    my (
+        $self, $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd,
+        $cmd_timeout, $outdata_file_full_path
+    ) = @_;
 
-    my $log_file_name =
+    my $base_out_fname =
         $cmd_env->{msjob_id}
         . '-' . $cmd_env->{jobp_num}
         . '-' . $cmd_env->{jobp_cmd_num}
         . '-' . $cmd_name
+    ;
+    my $log_file_name =
+        $base_out_fname
+        . '.txt'
     ;
     my $cmd_log_fp = catfile( $cmd_env->{results_dir}, $log_file_name );
 
@@ -273,12 +281,25 @@ sub run_cmd {
         $status = 5; # 5 .. error
     }
 
+    # don't try to send outdata file if it doesn't exists
+    if ( $outdata_file_full_path ) {
+        if ( -f $outdata_file_full_path ) {
+            # copy to results
+            my $dest_outdata_fpath = catfile( $cmd_env->{results_dir}, $base_out_fname.'.tar.gz' );
+            copy( $outdata_file_full_path, $dest_outdata_fpath )
+                or carp "Copy '$outdata_file_full_path' to '$dest_outdata_fpath' failed.\n$!";
+        } else {
+            print "Trun outdata file '$outdata_file_full_path' not found.\n" if $ver >= 3;
+            $outdata_file_full_path = undef;
+        }
+    }
     $data = $self->{agent}->sset(
         $self->{msession_id},
         $msjobp_cmd_id, # $msjobp_cmd_id
         $status,
         time(), # $end_time, TODO - is GMT?
-        $cmd_log_fp
+        $cmd_log_fp,
+        $outdata_file_full_path
     );
     $self->my_croak( $data->{err_msg} ) if $data->{err};
     return 1;
@@ -296,7 +317,7 @@ sub ccmd_perl_configure {
 
     my $cmd = 'perl Configure.pl';
     my $cmd_timeout = 5*60; # 5 min
-    return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout );
+    return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout, undef );
 }
 
 
@@ -320,7 +341,7 @@ sub ccmd_make {
     }
 
     my $cmd_timeout = 5*60; # 5 min
-    return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout );
+    return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout, undef );
 }
 
 
@@ -340,7 +361,10 @@ sub ccmd_trun {
         $cmd = 'perl t/harness --archive';
     }
     my $cmd_timeout = 15*60; # 15 min
-    return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout );
+
+    # TODO - Parrot file name
+    my $outdata_file_full_path = catfile( $cmd_env->{temp_dir}, 'parrot_test_run.tar.gz' );
+    return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout, $outdata_file_full_path );
 }
 
 
@@ -355,7 +379,7 @@ sub ccmd_test {
 
     my $cmd = 'make test';
     my $cmd_timeout = 5*60; # 5 min
-    return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout );
+    return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout, undef );
 }
 
 

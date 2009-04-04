@@ -157,7 +157,7 @@ sub cget {
 
 sub sset {
     my ( $self, $msession_id, $msjobp_cmd_id, $cmd_status_id,
-         $end_time, $file_path
+         $end_time, $output_fpath, $outdata_fpath
     ) = @_;
 
     my $action = 'sset';
@@ -173,7 +173,14 @@ sub sset {
     if ( $end_time ) {
         $request_upload = 1;
         $request->{etime} = $end_time;
-        $request->{outf} = [ $file_path, 'aa' ];
+    }
+    if ( $output_fpath ) {
+        $request_upload = 1;
+        $request->{output_file} = [ $output_fpath, 'output_file_name' ];
+    }
+    if ( $outdata_fpath ) {
+        $request_upload = 1;
+        $request->{outdata_file} = [ $outdata_fpath, 'outdata_file_name' ];
     }
     my $data = $self->run_action( $action, $request, $request_upload );
     return $data;

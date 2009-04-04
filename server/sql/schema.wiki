@@ -539,7 +539,8 @@ Machine session job part command.
 * pid
 * start_time
 * end_time
-* output_id
+* output_id - command output (stderr and stdout, .txt file)
+* outdata_id - command data output (one .tar.gz file)
 <source lang=sql>
 CREATE TABLE msjobp_cmd (
     msjobp_cmd_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -550,12 +551,14 @@ CREATE TABLE msjobp_cmd (
     start_time      DATETIME NOT NULL,
     end_time        DATETIME DEFAULT NULL,
     output_id       INT UNSIGNED DEFAULT NULL,
+    outdata_id      INT UNSIGNED DEFAULT NULL,
     INDEX i_msjobp_id (msjobp_id),
     INDEX i_jobp_cmd_id (jobp_cmd_id),
     CONSTRAINT fk_msjobp_cmd_msjobp_id FOREIGN KEY (msjobp_id) REFERENCES msjobp (msjobp_id),
     CONSTRAINT fk_msjobp_cmd_jobp_cmd_id FOREIGN KEY (jobp_cmd_id) REFERENCES jobp_cmd (jobp_cmd_id),
     CONSTRAINT fk_msjobp_cmd_job_status_id FOREIGN KEY (status_id) REFERENCES cmd_status (cmd_status_id),
-    CONSTRAINT fk_msjobp_cmd_output_id FOREIGN KEY (output_id) REFERENCES fsfile (fsfile_id)
+    CONSTRAINT fk_msjobp_cmd_output_id FOREIGN KEY (output_id) REFERENCES fsfile (fsfile_id),
+    CONSTRAINT fk_msjobp_cmd_outdata_id FOREIGN KEY (outdata_id) REFERENCES fsfile (fsfile_id)
 ) TYPE=InnoDB;
 </source>
 

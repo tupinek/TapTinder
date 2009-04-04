@@ -1923,6 +1923,15 @@ __PACKAGE__->add_columns(
       'is_nullable' => 1,
       'size' => '11'
     },
+    'outdata_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 1,
+      'name' => 'outdata_id',
+      'is_nullable' => 1,
+      'size' => '11'
+    },
 );
 __PACKAGE__->set_primary_key('msjobp_cmd_id');
 
@@ -2752,15 +2761,6 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '255'
     },
-    'subpath' => {
-      'data_type' => 'VARCHAR',
-      'is_auto_increment' => 0,
-      'default_value' => '',
-      'is_foreign_key' => 0,
-      'name' => 'subpath',
-      'is_nullable' => 0,
-      'size' => '255'
-    },
     'desc' => {
       'data_type' => 'TEXT',
       'is_auto_increment' => 0,
@@ -2957,6 +2957,7 @@ package TapTinder::DB::Schema::fsfile;
 
 __PACKAGE__->has_many('get_patch', 'TapTinder::DB::Schema::patch', 'fsfile_id');
 __PACKAGE__->has_many('get_msjobp_cmd', 'TapTinder::DB::Schema::msjobp_cmd', 'output_id');
+__PACKAGE__->has_many('get_msjobp_cmd', 'TapTinder::DB::Schema::msjobp_cmd', 'outdata_id');
 __PACKAGE__->belongs_to('fspath_id','TapTinder::DB::Schema::fspath','fspath_id');
 
 
@@ -3020,6 +3021,8 @@ __PACKAGE__->belongs_to('jobp_cmd_id','TapTinder::DB::Schema::jobp_cmd','jobp_cm
 __PACKAGE__->belongs_to('status_id','TapTinder::DB::Schema::cmd_status','status_id');
 
 __PACKAGE__->belongs_to('output_id','TapTinder::DB::Schema::fsfile','output_id',{join_type => 'left'});
+
+__PACKAGE__->belongs_to('outdata_id','TapTinder::DB::Schema::fsfile','outdata_id',{join_type => 'left'});
 
 __PACKAGE__->has_many('get_build', 'TapTinder::DB::Schema::build', 'msjobp_cmd_id');
 __PACKAGE__->has_many('get_trun', 'TapTinder::DB::Schema::trun', 'msjobp_cmd_id');
