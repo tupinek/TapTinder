@@ -14,41 +14,115 @@ use DBI;
 use Digest::MD5 qw(md5);
 
 my $help = 0;
-my $machine_id = '';
-my $machine_name = '';
-my $client_new_passwd = '';
-my $client_conf_fpath = catfile( $RealBin, '..', '..', 'client-conf', 'client-conf.yml' );
-my $client_project_name = 'tt-test-proj';
 my $server_conf_fpath = catfile( $RealBin, '..', 'conf', 'web_db.yml' );
+
+# part A) new passwd
+my $machine_id = undef;
+my $machine_name = undef;
+my $client_new_passwd = undef;
+
+# part B) client conf file
+my $client_conf_fpath = undef;
+my $client_project_name = undef;
+
+# part C) own client's passwd list
+my $client_passwd_list_fpath = undef;
 
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
+    'server_conf_fpath=s' => \$server_conf_fpath,
+
+    # part A)
     'machine_id|mid=i' => \$machine_id,
     'machine_name|mn=s' => \$machine_name,
     'passwd|p=s' => \$client_new_passwd,
-    'client_conf_fpath|ccfp' => \$client_conf_fpath,
-    'client_project_name|cpn=s' => \$client_project_name,
-    'server_conf_fpath|scfp' => \$server_conf_fpath
+
+    # part B)
+    'client_conf_fpath:s' => \$client_conf_fpath,
+    'client_project_name=s' => \$client_project_name,
+
+    # part C)
+    'client_passwd_list:s' => \$client_passwd_list_fpath,
 );
-pod2usage(1) if $help || !$options_ok;
 
-croak "You can't set both machine_id and machine_name." if $machine_id && $machine_name;
 
-# load client data from configuration file
-my $machine_selected = ( $machine_id || $machine_name );
-if ( !$machine_selected || !$client_new_passwd ) {
+# default values
+# part B)
+if ( defined $client_conf_fpath && !$client_conf_fpath ) {
+    $client_conf_fpath = catfile( $RealBin, '..', '..', 'client-conf', 'client-conf.yml' );
+    if ( !$client_project_name ) {
+        $client_project_name = 'tt-test-proj';
+    }
+}
+
+# part C)
+if ( defined $client_passwd_list_fpath && !$client_passwd_list_fpath ) {
+    $client_passwd_list_fpath = catfile( $RealBin, '..', 'conf', 'client-passwds.yml' );
+}
+
+
+# part mismatch, no empty values exists
+my $part_a = 0;
+$part_a = 1 if $machine_id || $machine_name || $client_new_passwd;
+
+my $part_b = 0;
+$part_b = 1 if $client_conf_fpath || $client_project_name;
+
+my $part_c = 0;
+$part_c = 1 if $client_passwd_list_fpath;
+
+my $part_sum = $part_a + $part_b + $part_c;
+if ( $part_sum > 1 ) {
+    croak "Config mismatch. Try to use only one part of config options.\n";
+}
+
+pod2usage(1) if $help || !$options_ok || !$part_sum;
+
+
+my @client_passwds = ();
+
+# part A)
+if ( $part_a ) {
+    croak "You can't set both machine_id and machine_name." if $machine_id && $machine_name;
+    croak "Option machine_id or machine_name is mandatory here.\n" if !$machine_id && !$machine_name;
+    croak "Option client_new_passwd is mandatory here.\n" if !$client_new_passwd;
+    if ( $machine_id ) {
+        push @client_passwds, { id => $machine_id, passwd => $client_new_passwd };
+    # machine_name
+    } else {
+        push @client_passwds, { name => $machine_name, passwd => $client_new_passwd };
+    }
+
+}
+
+if ( $part_b ) {
+    # load client data from configuration file
     croak "Can't find client configuration file '$client_conf_fpath'.\n" unless -f $client_conf_fpath;
     my ( $all_client_conf ) = YAML::LoadFile( $client_conf_fpath );
     unless ( exists $all_client_conf->{$client_project_name} ) {
         croak "Project '$client_project_name' configuration not found inside client config file '$client_conf_fpath'."
     }
     my $client_conf = $all_client_conf->{$client_project_name};
+    push @client_passwds, {
+        id => $client_conf->{machine_id},
+        passwd => $client_conf->{machine_passwd},
+    };
+}
 
-    if ( !$machine_id && !$machine_name ) {
-        $machine_id = $client_conf->{machine_id};
-    }
-    if ( !$client_new_passwd ) {
-        $client_new_passwd = $client_conf->{machine_passwd};
+
+if ( $part_c ) {
+    croak "Can't find clients passwords configuration file '$client_passwd_list_fpath'.\n" unless -f $client_passwd_list_fpath;
+    my ( $client_passwd_list ) = YAML::LoadFile( $client_passwd_list_fpath );
+    my $num = 1;
+    foreach my $client_conf ( @$client_passwd_list ) {
+        #use Data::Dumper; croak Dumper( $conf );
+        croak "Can't find machine_id key definition for client number $num.\n" unless $client_conf->{machine_id};
+        croak "Can't find machine_passwd key definition for client number $num.\n" unless $client_conf->{machine_passwd};
+        push @client_passwds, {
+            id => $client_conf->{machine_id},
+            passwd => $client_conf->{machine_passwd},
+        };
+        $num++;
     }
 }
 
@@ -64,50 +138,71 @@ my $dbh = DBI->connect(
 ) or croak $DBI::errstr;
 
 
-my $sth;
+# Not optimized yet. New SQL and Prepare each time.
+foreach my $conf ( @client_passwds ) {
+    my $client_new_passwd_digest = substr( md5($conf->{passwd}), -8 );
+    my @bv = ( $client_new_passwd_digest );
+    my $sql = 'UPDATE machine SET passwd=? WHERE ';
+    my $info_msg = "Password set for ";
+    if ( exists $conf->{id} ) {
+        $info_msg .= 'machine.machine_id=' . $conf->{id};
+        $sql .= 'machine_id=?';
+        push @bv, $conf->{id};
+    } elsif ( $conf->{name} ) {
+        $info_msg .= 'machine.name=' . $conf->{name};
+        $sql .= 'name=?';
+        push @bv, $conf->{name};
+    } else {
+        croak "Nor ID or Name  found.\n";
+    }
+    $info_msg .= ".\n";
+    my $sth = $dbh->prepare($sql);
+    $sth->execute( @bv );
+    # TODO
+    #print $DBI::errstr;
 
-my $client_new_passwd_digest = substr( md5($client_new_passwd), -8 );
-my @bv = ( $client_new_passwd_digest );
-my $sql = 'UPDATE machine SET passwd=? WHERE ';
-my $info_msg = "Password set for ";
-if ( $machine_id ) {
-    $info_msg .= 'machine.machine_id=' . $machine_id;
-    $sql .= 'machine_id=?';
-    push @bv, $machine_id;
-} else {
-    $info_msg .= 'machine.name=' . $machine_id;
-    $sql .= 'name=?';
-    push @bv, $machine_name;
+    $dbh->commit;
+
+    print $info_msg;
 }
-$info_msg .= ".\n";
-$sth = $dbh->prepare($sql);
-$sth->execute( @bv );
-# TODO
-#print $DBI::errstr;
 
-$dbh->commit;
 $dbh->disconnect;
-
-print $info_msg;
 
 __END__
 
 =head1 NAME
 
-set_client_passwd - Loads client configuration file and sets client (machine) password to database.
+set_client_passwd - Set client password inside server database.
 
 =head1 SYNOPSIS
 
-set_client_passwd [options]
+perl set_client_passwd.pl [options]
 
- Options:
+Examples:
+
+perl set_client_passwd.pl --machine_id=6 --passwd=hsd233h
+
+perl set_client_passwd.pl --client_conf_fpath
+perl set_client_passwd.pl --client_conf_fpath=../../client-conf/client-conf.yml
+
+perl set_client_passwd.pl --client_passwd_list
+perl set_client_passwd.pl --client_passwd_list=../conf/client-passwds.yml
+
+Options:
    --help
+   --server_conf_fpath
+
+   # part A - Set client password manualy.
    --machine_id
    --machine_name
    --passwd
+
+   # part B - Loads client configuration file and sets client (machine) password to database.
    --client_conf_fpath
    --client_project_name
-   --server_conf_fpath
+
+   # part C - Set clients passwords using own configuration file.
+   --client_passwd_list - yaml file with passwds for clients
 
 =head1 DESCRIPTION
 

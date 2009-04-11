@@ -1,0 +1,6 @@
+# Configuration file example for "perl utils/set_client_passwd.pl --client_passwd_list"
+---
+- machine_id: 1
+  machine_passwd: somePasswdm1
+- machine_id: 2
+  machine_passwd: somePasswdm2
