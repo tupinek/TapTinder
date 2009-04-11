@@ -3,8 +3,8 @@ perl utils/wiki_schema.pl sql/schema.wiki > temp/schema.sql
 cat temp/schema.sql > temp/all.sql 
 cat sql/data-base.sql >> temp/all.sql
 
-cat temp/all.sql > temp/all-devel.sql
-cat sql/data-devel.sql >> temp/all-devel.sql
+cat temp/all.sql > temp/all-dev.sql
+cat sql/data-dev.sql >> temp/all-dev.sql
 
 cat temp/all.sql > temp/all-stable.sql
 cat sql/data-stable.sql >> temp/all-stable.sql

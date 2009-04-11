@@ -8,8 +8,8 @@ echo "Running utils/all-sql.sh"
 ./utils/all-sql.sh
 echo ""
 
-echo "Executing temp/all-devel.sql (perl utils/db-run-sqlscript.pl):"
-perl ./utils/db-run-sqlscript.pl ./temp/all-devel.sql 1
+echo "Executing temp/all-dev.sql (perl utils/db-run-sqlscript.pl):"
+perl ./utils/db-run-sqlscript.pl ./temp/all-dev.sql 1
 echo ""
 
 echo "Executing utils/set_client_passwd.pl --client_conf_fpath (perl):"

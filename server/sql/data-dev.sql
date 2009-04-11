@@ -122,8 +122,8 @@ VALUES (
 
 INSERT INTO fspath ( fspath_id, path, web_path, public, created, deleted, name, `desc` )
 VALUES (
-    1, '/home/jurosz/taptinder-dev/server-data/cmdout', 'file/cmdout', 1, NOW(), null, 'dir-cmdout', 'dir for command outputs'  ), (
-    2, '/home/jurosz/taptinder-dev/server-data/patch',  'file/patch',  1, NOW(), null, 'dir-patch',  'dir for patches'
+    1, '/home/jurosz/dev-tt/server-data/cmdout', 'file/cmdout', 1, NOW(), null, 'dir-cmdout', 'dir for command outputs'  ), (
+    2, '/home/jurosz/dev-tt/server-data/patch',  'file/patch',  1, NOW(), null, 'dir-patch',  'dir for patches'
 );
 
 INSERT INTO fspath_select ( fspath_select_id, fsfile_type_id, rep_path_id, fspath_id )
