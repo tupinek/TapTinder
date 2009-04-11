@@ -12,8 +12,12 @@ echo "Executing temp/all-devel.sql (perl utils/db-run-sqlscript.pl):"
 perl ./utils/db-run-sqlscript.pl ./temp/all-devel.sql 1
 echo ""
 
-echo "Executing utils/set_client_passwd.pl (perl):"
-perl ./utils/set_client_passwd.pl
+echo "Executing utils/set_client_passwd.pl --client_conf_fpath (perl):"
+perl ./utils/set_client_passwd.pl --client_conf_fpath
+echo ""
+
+echo "Executing utils/set_client_passwd.pl --client_passwd_list (perl):"
+perl ./utils/set_client_passwd.pl --client_passwd_list
 echo ""
 
 echo "Executing cron/repository-update.pl -p TapTinder-tr1 (perl):"
