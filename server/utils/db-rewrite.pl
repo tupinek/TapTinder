@@ -17,6 +17,7 @@ my $src_conf_fpath  = $ARGV[0] || catfile( $RealBin, '..', '..', '..', 'tt', 'se
 my $dest_conf_fpath = $ARGV[1] || catfile( $RealBin, '..', 'conf', 'web_db.yml' );
 my $use_root_passwd = $ARGV[2] || 0;
 my $noipc = $ARGV[3] || 1;
+# TODO dump_only load_only
 
 croak "Source conf file '$src_conf_fpath' not found." unless -f $src_conf_fpath;
 croak "Destination conf file '$dest_conf_fpath' not found." unless -f $dest_conf_fpath;

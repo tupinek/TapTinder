@@ -15,11 +15,13 @@ use DBI;
 my $help = 0;
 my $remove = 0;
 my $server_conf_fpath = catfile( $RealBin, '..', 'conf', 'web_db.yml' );
+my $fspath_ids = undef;
 
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
-    'remove|rm' => \$remove,
-    'server_conf_fpath|scfp' => \$server_conf_fpath
+    'remove' => \$remove,
+    'server_conf_fpath=s' => \$server_conf_fpath,
+    'fspath_ids=s' => \$fspath_ids,
 );
 pod2usage(1) if $help || !$options_ok;
 
@@ -34,11 +36,16 @@ my $dbh = DBI->connect(
     { RaiseError => 1, AutoCommit => 0 }
 ) or croak $DBI::errstr;
 
+
 my $sql_cmd = "
     select fsp.fspath_id, fsp.path, fsp.name
       from fspath fsp
      where fsp.deleted is null
 ";
+if ( defined $fspath_ids ) {
+    $sql_cmd .= " and fsp.fspath_id in (" . $fspath_ids . ")";
+}
+
 my $sth = $dbh->prepare($sql_cmd) or croak $dbh->errstr;
 $sth->execute();
 while ( my $fp_info = $sth->fetchrow_hashref ) {
@@ -79,12 +86,16 @@ rm_uploaded_files - Remove all files from all not deleted paths in fspath.path t
 
 =head1 SYNOPSIS
 
-rm_uploaded_files [options]
+perl rm_uploaded_files.pl [options]
+
+Example:
+    perl rm_uploaded_files.pl --fspath_ids=3,4
 
  Options:
    --help
    --remove .. Will remove files. Default only print file list.
    --server_conf_fpath
+   --fspath_ids .. Will delete only files inside paths with this fspath_id(s).
 
 =head1 DESCRIPTION
 
