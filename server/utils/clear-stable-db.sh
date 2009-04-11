@@ -4,6 +4,20 @@ echo "Going to change database to clear devel version. All data will be lost."
 echo "Press <Enter> to continue or <Ctrl+C> to cancel ..."
 read
 
+echo "Are you sure? This is live productive version."
+echo "Before you start:"
+echo "* Stop all repository update loops."
+echo ""
+echo "This will be stoped automaticaly:
+echo "* httpd service"
+echo ""
+echo "Press <Enter> to continue or <Ctrl+C> to cancel ..."
+read
+
+echo "Stoping httpd service:"
+service httpd stop
+echo ""
+
 echo "Running utils/all-sql.sh"
 ./utils/all-sql.sh
 echo ""
@@ -26,6 +40,10 @@ echo ""
 
 echo "Executing utils/rm_uploaded_files.pl --remove (perl):"
 perl ./utils/rm_uploaded_files.pl --remove
+echo ""
+
+echo "Starting httpd service:"
+service httpd start
 echo ""
 
 echo "Done."

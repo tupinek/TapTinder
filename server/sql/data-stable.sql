@@ -58,7 +58,7 @@ VALUES (
 INSERT INTO rep ( rep_id, project_id, active, name, path, `desc`, default_layout  )
 VALUES (
     1, 1, 1, 'default', 'https://svn.parrot.org/parrot/', '', 1    ), (
-    2, 1, 1, 'default', 'http://svn.pugscode.org/pugs/',  '', 0
+    2, 2, 1, 'default', 'http://svn.pugscode.org/pugs/',  '', 0
 );
 
 
