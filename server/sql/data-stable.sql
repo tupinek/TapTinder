@@ -16,7 +16,10 @@ delete from rep;
 delete from job;
 delete from jobp;
 delete from jobp_cmd;
+delete from machine_job_conf;
 
+delete from fspath;
+delete from fspath_select;
 
 -- insert new data
 
