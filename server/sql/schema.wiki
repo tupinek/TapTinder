@@ -415,9 +415,10 @@ Command status.
 * name
 * 1 .. created -- created in DB, not started yet
 * 2 .. running
-* 3 .. ok -- finished ok
-* 4 .. interrupted
-* 5 .. error -- finished with error
+* 3 .. paused -- paused by user
+* 4 .. ok -- finished ok
+* 5 .. interrupted
+* 6 .. error -- finished with error
 * desc
 <source lang=sql>
 CREATE TABLE cmd_status (

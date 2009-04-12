@@ -170,9 +170,10 @@ INSERT INTO cmd_status ( cmd_status_id, name, `desc` )
 VALUES (
     1, 'created',   'created in DB, not started yet'    ), (
     2, 'running',   NULL                                ), (
-    3, 'ok',        'finished ok'                       ), (
-    4, 'stopped',   NULL                                ), (
-    5, 'error',     'finished with error'
+    3, 'paused',    'paused by user'                    ), (
+    4, 'ok',        'finished ok'                       ), (
+    5, 'stopped',   NULL                                ), (
+    6, 'error',     'finished with error'
 );
 
 commit;

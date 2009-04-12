@@ -9,6 +9,8 @@ use DateTime;
 use File::Spec;
 use File::Copy;
 
+use constant SUPPORRTED_REVISION => 257;
+
 
 =head1 NAME
 
@@ -168,6 +170,25 @@ sub check_param {
 }
 
 
+=head2 check_client_rev
+
+Check if client revision is supported by server.
+
+=cut
+
+sub check_client_rev {
+    my ( $self, $c, $data, $client_rev ) = @_;
+
+    if ( $client_rev < SUPPORRTED_REVISION ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: Your client (revision $client_rev) is not supported. Revision >= " . SUPPORRTED_REVISION . " required.";
+        return 0;
+    }
+    return 1;
+}
+
+
+
 =head2 create_mslog
 
 Create new machine session log (mslog) entry.
@@ -190,7 +211,7 @@ sub create_mslog {
     });
     unless ( $rs ) {
         $data->{err} = 1;
-        $data->{err_msg} = "Error: Create mslog entry failed."; # TODO
+        $data->{err_msg} = "Error: Create mslog entry failed (action=$action_name)."; # TODO
         return 0;
     }
     return 1;
@@ -211,9 +232,11 @@ sub cmd_mscreate {
 
     $self->check_param( $c, $data, $params, 'crev', 'client code revision' ) || return 0;
     my $client_rev = $params->{crev};
+    $self->check_client_rev( $c, $data, $client_rev ) || return 0;
 
     $self->check_param( $c, $data, $params, 'pid', 'client process ID' ) || return 0;
     my $pid = $params->{pid};
+
 
     my $msession_rs = $c->model('WebDB::msession')->create({
         machine_id  => $machine_id,
@@ -802,6 +825,32 @@ sub uploaded_file_found {
 }
 
 
+=head2 update_msjobp_cmd
+
+Update row with $msjobp_cmd_id in msjobp_cmd table. New values are in $to_set hash ref.
+
+=cut
+
+
+sub update_msjobp_cmd {
+    my ( $self, $c, $data, $msjobp_cmd_id, $to_set ) = @_;
+
+    my $msjobp_cmd_rs = $c->model('WebDB::msjobp_cmd')->search( {
+        msjobp_cmd_id => $msjobp_cmd_id,
+    } );
+
+    my $ret_val = $msjobp_cmd_rs->update( $to_set );
+
+    unless ( $ret_val ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: update msjobp_cmd failed ... (ret_val=$ret_val)."; # TODO
+        return 0;
+    }
+
+    return 1;
+}
+
+
 =head2 cmd_sset
 
 Set msjobp_cmd.status_id.
@@ -823,9 +872,6 @@ sub cmd_sset {
     my $msjob_info = $self->get_msjobp_cmd_info( $c, $data, $msession_id, $msjobp_cmd_id );
     return 0 unless $msjob_info;
 
-    my $msjobp_cmd_rs = $c->model('WebDB::msjobp_cmd')->search( {
-        msjobp_cmd_id => $msjobp_cmd_id,
-    } );
     my $to_set = {
         status_id => $cmd_status_id,
     };
@@ -855,16 +901,10 @@ sub cmd_sset {
         $to_set->{outdata_id} = $fsfile_id;
     }
 
-    my $ret_val = $msjobp_cmd_rs->update( $to_set );
-
-    unless ( $ret_val ) {
-        $data->{err} = 1;
-        $data->{err_msg} = "Error: cmd_sset update ... (ret_val=$ret_val)."; # TODO
-        return 0;
-    }
-
-    return 1;
+    return $self->update_msjobp_cmd( $c, $data, $msjobp_cmd_id, $to_set );
 }
+
+
 
 
 =head2 get_rr_info
@@ -949,14 +989,68 @@ sub cmd_rriget {
 }
 
 
-=head2 cmd_alog
+=head2 cmd_mevent
 
-Add row to mslog table.
+Machine event occured.
 
 =cut
 
-sub cmd_alog {
+sub cmd_mevent {
     my ( $self, $c, $data, $params ) = @_;
+
+    # $params->{mid} - already checked
+    my $machine_id = $params->{mid};
+    # $params->{msid} - already checked
+    my $msession_id = $params->{msid};
+
+    # TODO - undef or is_numeric?
+    my $msjobp_cmd_id = $params->{mcid};
+
+    $self->check_param( $c, $data, $params, 'en', 'event name' ) || return 0;
+    my $event_name = $params->{en};
+
+    my $new_msstatus_id = undef;
+    my $new_cmd_status_id = undef;
+
+    if ( $event_name eq 'pause' ) {
+        $new_msstatus_id = 6; # paused by user
+        $new_cmd_status_id = 6; # paused by user
+
+    } elsif ( $event_name eq 'continue' ) {
+        # TODO - try to restore msstatus_id from before pause
+        $new_msstatus_id = 1; # unknown status
+        $new_cmd_status_id = 2; # running
+
+    } else {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: Unknown event name '$event_name'.";
+        return 0;
+    }
+
+
+    if ( $new_msstatus_id ) {
+        # create mslog
+        my $ret_code = $self->create_mslog(
+            $c, $data, 'mevent',
+            $msession_id,
+            $new_msstatus_id, # $msstatus_id
+            1, # $attempt_number
+            DateTime->now, # $change_time
+            undef # $estimated_finish_time
+        ) || return 0;
+    }
+
+    if ( $msjobp_cmd_id && $new_cmd_status_id ) {
+        # check/validate of msession_id vs. msjobp_cmd_id
+        my $msjob_info = $self->get_msjobp_cmd_info( $c, $data, $msession_id, $msjobp_cmd_id );
+        return 0 unless $msjob_info;
+
+        my $to_set = {
+            status_id => $new_cmd_status_id,
+        };
+        return $self->update_msjobp_cmd( $c, $data, $msjobp_cmd_id, $to_set );
+    }
+
     return 1;
 }
 
@@ -988,11 +1082,10 @@ sub process_action {
     } elsif ( $action eq 'msdestroy' )  { $param_msid_checks = 1;   # msession destroy
     } elsif ( $action eq 'cget' )       { $param_msid_checks = 1;   # get command
     } elsif ( $action eq 'sset' )       { $param_msid_checks = 1;   # set status
-    } elsif ( $action eq 'rset' )       { $param_msid_checks = 1;   # set results
     } elsif ( $action eq 'rriget' )     { $param_msid_checks = 1;   # rep rev info get
+    } elsif ( $action eq 'mevent' )     { $param_msid_checks = 1;   # machine event occured
     # debug commands
     } elsif ( $action eq 'login' )      { $param_msid_checks = 0;   # login
-    } elsif ( $action eq 'alog' )       { $param_msid_checks = 1;   # add mslog
     } else {
         $data->{err} = 1;
         $data->{err_msg} = "Error: Unknow action '$action'.";
@@ -1015,10 +1108,11 @@ sub process_action {
         } elsif ( $action eq 'sset' ) {
             $cmd_ret_code = $self->cmd_sset( $c, $data, $params, $c->request->upload );
 
-        } elsif ( $action eq 'rset' ) {
-
         } elsif ( $action eq 'rriget' ) {
             $cmd_ret_code = $self->cmd_rriget( $c, $data, $params );
+
+        } elsif ( $action eq 'mevent' ) {
+            $cmd_ret_code = $self->cmd_mevent( $c, $data, $params );
 
         }
     }
