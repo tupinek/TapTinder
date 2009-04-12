@@ -24,13 +24,13 @@ sub index : Path  {
 
     my $pr = $self->get_page_params( $params );
 
-    my $plus_rows = [ qw/ msession_id client_rev start_time machine_id machine_name cpuarch osname archname last_cmd_finish_time /];
+    my $plus_rows = [ qw/ msession_id client_rev start_time machine_id machine_name cpuarch osname archname last_cmd_finish_time msstatus_name /];
     my $search_conf = {
         'select' => $plus_rows,
         'as'     => $plus_rows,
         bind   => [],
         page => $pr->{page},
-        rows => $pr->{rows} || 5,
+        rows => $pr->{rows} || 20,
         offset => $pr->{offset} || 0,
     };
 
