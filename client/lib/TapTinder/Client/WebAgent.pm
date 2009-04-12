@@ -10,7 +10,7 @@ use LWP::UserAgent;
 use JSON;
 
 our $VERSION = '0.10';
-use constant REVISION => 150;
+use constant REVISION => 259;
 
 
 =head1 NAME
@@ -198,6 +198,25 @@ sub rriget {
         msid => $msession_id,
         rpid => $rep_path_id,
         revid => $rev_id,
+    };
+    my $data = $self->run_action( $action, $request );
+    return $data;
+}
+
+
+sub mevent {
+    my ( $self, $msession_id, $msjobp_cmd_id, $event_name ) = @_;
+
+    # TODO validate $event_name
+
+    my $action = 'mevent';
+    my $request = {
+        ot   => 'json',
+        mid  => $self->{machine_id},
+        pass => $self->{machine_passwd},
+        msid => $msession_id,
+        mcid => $msjobp_cmd_id,
+        en   => $event_name,
     };
     my $data = $self->run_action( $action, $request );
     return $data;

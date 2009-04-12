@@ -11,13 +11,15 @@ our @EXPORT = qw(last_pressed_key process_keypress sleep_and_process_keypress cl
 use Term::ReadKey;
 our $ver = 0;
 
-our $sub_before_exit = sub {
+our $hooks = {};
+$hooks->{before_exit} = sub {
     Term::ReadKey::ReadMode('normal');
 };
-
+$hooks->{pause_begin} = sub {};
+$hooks->{pause_end} = sub {};
 
 sub cleanup_before_exit {
-    $sub_before_exit->();
+    $hooks->{before_exit}->();
     return 1;
 }
 
@@ -40,12 +42,14 @@ sub process_keypress() {
         if ( $char ) {
             $char = uc( $char );
             if ( $char eq 'P' ) {
+                $hooks->{pause_begin}->() unless $paused;
                 print "Paused. Press C to continue ...\n";
                 print "User press pause key.\n" if $ver > 2;
                 $paused = 1;
 
             } elsif ( $char eq 'C' ) {
                 print "User press continue key.\n" if $ver > 2;
+                $hooks->{pause_end}->() if $paused;
                 $paused = 0;
 
             } elsif ( $char eq 'Q' || $char eq 'E' ) {

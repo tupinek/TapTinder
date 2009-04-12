@@ -63,6 +63,8 @@ sub new {
     $self->{data_dir} = catdir( $base_dir, 'client-data' );
 
     $self->{agent} = undef;
+    $self->{msession_id} = undef;
+    $self->{msjobp_cmd_id} = undef;
 
     # current work directory on start
     $self->{orginal_cwd} = Cwd::getcwd;
@@ -134,13 +136,26 @@ sub init_keypress {
     select(STDOUT); $| = 1;
 
     # closure - take $self
-    $TapTinder::Client::KeyPress::sub_before_exit = sub {
+    $TapTinder::Client::KeyPress::hooks->{before_exit} = sub {
         chdir( $self->{orginal_cwd} );
         Term::ReadKey::ReadMode('normal');
         if ( $self->{msession_id} ) {
             $self->{agent}->msdestroy( $self->{msession_id} );
         }
     };
+
+    $TapTinder::Client::KeyPress::hooks->{pause_begin} = sub {
+        if ( $self->{msession_id} ) {
+            $self->{agent}->mevent( $self->{msession_id}, $self->{msjobp_cmd_id}, 'pause' );
+        }
+    };
+
+    $TapTinder::Client::KeyPress::hooks->{pause_end} = sub {
+        if ( $self->{msession_id} ) {
+            $self->{agent}->mevent( $self->{msession_id}, $self->{msjobp_cmd_id}, 'continue' );
+        }
+    };
+
     return 1;
 }
 
@@ -165,7 +180,7 @@ Run get_src client command.
 =cut
 
 sub ccmd_get_src {
-    my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env ) = @_;
 
     my $data; # many different uses
     $data = $self->{agent}->rriget(
@@ -184,19 +199,19 @@ sub ccmd_get_src {
     my $rep_full_path = $rep_rev_info->{rep_path} . $rep_rev_info->{rep_path_path};
     print "Getting revision $data->{rev_num} from $rep_full_path.\n" if $ver >= 2;
 
-    $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 2 ); # running, $cmd_status_id
+    $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 2 ); # running, $cmd_status_id
     $self->my_croak( $data->{err_msg} ) if $data->{err};
 
     my $dirs = $self->{repman}->prepare_temp_copy( $rep_rev_info );
     unless ( $dirs ) {
-        $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 5 ); # error, $cmd_status_id
+        $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 6 ); # error, $cmd_status_id
         $self->my_croak( $data->{err_msg} ) if $data->{err};
         return 0; # not needed
     }
     $cmd_env->{temp_dir} = $dirs->{temp_dir};
     $cmd_env->{results_dir} = $dirs->{results_dir};
 
-    $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 3 ); # ok, $cmd_status_id
+    $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 4 ); # ok, $cmd_status_id
     return 1;
 }
 
@@ -208,14 +223,14 @@ Run prepare client command. Prepare project dir for TapTinder run.
 =cut
 
 sub ccmd_prepare {
-    my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env ) = @_;
 
-    my $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 2 ); # running, $cmd_status_id
+    my $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 2 ); # running, $cmd_status_id
 
     my $src_add_project_dir = catdir( $self->{src_add_dir}, $cmd_env->{project_name} );
     $self->{repman}->add_merge_copy( $src_add_project_dir, $cmd_env->{temp_dir} );
 
-    $data = $self->{agent}->sset( $self->{msession_id}, $msjobp_cmd_id, 3 ); # ok, $cmd_status_id
+    $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 4 ); # ok, $cmd_status_id
 
     return 1;
 }
@@ -228,7 +243,7 @@ Run patch client command.
 =cut
 
 sub ccmd_patch {
-    my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env ) = @_;
     print "Client command 'patch' not implemented yet.\n" if $ver >= 2;
     return 1;
 }
@@ -242,7 +257,7 @@ Run command.
 
 sub run_cmd {
     my (
-        $self, $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd,
+        $self, $cmd_name, $cmd_env, $cmd,
         $cmd_timeout, $outdata_file_full_path
     ) = @_;
 
@@ -260,7 +275,7 @@ sub run_cmd {
 
     my $data = $self->{agent}->sset(
         $self->{msession_id},
-        $msjobp_cmd_id, # $msjobp_cmd_id
+        $self->{msjobp_cmd_id}, # $msjobp_cmd_id
         2, # running
         undef, # $end_time
         undef  # $file_path
@@ -295,7 +310,7 @@ sub run_cmd {
     }
     $data = $self->{agent}->sset(
         $self->{msession_id},
-        $msjobp_cmd_id, # $msjobp_cmd_id
+        $self->{msjobp_cmd_id}, # $msjobp_cmd_id
         $status,
         time(), # $end_time, TODO - is GMT?
         $cmd_log_fp,
@@ -313,11 +328,11 @@ Run perl_configure client command.
 =cut
 
 sub ccmd_perl_configure {
-    my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env ) = @_;
 
     my $cmd = 'perl Configure.pl';
     my $cmd_timeout = 5*60; # 5 min
-    return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout, undef );
+    return $self->run_cmd( $cmd_name, $cmd_env, $cmd, $cmd_timeout, undef );
 }
 
 
@@ -328,7 +343,7 @@ Run make client command.
 =cut
 
 sub ccmd_make {
-    my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env ) = @_;
 
     my $cmd = 'make';
     if ( $^O eq 'MSWin32' ) {
@@ -341,7 +356,7 @@ sub ccmd_make {
     }
 
     my $cmd_timeout = 5*60; # 5 min
-    return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout, undef );
+    return $self->run_cmd( $cmd_name, $cmd_env, $cmd, $cmd_timeout, undef );
 }
 
 
@@ -352,7 +367,7 @@ Run trun client command.
 =cut
 
 sub ccmd_trun {
-    my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env ) = @_;
 
     my $cmd;
     if ( $^O eq 'MSWin32' ) {
@@ -364,7 +379,7 @@ sub ccmd_trun {
 
     # TODO - Parrot file name
     my $outdata_file_full_path = catfile( $cmd_env->{temp_dir}, 'parrot_test_run.tar.gz' );
-    return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout, $outdata_file_full_path );
+    return $self->run_cmd( $cmd_name, $cmd_env, $cmd, $cmd_timeout, $outdata_file_full_path );
 }
 
 
@@ -375,11 +390,11 @@ Run test client command.
 =cut
 
 sub ccmd_test {
-    my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env ) = @_;
 
     my $cmd = 'make test';
     my $cmd_timeout = 5*60; # 5 min
-    return $self->run_cmd( $msjobp_cmd_id, $cmd_name, $cmd_env, $cmd, $cmd_timeout, undef );
+    return $self->run_cmd( $cmd_name, $cmd_env, $cmd, $cmd_timeout, undef );
 }
 
 
@@ -390,7 +405,7 @@ Run bench client command.
 =cut
 
 sub ccmd_bench {
-    my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env ) = @_;
     print "Client command 'bench' not implemented yet.\n" if $ver >= 2;
     return 1;
 }
@@ -403,7 +418,7 @@ Run install client command.
 =cut
 
 sub ccmd_install {
-    my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env ) = @_;
     print "Client command 'install' not implemented yet.\n" if $ver >= 2;
     return 1;
 }
@@ -416,7 +431,7 @@ Run clean client command.
 =cut
 
 sub ccmd_clean {
-    my ( $self, $msjobp_cmd_id, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env ) = @_;
     print "Client command 'clean' not implemented yet.\n" if $ver >= 2;
     return 1;
 }
@@ -440,7 +455,7 @@ sub run {
     # current (or last successful) ids
     my $msjob_id = undef;
     my $msjobp_id = undef;
-    my $msjobp_cmd_id = undef;
+    $self->{msjobp_cmd_id} = undef;
 
     # data shared between commands
     my $cmd_env = {};
@@ -464,7 +479,7 @@ sub run {
             $self->{msession_id},
             $next_attempt_number, # $attemnt_number
             $estimated_finish_time,
-            $msjobp_cmd_id # use actual id to get new one
+            $self->{msjobp_cmd_id} # use actual id to get new one
         );
         $self->my_croak("Cmd cget error.") unless defined $data;
         $self->my_croak( $data->{err_msg} ) if $data->{err};
@@ -505,9 +520,9 @@ sub run {
                 $msjobp_id = $data->{msjobp_id};
             }
             # new command
-            if ( !defined($msjobp_cmd_id) || ( exists($data->{msjobp_cmd_id}) && $msjobp_cmd_id != $data->{msjobp_cmd_id} ) ) {
+            if ( !defined($self->{msjobp_cmd_id}) || ( exists($data->{msjobp_cmd_id}) && $self->{msjobp_cmd_id} != $data->{msjobp_cmd_id} ) ) {
                 $cmd_env->{jobp_cmd_num}++;
-                $msjobp_cmd_id = $data->{msjobp_cmd_id};
+                $self->{msjobp_cmd_id} = $data->{msjobp_cmd_id};
             } else {
                 $self->my_croak("Error new msjobp_cmd_id=$data->{msjobp_cmd_id}.");
             }
@@ -517,37 +532,37 @@ sub run {
                 $cmd_env->{rep_path_id} = $data->{rep_path_id};
                 $cmd_env->{rev_id} = $data->{rev_id};
                 # will set another keys to $cmd_env
-                $self->ccmd_get_src( $msjobp_cmd_id, $cmd_name, $cmd_env );
+                $self->ccmd_get_src( $cmd_name, $cmd_env );
 
                 # change current working directory (cwd, pwd)
                 chdir( $cmd_env->{temp_dir} );
 
             } elsif ( $cmd_name eq 'prepare' ) {
-                $self->ccmd_prepare( $msjobp_cmd_id, $cmd_name, $cmd_env );
+                $self->ccmd_prepare( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'patch' ) {
-                $self->ccmd_patch( $msjobp_cmd_id, $cmd_name, $cmd_env );
+                $self->ccmd_patch( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'perl_configure' ) {
-                $self->ccmd_perl_configure( $msjobp_cmd_id, $cmd_name, $cmd_env );
+                $self->ccmd_perl_configure( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'make' ) {
-                $self->ccmd_make( $msjobp_cmd_id, $cmd_name, $cmd_env );
+                $self->ccmd_make( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'trun' ) {
-                $self->ccmd_trun( $msjobp_cmd_id, $cmd_name, $cmd_env );
+                $self->ccmd_trun( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'test' ) {
-                $self->ccmd_test( $msjobp_cmd_id, $cmd_name, $cmd_env );
+                $self->ccmd_test( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'bench' ) {
-                $self->ccmd_bench( $msjobp_cmd_id, $cmd_name, $cmd_env );
+                $self->ccmd_bench( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'install' ) {
-                $self->ccmd_install( $msjobp_cmd_id, $cmd_name, $cmd_env );
+                $self->ccmd_install( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'clean' ) {
-                $self->ccmd_clean( $msjobp_cmd_id, $cmd_name, $cmd_env );
+                $self->ccmd_clean( $cmd_name, $cmd_env );
             }
 
             # debug sleep
