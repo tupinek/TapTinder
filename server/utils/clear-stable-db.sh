@@ -19,7 +19,7 @@ service httpd stop
 echo ""
 
 echo "Running utils/all-sql.sh"
-./utils/all-sql.sh
+./utils/all-sql.sh $1
 echo ""
 
 echo "Executing temp/all-stable.sql (perl utils/db-run-sqlscript.pl):"

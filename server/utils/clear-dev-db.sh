@@ -5,7 +5,7 @@ echo "Press <Enter> to continue or <Ctrl+C> to cancel ..."
 read
 
 echo "Running utils/all-sql.sh"
-./utils/all-sql.sh
+./utils/all-sql.sh $1
 echo ""
 
 echo "Executing temp/all-dev.sql (perl utils/db-run-sqlscript.pl):"
