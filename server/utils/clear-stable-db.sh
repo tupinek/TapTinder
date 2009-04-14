@@ -34,6 +34,10 @@ echo "Executing utils/set_client_passwd.pl --client_passwd_list (perl):"
 perl ./utils/set_client_passwd.pl --client_passwd_list
 echo ""
 
+echo "Executing utils/reptable-load.sh:"
+./utils/reptables-load.sh
+echo ""
+
 echo "Executing cron/repository-update.pl -p Parrot (perl):"
 perl ./cron/repository-update.pl -p Parrot
 echo ""
