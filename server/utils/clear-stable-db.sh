@@ -8,7 +8,7 @@ echo "Are you sure? This is live productive version."
 echo "Before you start:"
 echo "* Stop all repository update loops."
 echo ""
-echo "This will be stoped automaticaly:
+echo "This will be stoped automaticaly:"
 echo "* httpd service"
 echo ""
 echo "Press <Enter> to continue or <Ctrl+C> to cancel ..."
