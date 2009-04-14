@@ -30,7 +30,7 @@ $new_source->name(\<<'');
               from (
                     select distinct sa_jp.*
                       from (
-                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id
+                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id, jp.max_age
                                 from machine_job_conf mjc,
                                      rep_path rp,
                                      jobp jp
@@ -39,7 +39,7 @@ $new_source->name(\<<'');
                                  and jp.rep_path_id = rp.rep_path_id
                             )
                             union all
-                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id
+                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id, jp.max_age
                                 from machine_job_conf mjc,
                                      jobp jp
                                where mjc.machine_id = ?
@@ -47,7 +47,7 @@ $new_source->name(\<<'');
                                  and jp.rep_path_id = mjc.rep_path_id
                             )
                             union all
-                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id
+                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id, jp.max_age
                                 from machine_job_conf mjc,
                                      jobp jp
                                where mjc.machine_id = ?
@@ -61,6 +61,7 @@ $new_source->name(\<<'');
                   job j
             where rrp.rep_path_id = a_jp.rep_path_id
               and r.rev_id = rrp.rev_id
+              and DATE_SUB(CURDATE(), INTERVAL a_jp.max_age HOUR) <= r.date
               and j.job_id = a_jp.job_id
             order by a_jp.priority, j.priority, r.rev_num desc, a_jp.jobp_id
           ) a_r

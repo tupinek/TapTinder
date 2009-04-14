@@ -17,13 +17,8 @@ VALUES (
 INSERT INTO fspath_select ( fspath_select_id, fsfile_type_id, rep_path_id, fspath_id )
 VALUES (
     1, 1, 1, 3  ), (
-    2, 1, 2, 3  ), (
-
-    3, 2, 1, 3  ), (
-    4, 2, 2, 3  ), (
-
-    5, 3, 1, 4  ), (
-    6, 3, 2, 4
+    2, 2, 1, 3  ), (
+    3, 3, 1, 4
 );
 
 commit;

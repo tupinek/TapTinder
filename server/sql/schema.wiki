@@ -353,6 +353,7 @@ Job part.
 * order
 * name
 * desc
+* max_age - Maximal commit age in hours.
 * depends_on_id - Depends on jobp.jobp_id. Job part (jobp_id) can't start if jobp.depends_on_id doesn't finished ok.
 * extends - Default 0. 1 if this part extends part defined in depends_on_id.
 <source lang=sql>
@@ -363,6 +364,7 @@ CREATE TABLE jobp (
     `order`         INT UNSIGNED NOT NULL,
     name            VARCHAR(25),
     `desc`          TEXT DEFAULT NULL,
+    max_age         INT UNSIGNED DEFAULT NULL,
     depends_on_id   INT UNSIGNED DEFAULT NULL,
     extends         BOOLEAN NOT NULL DEFAULT 0,
     INDEX i_job_id (job_id),

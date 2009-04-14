@@ -64,15 +64,14 @@ VALUES (
 
 INSERT INTO job ( job_id, client_min_rev, priority, name, `desc` )
 VALUES (
-    1, 150, 1, 'Parrot only',       NULL    ), (
-    2, 150, 2, 'Parrot and Rakudo', NULL
+    1, 257, 1, 'Parrot make only',  NULL    ), (
+    2, 257, 2, 'Parrot test',       NULL
 );
 
-INSERT INTO jobp ( jobp_id, job_id, rep_path_id, `order`, name, `desc`, depends_on_id, extends )
+INSERT INTO jobp ( jobp_id, job_id, rep_path_id, `order`, name, `desc`, max_age, depends_on_id, extends )
 VALUES (
-    1, 1, 1, 1, 'sole',             NULL, NULL, 0  ), (
-    2, 2, 1, 1, 'Parrot',           NULL, NULL, 0  ), (
-    3, 2, 2, 2, 'Rakudo spectests', NULL, 2,    1
+    1, 1, 1, 1, 'sole', NULL,    7*24,  NULL, 0  ), (
+    2, 2, 1, 1, 'sole', NULL,   31*24,  NULL, 0
 );
 
 INSERT INTO jobp_cmd ( jobp_cmd_id, jobp_id, `order`, cmd_id )
@@ -81,17 +80,12 @@ VALUES (
      2, 1, 2, 2  ), (
      3, 1, 3, 4  ), (
      4, 1, 4, 5  ), (
-     5, 1, 5, 6  ), (
 
      6, 2, 1, 1 ), (
      7, 2, 2, 2 ), (
      8, 2, 3, 4 ), (
      9, 2, 4, 5 ), (
-    10, 2, 5, 6 ), (
-
-    11, 3, 1, 1 ), (
-    12, 3, 2, 2 ), (
-    13, 3, 3, 6
+    10, 2, 5, 6
 );
 
 
@@ -113,13 +107,8 @@ VALUES (
 INSERT INTO fspath_select ( fspath_select_id, fsfile_type_id, rep_path_id, fspath_id )
 VALUES (
     1, 1, 1, 1  ), (
-    2, 1, 2, 1  ), (
-
-    3, 2, 1, 1  ), (
-    4, 2, 2, 1  ), (
-
-    5, 3, 1, 2  ), (
-    6, 3, 2, 2
+    2, 2, 1, 1  ), (
+    3, 3, 1, 2
 );
 
 commit;
