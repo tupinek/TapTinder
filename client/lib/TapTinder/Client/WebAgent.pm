@@ -64,6 +64,12 @@ sub init_ua {
 sub run_action {
      my ( $self, $action, $request, $form_data ) = @_;
 
+    if ( $self->{ver} >= 5 ) {
+        print "action '$action' debug:\n";
+        print Dumper( $request );
+        print "\n";
+    }
+
     my $taptinder_server_url = $self->{taptinderserv} . 'client/' . $action;
     my $resp;
     if ( $form_data ) {
@@ -72,15 +78,14 @@ sub run_action {
         $resp = $self->{ua}->post( $taptinder_server_url, $request );
     }
     if ( !$resp->is_success ) {
-        croak "error: " . $resp->status_line . ' --- ' . $resp->content . "\n";
+        carp "error: " . $resp->status_line . ' --- ' . $resp->content . "\n";
+        return undef;
     }
 
     my $json_text = $resp->content;
     my $json = from_json( $json_text, {utf8 => 1} );
 
     if ( $self->{ver} >= 5 ) {
-        print "action '$action' debug:\n";
-        print Dumper( $request );
         print Dumper( $json );
         print "\n";
     }

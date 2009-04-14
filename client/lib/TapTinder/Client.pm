@@ -291,9 +291,9 @@ sub run_cmd {
     );
     print "Command '$cmd_name' return $cmd_rc.\n" if $ver >= 5;
 
-    my $status = 3; # 3 .. ok
+    my $status = 4; # 4 .. ok
     if ( $cmd_rc ) {
-        $status = 5; # 5 .. error
+        $status = 6; # 6 .. error
     }
 
     # don't try to send outdata file if it doesn't exists
@@ -316,6 +316,8 @@ sub run_cmd {
         $cmd_log_fp,
         $outdata_file_full_path
     );
+    return $self->my_croak( "Unknown error" ) unless $data;
+    $self->my_croak( $data->{ag_err_msg} ) if $data->{ag_err};
     $self->my_croak( $data->{err_msg} ) if $data->{err};
     return 1;
 }
