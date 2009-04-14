@@ -25,12 +25,13 @@ $new_source->name(\<<'');
                    a_jp.rep_path_id,
                    r.rev_id,
                    r.rev_num,
-                   a_jp.priority,
+                   a_jp.mjc_priority,
                    j.priority as jpriority
               from (
                     select distinct sa_jp.*
                       from (
-                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id, jp.max_age
+                            -- todo, empty mjc.rep_id
+                            ( select jp.jobp_id, mjc.priority as mjc_priority, jp.rep_path_id, jp.job_id, jp.max_age
                                 from machine_job_conf mjc,
                                      rep_path rp,
                                      jobp jp
@@ -39,7 +40,7 @@ $new_source->name(\<<'');
                                  and jp.rep_path_id = rp.rep_path_id
                             )
                             union all
-                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id, jp.max_age
+                            ( select jp.jobp_id, mjc.priority as mjc_priority, jp.rep_path_id, jp.job_id, jp.max_age
                                 from machine_job_conf mjc,
                                      jobp jp
                                where mjc.machine_id = ?
@@ -47,7 +48,7 @@ $new_source->name(\<<'');
                                  and jp.rep_path_id = mjc.rep_path_id
                             )
                             union all
-                            ( select jp.jobp_id, mjc.priority, jp.rep_path_id, jp.job_id, jp.max_age
+                            ( select jp.jobp_id, mjc.priority as mjc_priority, jp.rep_path_id, jp.job_id, jp.max_age
                                 from machine_job_conf mjc,
                                      jobp jp
                                where mjc.machine_id = ?
@@ -61,9 +62,9 @@ $new_source->name(\<<'');
                   job j
             where rrp.rep_path_id = a_jp.rep_path_id
               and r.rev_id = rrp.rev_id
-              and DATE_SUB(CURDATE(), INTERVAL a_jp.max_age HOUR) <= r.date
+              and ( a_jp.max_age is null or DATE_SUB(CURDATE(), INTERVAL a_jp.max_age HOUR) <= r.date )
               and j.job_id = a_jp.job_id
-            order by a_jp.priority, j.priority, r.rev_num desc, a_jp.jobp_id
+            order by a_jp.mjc_priority, j.priority, r.rev_num desc, a_jp.jobp_id
           ) a_r
     where not exists (
             select 1
@@ -75,6 +76,7 @@ $new_source->name(\<<'');
                and msj.msession_id = ms.msession_id
                and msjp.msjob_id = msj.msjob_id
                and jp.jobp_id = msjp.jobp_id
+               and msjp.jobp_id = a_r.jobp_id
                and jp.rep_path_id = a_r.rep_path_id
                and msjp.rev_id = a_r.rev_id
           )

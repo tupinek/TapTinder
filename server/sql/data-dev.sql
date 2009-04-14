@@ -63,19 +63,21 @@ VALUES (
 
 INSERT INTO job ( job_id, client_min_rev, priority, name, `desc` )
 VALUES (
-    1, 150, 1, 'tr1',       NULL    ), (
-    2, 150, 2, 'tr1, tr2',  NULL    ), (
-    3, 150, 3, 'tr1, tr3',  NULL
+    1, 257, 1, 'tr1 A',     NULL    ), (
+    2, 257, 2, 'tr1, tr2',  NULL    ), (
+    3, 257, 3, 'tr1, tr3',  NULL    ), (
+    4, 257, 4, 'tr1 B',     NULL
 );
 
 
 INSERT INTO jobp ( jobp_id, job_id, rep_path_id, `order`, name, `desc`, max_age, depends_on_id, extends )
 VALUES (
-    1, 1, 1, 1, 'sole',           NULL,   NULL, NULL, 0  ), (
-    2, 2, 1, 1, 'base',           NULL,  30*24, NULL, 0  ), (
-    3, 2, 2, 2, 'external tests', NULL,  60*24, 2,    1  ), (
-    4, 3, 1, 1, 'base',           NULL,  10*24, NULL, 0  ), (
-    5, 3, 3, 2, 'related part',   NULL, 300*24, 4,    0
+    1, 1, 1, 1, 'sole',           NULL,     3*30*24, NULL, 0  ), (
+    2, 2, 1, 1, 'base',           NULL,     3*30*24, NULL, 0  ), (
+    3, 2, 2, 2, 'external tests', NULL,     5*30*24, 2,    1  ), (
+    4, 3, 1, 1, 'base',           NULL,       10*24, NULL, 0  ), (
+    5, 3, 3, 2, 'related part',   NULL,    12*30*24, 4,    0  ), (
+    6, 4, 1, 1, 'sole',           NULL,        NULL, NULL, 0
 );
 
 INSERT INTO jobp_cmd ( jobp_cmd_id, jobp_id, `order`, cmd_id )
@@ -108,16 +110,24 @@ VALUES (
     20, 5, 2, 2 ), (
     21, 5, 3, 4 ), (
     22, 5, 4, 5 ), (
-    23, 5, 5, 6
+    23, 5, 5, 6 ), (
+
+    24, 6, 1, 1 ), (
+    25, 6, 2, 2 ), (
+    26, 6, 3, 4 ), (
+    27, 6, 4, 5
 );
 
 INSERT INTO machine_job_conf ( machine_job_conf_id, machine_id, rep_id, rep_path_id, job_id, priority )
 VALUES (
     1, 5, NULL, NULL, 1,    1  ), (
+
     2, 6, 1,    NULL, NULL, 1  ), (
     3, 6, NULL, NULL, 2,    2  ), (
+
     4, 7, 1,    NULL, NULL, 1  ), (
-    5, 7, NULL, NULL, 2,    2
+    5, 7, 1,    NULL, NULL, 2  ), (
+    6, 7, NULL, NULL, NULL, 3
 );
 
 INSERT INTO fspath ( fspath_id, path, web_path, public, created, deleted, name, `desc` )

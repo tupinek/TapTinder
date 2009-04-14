@@ -321,7 +321,7 @@ Return new job description for client.
 sub get_new_job {
     my ( $self, $c, $data, $machine_id, $msession_id ) = @_;
 
-    my $plus_rows = [ qw/ job_id jobp_id rep_path_id rev_id rev_num priority jpriority /];
+    my $plus_rows = [ qw/ job_id jobp_id rep_path_id rev_id rev_num mjc_priority jpriority /];
     my $search_conf = {
         'select' => $plus_rows,
         'as'     => $plus_rows,
