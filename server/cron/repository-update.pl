@@ -12,11 +12,11 @@ use Data::Dumper;
 use File::Spec::Functions;
 use Devel::StackTrace;
 
-use Config::Multi;
 use SVN::Log;
 
 use lib "$FindBin::Bin/../lib";
 use TapTinder::DB;
+use TapTinder::Utils::Conf qw(load_conf_multi);
 
 my $help = 0;
 my $project_name = undef;
@@ -32,21 +32,9 @@ unless ( $project_name ) {
     exit 0;
 }
 
-# use same way as to load config as TapTinder::Web and then delete
-# all but 'project' and 'db' parts (keys)
 my $cm_dir = catfile( $FindBin::Bin , '..', 'conf' );
-my $cm = Config::Multi->new({
-     dir => $cm_dir,
-     prefix => '',
-     app_name => 'web',
-     extension => 'yml',
-});
-my $conf = $cm->load();
-foreach my $key ( keys %$conf ) {
-    if ( $key ne 'project' && $key ne 'db' ) {
-        delete $conf->{$key};
-    }
-}
+my $conf = load_conf_multi( $cm_dir, 'db', 'project' );
+
 # print Dumper($conf); exit();
 croak "Configuration for database is empty.\n" unless $conf->{db};
 croak "Configuration for projects is empty.\n" unless $conf->{project};

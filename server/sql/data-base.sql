@@ -145,7 +145,7 @@ VALUES (
     null
 ), (
     6, 'trun',
-    'running command - perl t/taptinder_harness --yaml',
+    'running command - make test, create and upload Test::Harness::Archive',
     null
 ), (
     7, 'test',

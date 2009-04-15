@@ -4,6 +4,7 @@ package TapTinder::DB::SchemaAdd;
 use base 'TapTinder::DB::Schema';
 
 
+
 package TapTinder::DB::Schema::rev_rep_path;
 
 __PACKAGE__->add_unique_constraint([ qw/rev_id rep_path_id/ ]);
@@ -112,6 +113,7 @@ $new_source2->name(\<<'');
 TapTinder::DB::Schema->register_source( 'NextJobCmd' => $new_source2 );
 
 
+
 package TapTinder::DB::Schema::msession;
 
 my $source3 = __PACKAGE__->result_source_instance();
@@ -204,6 +206,38 @@ $new_source4->name(\<<'');
 
 
 TapTinder::DB::Schema->register_source( 'BuildStatus' => $new_source4 );
+
+
+
+package TapTinder::DB::Schema::msjobp_cmd;
+
+my $source5 = __PACKAGE__->result_source_instance();
+my $new_source5 = $source5->new( $source5 );
+$new_source5->source_name( 'NotLoadedTruns' );
+
+$new_source5->name(\<<'');
+(
+select mjpc.msjobp_cmd_id,
+       fsp.path as file_path,
+       fsf.name as file_name
+ from msjobp_cmd mjpc,
+      jobp_cmd jpc,
+      fsfile fsf,
+      fspath fsp
+where mjpc.outdata_id is not null
+  and jpc.jobp_cmd_id = mjpc.jobp_cmd_id
+  and jpc.cmd_id = 6 -- trun
+    and not exists (
+    select 1
+      from trun tr
+      where tr.msjobp_cmd_id = mjpc.msjobp_cmd_id
+  )
+  and fsf.fsfile_id = mjpc.outdata_id
+  and fsp.fspath_id = fsf.fspath_id
+)
+
+
+TapTinder::DB::Schema->register_source( 'NotLoadedTruns' => $new_source5 );
 
 
 
