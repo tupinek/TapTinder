@@ -686,6 +686,7 @@ CREATE TABLE trun_conf (
 Test run info and test run statistics (cache).
 * trun_id
 * msjobp_cmd_id
+* loaded_ok - if parsing and saving outdata was successful (1) or not (0)
 * conf_id - test configuration id
 * num_notseen - cache
 * num_failed - cache
@@ -698,6 +699,7 @@ Test run info and test run statistics (cache).
 CREATE TABLE trun (
     trun_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msjobp_cmd_id   INT UNSIGNED NOT NULL,
+    loaded_ok       BOOLEAN NOT NULL,
     conf_id         INT UNSIGNED NOT NULL,
     num_notseen     INT UNSIGNED NOT NULL,
     num_failed      INT UNSIGNED NOT NULL,

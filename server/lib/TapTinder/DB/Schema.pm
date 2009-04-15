@@ -2530,6 +2530,15 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
+    'loaded_ok' => {
+      'data_type' => 'BOOLEAN',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'loaded_ok',
+      'is_nullable' => 0,
+      'size' => 0
+    },
     'conf_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
