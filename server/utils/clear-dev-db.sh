@@ -21,7 +21,7 @@ if [ "$1" = "1" ]; then
     fi
 
     echo "Loading DD dump temp/tt-dump.sql (perl utils/db-run-sqlscript.pl ...):"
-    perl ./utils/db-run-sqlscript.pl ./temp/tt-dump.sql 1
+    perl ./utils/db-run-sqlscript.pl ./temp/ttdev-dump.sql 1
     echo ""
 
     echo "Executing utils/set_client_passwd.pl --client_conf_fpath (perl):"
