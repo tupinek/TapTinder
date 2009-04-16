@@ -15,6 +15,8 @@ use Devel::StackTrace;
 use Archive::Tar;
 use Cwd;
 use YAML::Syck;
+use TAP::Parser;
+use TAP::Parser::Aggregator;
 
 use lib "$FindBin::Bin/../lib";
 use TapTinder::DB;
@@ -66,9 +68,35 @@ while ( my $row = $rs->next ) {
     my $file_num = $file_names{ 'meta.yml' };
     my $meta_yaml = $files[$file_num]->get_content;
     my $meta = Load( $meta_yaml );
-    print Dumper( \$meta ) if $debug;
 
-    exit;
+    my $aggregator = TAP::Parser::Aggregator->new();
+    foreach my $tap_file_path ( @{ $meta->{file_order} } ) {
+        carp "$tap_file_path not foun." unless exists $file_names{ $tap_file_path };
+        my $file_num = $file_names{ $tap_file_path };
+        my $file = $files[ $file_num ];
+        #print Dumper( \$file ) if $debug;
+        my $tap_source = $file->{data};
+
+        my $tap_parser = TAP::Parser->new( { tap => $tap_source } );
+        while ( my $result = $tap_parser->next ) {
+            #print $result->as_string . "\n" if $debug;
+            $tap_parser->run;
+            $aggregator->add( $tap_file_path, $tap_parser );
+        }
+    }
+    my $summary = <<'END_SUMMARY';
+Passed:  %s
+Failed:  %s
+Unexpectedly succeeded: %s
+
+END_SUMMARY
+    printf $summary,
+        scalar $aggregator->passed,
+        scalar $aggregator->failed,
+        scalar $aggregator->todo_passed
+    ;
+    #exit;
+
 }
 
 
