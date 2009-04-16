@@ -3,21 +3,21 @@ clear
 if [ -z "$1" ]; then
     echo "Help:"
     echo "  clear-copy-dh.sh 1   ... rewrite stable to copy"
-    echo "  clear-copy-dh.sh 1 1 ... rewrite stable to copy, upgrade schema"
+    echo "  clear-copy-dh.sh 1 2 ... rewrite stable to copy, update schema files, upgrade schema"
     echo "  clear-copy-dh.sh 0   ... create fresh db for Parrot testing"
-    echo "  clear-copy-dh.sh 0 1 ... create fresh db for Parrot testing, update Schema.pm and schema.png"
+    echo "  clear-copy-dh.sh 0 2 ... create fresh db for Parrot testing, update schema files"
     exit
 fi
 
 
-if [ "$1" ]; then
+if [ "$1" = "1" ]; then
     echo "Going to rewrite this database by another one:"
     echo "Press <Enter> to continue or <Ctrl+C> to cancel ..."
     read
 
-    if [ "$2" ]; then
+    if [ "$2" = "1" -o "$2" = "2" ]; then
         echo "Running utils/all-sql.sh"
-        ./utils/all-sql.sh 1
+        ./utils/all-sql.sh $2
         echo ""
     fi
 
@@ -45,18 +45,19 @@ if [ "$1" ]; then
     perl ./utils/rm_uploaded_files.pl --remove --fspath_ids=3,4
     echo ""
 
-    if [ "$2" ]; then
-        echo "Executing utils/sqlt-schema-diff.sh:"
-        ./utils/sqlt-schema-diff.sh
+    if [ "$2" = "1" -o "$2" = "2" ]; then
+        echo "Creating temp/schema-diff.sql:"
+        sqlt-diff ../../tt/server/temp/schema-raw-create.sql=MySQL temp/schema-raw-create.sql=MySQL > ./temp/schema-diff.sql
         echo ""
 
         echo "Executing temp/schema-diff.sql (perl utils/db-run-sqlscript.pl ...):"
         perl ./utils/db-run-sqlscript.pl ./temp/schema-diff.sql 1
         echo ""
     fi
+fi
 
-else
 
+if [ "$1" = "0" ]; then
     echo "Going to create fresh database (product repository):"
     echo "Press <Enter> to continue or <Ctrl+C> to cancel ..."
     read
@@ -67,6 +68,10 @@ else
 
     echo "Executing temp/all-stable.sql (perl utils/db-run-sqlscript.pl):"
     perl ./utils/db-run-sqlscript.pl ./temp/all-stable.sql 1
+    echo ""
+
+    echo "Copying temp/schema-raw-create.sql to temp/schema-raw-create-dump.sql"
+    cp ./temp/schema-raw-create.sql ./temp/schema-raw-create-dump.sql
     echo ""
 
     echo "Executing utils/set_client_passwd.pl --client_conf_fpath (perl):"
@@ -90,7 +95,6 @@ else
     echo "Executing utils/rm_uploaded_files.pl --remove --fspath_ids=3,4 (perl):"
     perl ./utils/rm_uploaded_files.pl --remove --fspath_ids=3,4
     echo ""
-
-fi;
+fi
 
 echo "Done."

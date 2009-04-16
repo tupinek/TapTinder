@@ -26,6 +26,10 @@ echo "Executing temp/all-stable.sql (perl utils/db-run-sqlscript.pl):"
 perl ./utils/db-run-sqlscript.pl ./temp/all-stable.sql 1
 echo ""
 
+echo "Copying temp/schema-raw-create.sql to temp/schema-raw-create-dump.sql"
+cp ./temp/schema-raw-create.sql ./temp/schema-raw-create-dump.sql
+echo ""
+
 echo "Executing utils/set_client_passwd.pl --client_conf_fpath (perl):"
 perl ./utils/set_client_passwd.pl --client_conf_fpath
 echo ""

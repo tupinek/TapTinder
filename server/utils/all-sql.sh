@@ -1,6 +1,6 @@
 echo -n "updating some temp/*.sql - "
-perl utils/wiki_schema.pl sql/schema.wiki > temp/schema.sql 
-cat temp/schema.sql > temp/all.sql 
+perl utils/wiki_schema.pl sql/schema.wiki > temp/schema.sql
+cat temp/schema.sql > temp/all.sql
 cat sql/data-base.sql >> temp/all.sql
 
 cat temp/all.sql > temp/all-dev.sql
@@ -17,18 +17,16 @@ perl utils/wiki_schema.pl sql/schema.wiki 0 0 0 trun > temp/sel-tables.sql && ec
 echo -n "creating temp/schema-raw-create.sql - "
 perl utils/wiki_schema.pl sql/schema.wiki 0 1 0 > temp/schema-raw-create.sql && echo done
 
-if [ ! -z "$1" ]
-then
+if [ "$1" = "1" -o "$1" = "2" ]; then
     echo -n "updating TapTinder::DB::Schema.pm - "
     perl utils/sqlt-taptinder.pl dbix temp/schema-raw-create.sql 0 && echo done
-fi	
+fi
 
 
 echo -n "creating temp/schema-raw-create-comments.sql - "
 perl utils/wiki_schema.pl sql/schema.wiki 0 1 1 > temp/schema-raw-create-comments.sql && echo done
 
-if [ ! -z "$1" ]
-then
+if [ "$1" = "2" ]; then
     echo -n "updating temp/schema.png - "
     perl utils/sqlt-taptinder.pl graph temp/schema-raw-create-comments.sql 0 && echo done
 fi
