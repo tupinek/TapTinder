@@ -51,18 +51,29 @@ my %summary_methods = map { $_ => $_ } qw(
   failed
   parse_errors
   passed
+  planned
   skipped
   todo
   todo_passed
-  total
   wait
   exit
-  planned
+  total
   skip_all
-  parse_errors
 );
 $summary_methods{total}   = 'tests_run';
 $summary_methods{planned} = 'tests_planned';
+
+my %aggregator_summary_methods = map { $_ => $_ } qw(
+  failed
+  parse_errors
+  passed
+  planned
+  skipped
+  todo
+  todo_passed
+  wait
+  exit
+);
 
 
 my %trest = (
@@ -101,6 +112,9 @@ while ( my $row = $rs->next ) {
     my $meta = Load( $meta_yaml );
 
     my $aggregator = TAP::Parser::Aggregator->new();
+    my %all_aggr = ( 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0, 6 => 0, 7 => 0, );
+    my $all_my_parse_errors = 0;
+    my $all_my_planned = 0;
     foreach my $tap_file_path ( @{ $meta->{file_order} } ) {
         carp "$tap_file_path not foun." unless exists $file_names{ $tap_file_path };
         my $file_num = $file_names{ $tap_file_path };
@@ -113,13 +127,17 @@ while ( my $row = $rs->next ) {
         my $prev_num = 0;
         my $actual_num = 0;
         my $trest_id = 0;
+
+        my %aggr = ( 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0, 6 => 0, 7 => 0, );
         my $my_parse_errors = 0;
-        my $planned = undef;
+        my $my_planned = undef;
         while ( my $result = $tap_parser->next ) {
             #print $result->as_string . "\n" if $debug;
             if ( $result->is_plan ) {
-                $planned = $result->tests_planned;
-                print "  plan: " . $planned . "\n\n";
+                unless ( defined $my_planned ) {
+                    $my_planned = $result->tests_planned;
+                    print "  my plan: " . $my_planned . "\n\n";
+                }
 
             } elsif ( $result->is_test ) {
                 $actual_num = $result->number;
@@ -129,7 +147,7 @@ while ( my $row = $rs->next ) {
                     $my_parse_errors++;
                     print "    my parse error $my_parse_errors (test num $actual_num): " . $result->as_string . "\n" if $debug;
 
-                } elsif ( defined $planned && $actual_num > $planned ) {
+                } elsif ( defined $my_planned && $actual_num > $my_planned ) {
                     $my_parse_errors++;
                     print "    my parse error $my_parse_errors (test num $actual_num): " . $result->as_string . "\n" if $debug;
 
@@ -137,6 +155,7 @@ while ( my $row = $rs->next ) {
                     if ( $actual_num > $prev_num + 1 ) {
                         $trest_id = 1; # not seen
                         foreach my $not_seen_num ( ($prev_num+1)..($actual_num-1) ) {
+                            $aggr{ $trest_id }++;
                             # do not count not seen as parse errors
                             print "  " . $not_seen_num . " $trest{$trest_id}:\n";
                         }
@@ -165,40 +184,71 @@ while ( my $row = $rs->next ) {
 
                     print "  " . $actual_num . " $trest{$trest_id}: " . $result->as_string . "\n" if $debug;
                     my $description = $result->description;
+                    $aggr{ $trest_id }++;
                     $prev_num = $actual_num;
                 }
             }
-        }
-        my $missing_num = $planned - $actual_num;
+        } # while
+
+        # last checks
+        my $missing_num = $my_planned - $actual_num;
         if ( $missing_num > 0 ) {
             $trest_id = 1; # not seen
-            foreach my $not_seen_num ( $actual_num..$planned ) {
+            foreach my $not_seen_num ( ($actual_num+1)..$my_planned ) {
+                $aggr{ $trest_id }++;
                 # do not count not seen as parse errors
                 print "  " . $not_seen_num . " $trest{$trest_id}:\n";
             }
         }
 
+        foreach my $trest_id ( 1..7 ) {
+            $all_aggr{$trest_id} += $aggr{$trest_id};
+        }
 
         if ( $debug ) {
             print "\n";
+
+            print "  my my_planned: $my_planned\n";
             print "  my my_parse_errors: $my_parse_errors\n";
-            print "  my_parse_errors: " . scalar $tap_parser->parse_errors . "\n";
-            my @errors = $tap_parser->parse_errors;
-            foreach my $err ( @errors ) {
-                print "    $err\n";
+            foreach my $trest_id ( 1..7 ) {
+                print "  my $trest{$trest_id}: $aggr{$trest_id}\n";
             }
+            print "\n";
 
             while ( my ( $summary, $method ) = each %summary_methods ) {
                 if ( my $count = $tap_parser->$method() ) {
                     print "  $summary: $count\n";
                 }
             }
+            if ( scalar $tap_parser->parse_errors ) {
+                print "  parse_errors:\n";
+                my @errors = $tap_parser->parse_errors;
+                foreach my $err ( @errors ) {
+                    print "    $err\n";
+                }
+            }
             print "\n";
         }
+
+        $all_my_planned += $my_planned;
+        $all_my_parse_errors += $my_parse_errors;
 
         $aggregator->add( $tap_file_path, $tap_parser );
     }
     print "\n" if $debug;
+
+    print "my all_my_planned: $all_my_planned\n";
+    print "my all_my_parse_errors: $all_my_parse_errors\n";
+    foreach my $trest_id ( 1..7 ) {
+        print "my all $trest{$trest_id}: $all_aggr{$trest_id}\n";
+    }
+    print "\n";
+    while ( my ( $summary, $method ) = each %aggregator_summary_methods ) {
+        if ( my $count = $aggregator->$method() ) {
+            print "all $summary: $count\n";
+        }
+    }
+    print "\n";
 
     last if $first_archive_only;
 }
