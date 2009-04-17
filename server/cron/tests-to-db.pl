@@ -113,19 +113,25 @@ while ( my $row = $rs->next ) {
         my $prev_num = 0;
         my $actual_num = 0;
         my $trest_id = 0;
-        my $parse_errors_num = 0;
+        my $my_parse_errors = 0;
+        my $planned = undef;
         while ( my $result = $tap_parser->next ) {
             #print $result->as_string . "\n" if $debug;
             if ( $result->is_plan ) {
-                print "  plan: " . $result->tests_planned . "\n\n";
+                $planned = $result->tests_planned;
+                print "  plan: " . $planned . "\n\n";
 
             } elsif ( $result->is_test ) {
                 $actual_num = $result->number;
 
                 # error, skip this
                 if ( $actual_num < $prev_num + 1 ) {
-                    $parse_errors_num++;
-                    print "    parse error $parse_errors_num (test num $actual_num): " . $result->as_string . "\n" if $debug;
+                    $my_parse_errors++;
+                    print "    my parse error $my_parse_errors (test num $actual_num): " . $result->as_string . "\n" if $debug;
+
+                } elsif ( defined $planned && $actual_num > $planned ) {
+                    $my_parse_errors++;
+                    print "    my parse error $my_parse_errors (test num $actual_num): " . $result->as_string . "\n" if $debug;
 
                 } else {
                     if ( $actual_num > $prev_num + 1 ) {
@@ -163,17 +169,20 @@ while ( my $row = $rs->next ) {
                 }
             }
         }
-        my $missing_num = $tap_parser->tests_planned - $actual_num;
+        my $missing_num = $planned - $actual_num;
         if ( $missing_num > 0 ) {
-            $parse_errors_num++;
-            print "    parse error - missing $missing_num test(s)\n" if $debug;
+            $trest_id = 1; # not seen
+            foreach my $not_seen_num ( $actual_num..$planned ) {
+                # do not count not seen as parse errors
+                print "  " . $not_seen_num . " $trest{$trest_id}:\n";
+            }
         }
 
 
         if ( $debug ) {
             print "\n";
-            print "  my parse_errors_num: $parse_errors_num\n";
-            print "  parse_errors_num: " . scalar $tap_parser->parse_errors . "\n";
+            print "  my my_parse_errors: $my_parse_errors\n";
+            print "  my_parse_errors: " . scalar $tap_parser->parse_errors . "\n";
             my @errors = $tap_parser->parse_errors;
             foreach my $err ( @errors ) {
                 print "    $err\n";
