@@ -26,10 +26,12 @@ use TapTinder::Utils::DB qw(get_connected_schema);
 my $help = 0;
 my $debug = 0;
 my $save_extracted = 0;
+my $first_archive_only = 0;
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
-    'debug' => \$debug,
+    'debug|d' => \$debug,
     'save_extracted' => \$save_extracted,
+    'first_archive_only' => \$first_archive_only,
 );
 pod2usage(1) if $help || !$options_ok;
 
@@ -45,11 +47,40 @@ my $search_conf = {
 };
 my $rs = $schema->resultset( 'NotLoadedTruns' )->search( {}, $search_conf );
 
+my %summary_methods = map { $_ => $_ } qw(
+  failed
+  parse_errors
+  passed
+  skipped
+  todo
+  todo_passed
+  total
+  wait
+  exit
+  planned
+  skip_all
+  parse_errors
+);
+$summary_methods{total}   = 'tests_run';
+$summary_methods{planned} = 'tests_planned';
+
+
+my %trest = (
+    1 => 'not seen',
+    2 => 'failed',
+    3 => 'unknown',
+    4 => 'todo',
+    5 => 'bonus',
+    6 => 'skip',
+    7 => 'ok',
+);
 
 while ( my $row = $rs->next ) {
     my $rdata = { $row->get_columns };
     #print Dumper( $row_data );
     my $fpath = catfile( $rdata->{file_path}, $rdata->{file_name} );
+    print "archive file: '$fpath'\n\n" if $debug;
+
     my $tar = Archive::Tar->new();
 
     my $work_dir = catdir( $FindBin::Bin, '..', 'temp', 'tar', $rdata->{file_name}.'-dir'  );
@@ -77,26 +108,90 @@ while ( my $row = $rs->next ) {
         #print Dumper( \$file ) if $debug;
         my $tap_source = $file->{data};
 
+        print "test file: '$tap_file_path'\n" if $debug;
         my $tap_parser = TAP::Parser->new( { tap => $tap_source } );
+        my $prev_num = 0;
+        my $actual_num = 0;
+        my $trest_id = 0;
+        my $parse_errors_num = 0;
         while ( my $result = $tap_parser->next ) {
             #print $result->as_string . "\n" if $debug;
-            $tap_parser->run;
-            $aggregator->add( $tap_file_path, $tap_parser );
+            if ( $result->is_plan ) {
+                print "  plan: " . $result->tests_planned . "\n\n";
+
+            } elsif ( $result->is_test ) {
+                $actual_num = $result->number;
+
+                # error, skip this
+                if ( $actual_num < $prev_num + 1 ) {
+                    $parse_errors_num++;
+                    print "    parse error $parse_errors_num (test num $actual_num): " . $result->as_string . "\n" if $debug;
+
+                } else {
+                    if ( $actual_num > $prev_num + 1 ) {
+                        $trest_id = 1; # not seen
+                        foreach my $not_seen_num ( ($prev_num+1)..($actual_num-1) ) {
+                            # do not count not seen as parse errors
+                            print "  " . $not_seen_num . " $trest{$trest_id}:\n";
+                        }
+                    }
+                    my $directive = $result->directive;
+                    if ( $directive eq 'TODO' ) {
+                        if ( ! $result->is_actual_ok ) {
+                            $trest_id = 4; # todo
+                        } else {
+                            $trest_id = 5; # bonus
+                        }
+
+                    } elsif ( $directive eq 'SKIP' ) {
+                        $trest_id = 6; # skip
+
+                    } elsif ( $directive ) {
+                        $trest_id = 3; # unknown
+
+                    } else {
+                        if ( $result->is_actual_ok ) {
+                            $trest_id = 7; # ok
+                        } else {
+                            $trest_id = 2; # failed
+                        }
+                    }
+
+                    print "  " . $actual_num . " $trest{$trest_id}: " . $result->as_string . "\n" if $debug;
+                    my $description = $result->description;
+                    $prev_num = $actual_num;
+                }
+            }
         }
+        my $missing_num = $tap_parser->tests_planned - $actual_num;
+        if ( $missing_num > 0 ) {
+            $parse_errors_num++;
+            print "    parse error - missing $missing_num test(s)\n" if $debug;
+        }
+
+
+        if ( $debug ) {
+            print "\n";
+            print "  my parse_errors_num: $parse_errors_num\n";
+            print "  parse_errors_num: " . scalar $tap_parser->parse_errors . "\n";
+            my @errors = $tap_parser->parse_errors;
+            foreach my $err ( @errors ) {
+                print "    $err\n";
+            }
+
+            while ( my ( $summary, $method ) = each %summary_methods ) {
+                if ( my $count = $tap_parser->$method() ) {
+                    print "  $summary: $count\n";
+                }
+            }
+            print "\n";
+        }
+
+        $aggregator->add( $tap_file_path, $tap_parser );
     }
-    my $summary = <<'END_SUMMARY';
-Passed:  %s
-Failed:  %s
-Unexpectedly succeeded: %s
+    print "\n" if $debug;
 
-END_SUMMARY
-    printf $summary,
-        scalar $aggregator->passed,
-        scalar $aggregator->failed,
-        scalar $aggregator->todo_passed
-    ;
-    #exit;
-
+    last if $first_archive_only;
 }
 
 
