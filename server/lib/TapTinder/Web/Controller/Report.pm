@@ -49,7 +49,7 @@ sub CreateMyResultSets {
 )
 
     my $schema = $c->model('WebDB')->schema;
-    $schema->register_source('ActiveRepPathList' => $new_source);
+    $schema->register_extra_source('ActiveRepPathList' => $new_source);
 
     return 1;
 }
