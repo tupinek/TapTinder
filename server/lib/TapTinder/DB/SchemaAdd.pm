@@ -1,6 +1,5 @@
 package TapTinder::DB::SchemaAdd;
 
-# version 0.04
 use base 'TapTinder::DB::Schema';
 
 
@@ -10,14 +9,16 @@ package TapTinder::DB::Schema::rev_rep_path;
 __PACKAGE__->add_unique_constraint([ qw/rev_id rep_path_id/ ]);
 
 
-# own resultsets
+
+# Own resultsets:
+
 package TapTinder::DB::Schema::job;
 
 my $source = __PACKAGE__->result_source_instance();
 my $new_source = $source->new( $source );
 $new_source->source_name( 'NotTestedJobs' );
 
-$new_source->name(\<<'');
+$new_source->name(\<<'SQLEND');
 (
     select a_r.*
       from (
@@ -82,16 +83,19 @@ $new_source->name(\<<'');
                and msjp.rev_id = a_r.rev_id
           )
 )
-
+SQLEND
 
 TapTinder::DB::Schema->register_extra_source( 'NotTestedJobs' => $new_source );
 
+
+
+package TapTinder::DB::Schema::jobp;
 
 my $source2 = __PACKAGE__->result_source_instance();
 my $new_source2 = $source2->new( $source2 );
 $new_source2->source_name( 'NextJobCmd' );
 
-$new_source2->name(\<<'');
+$new_source2->name(\<<'SQLEND');
 (
     select jp.jobp_id,
            jpc.jobp_cmd_id,
@@ -108,19 +112,20 @@ $new_source2->name(\<<'');
        and c.cmd_id = jpc.cmd_id
      order by jp.order, jpc.order
 )
-
+SQLEND
 
 TapTinder::DB::Schema->register_extra_source( 'NextJobCmd' => $new_source2 );
 
 
 
+package TapTinder::DB::Schema::msession;
 
 my $source3 = __PACKAGE__->result_source_instance();
 my $new_source3 = $source3->new( $source3 );
 $new_source3->source_name( 'MSessionStatus' );
 
 # mslog_id is autoincrement
-$new_source3->name(\<<'');
+$new_source3->name(\<<'SQLEND');
 (
     select ms.msession_id,
            ms.client_rev,
@@ -155,19 +160,19 @@ $new_source3->name(\<<'');
        and ms.abort_reason_id is null
      order by ms.machine_id, ms.start_time
 )
-
+SQLEND
 
 TapTinder::DB::Schema->register_extra_source( 'MSessionStatus' => $new_source3 );
 
 
 
-package TapTinder::DB::Schema::rev;
+package TapTinder::DB::Schema::rev_rep_path;
 
 my $source4 = __PACKAGE__->result_source_instance();
 my $new_source4 = $source4->new( $source4 );
 $new_source4->source_name( 'BuildStatus' );
 
-$new_source4->name(\<<'');
+$new_source4->name(\<<'SQLEND');
 (
    select ms.machine_id,
           r.rev_id,
@@ -202,7 +207,7 @@ $new_source4->name(\<<'');
       and mj.msjob_id = mjp.msjobp_id
       and ms.msession_id = mj.msession_id
 )
-
+SQLEND
 
 TapTinder::DB::Schema->register_extra_source( 'BuildStatus' => $new_source4 );
 
@@ -214,7 +219,7 @@ my $source5 = __PACKAGE__->result_source_instance();
 my $new_source5 = $source5->new( $source5 );
 $new_source5->source_name( 'NotLoadedTruns' );
 
-$new_source5->name(\<<'');
+$new_source5->name(\<<'SQLEND');
 (
 select mjpc.msjobp_cmd_id,
        fsp.path as file_path,
@@ -234,9 +239,43 @@ where mjpc.outdata_id is not null
   and fsf.fsfile_id = mjpc.outdata_id
   and fsp.fspath_id = fsf.fspath_id
 )
-
+SQLEND
 
 TapTinder::DB::Schema->register_extra_source( 'NotLoadedTruns' => $new_source5 );
+
+
+
+package TapTinder::DB::Schema::rep_path;
+
+my $source6 = __PACKAGE__->result_source_instance();
+my $new_source6 = $source5->new( $source6 );
+$new_source6->source_name( 'ActiveRepPathList' );
+
+$new_source6->name(\<<'SQLEND');
+(
+   SELECT rp.*,
+          mr.max_rev_num,
+          r.rev_id, r.author_id, r.date,
+          ra.rep_login
+     FROM rep_path rp,
+        ( SELECT rrp.rep_path_id, max(r.rev_num) as max_rev_num
+           FROM rev_rep_path  rrp, rev r
+          WHERE r.rev_id = rrp.rev_id
+          GROUP BY rrp.rep_path_id
+        ) mr,
+        rev r,
+        rep_author ra
+    WHERE rp.rep_id = ?
+      and rp.rev_num_to is null -- optimalization
+      and rp.path not like "tags/%"
+      and mr.rep_path_id = rp.rep_path_id
+      and r.rev_num = mr.max_rev_num
+      and ra.rep_author_id = r.author_id
+    ORDER BY max_rev_num DESC
+)
+SQLEND
+
+TapTinder::DB::Schema->register_extra_source('ActiveRepPathList' => $new_source6);
 
 
 

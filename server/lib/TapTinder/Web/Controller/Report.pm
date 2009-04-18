@@ -16,44 +16,6 @@ Catalyst controller for TapTinder web reports. The actions for reports browsing.
 
 =cut
 
-# TODO - temporary solution
-# dbix-class bug, see commented code in Taptinder::DB::SchemaAdd
-sub CreateMyResultSets {
-    my ( $self, $c ) = @_;
-
-    my $source = TapTinder::DB::Schema::rep_path->result_source_instance;
-    my $new_source = $source->new($source);
-    $new_source->source_name('ActiveRepPathList');
-
-    $new_source->name(\<<'');
-(
-   SELECT rp.*,
-          mr.max_rev_num,
-          r.rev_id, r.author_id, r.date,
-          ra.rep_login
-     FROM rep_path rp,
-        ( SELECT rrp.rep_path_id, max(r.rev_num) as max_rev_num
-           FROM rev_rep_path  rrp, rev r
-          WHERE r.rev_id = rrp.rev_id
-          GROUP BY rrp.rep_path_id
-        ) mr,
-        rev r,
-        rep_author ra
-    WHERE rp.rep_id = ?
-      and rp.rev_num_to is null -- optimalization
-      and rp.path not like "tags/%"
-      and mr.rep_path_id = rp.rep_path_id
-      and r.rev_num = mr.max_rev_num
-      and ra.rep_author_id = r.author_id
-    ORDER BY max_rev_num DESC
-)
-
-    my $schema = $c->model('WebDB')->schema;
-    $schema->register_extra_source('ActiveRepPathList' => $new_source);
-
-    return 1;
-}
-
 
 sub action_do {
     my ( $self, $c ) = @_;
@@ -336,8 +298,6 @@ sub index : Path  {
 
         my @projects = ();
         my %rep_paths = ();
-
-        $self->CreateMyResultSets( $c );
 
         while (my $row = $rs->next) {
             my $project_data = { $row->get_columns };
