@@ -119,6 +119,9 @@ sub show_table_list {
     my @tables = $schema->sources;
     my @tables_hash = ();
     foreach my $table_name ( sort @tables ) {
+        # ToDo
+        #next if $schema->source($table_name)->{extra};
+        next if $table_name =~ /^[A-Z]/;
         push @tables_hash, {
             name => $table_name,
             uri => $c->uri_for( $table_name )->as_string
