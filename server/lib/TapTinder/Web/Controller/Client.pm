@@ -928,7 +928,7 @@ sub get_rr_info {
     my $row = $rs->next;
     if ( !$row ) {
         $data->{err} = 1;
-        $data->{err_msg} = "Error: Rev_rep_path id (rep_path_id=$rep_path_id, rev_id=$rev_id) not found.";
+        $data->{err_msg} = "Error: Rev_rep_path id (rep_path_id=$rep_path_id, rev_id=$rev_id) not found (get_rr_info).";
         return 0;
     }
     my $row_data = { $row->get_columns() };
