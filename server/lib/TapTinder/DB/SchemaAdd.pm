@@ -84,7 +84,7 @@ $new_source->name(\<<'');
 )
 
 
-TapTinder::DB::Schema->register_source( 'NotTestedJobs' => $new_source );
+TapTinder::DB::Schema->register_extra_source( 'NotTestedJobs' => $new_source );
 
 
 my $source2 = __PACKAGE__->result_source_instance();
@@ -110,7 +110,7 @@ $new_source2->name(\<<'');
 )
 
 
-TapTinder::DB::Schema->register_source( 'NextJobCmd' => $new_source2 );
+TapTinder::DB::Schema->register_extra_source( 'NextJobCmd' => $new_source2 );
 
 
 
@@ -157,7 +157,7 @@ $new_source3->name(\<<'');
 )
 
 
-TapTinder::DB::Schema->register_source( 'MSessionStatus' => $new_source3 );
+TapTinder::DB::Schema->register_extra_source( 'MSessionStatus' => $new_source3 );
 
 
 
@@ -204,7 +204,7 @@ $new_source4->name(\<<'');
 )
 
 
-TapTinder::DB::Schema->register_source( 'BuildStatus' => $new_source4 );
+TapTinder::DB::Schema->register_extra_source( 'BuildStatus' => $new_source4 );
 
 
 
@@ -236,14 +236,11 @@ where mjpc.outdata_id is not null
 )
 
 
-TapTinder::DB::Schema->register_source( 'NotLoadedTruns' => $new_source5 );
+TapTinder::DB::Schema->register_extra_source( 'NotLoadedTruns' => $new_source5 );
 
 
 
 # ViewMD - view metadata
-
-package TapTinder::DB::Schema::build_conf;
-__PACKAGE__->cols_in_foreign_tables( [ qw/cc devel/ ] );
 
 package TapTinder::DB::Schema::cmd;
 __PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );

@@ -628,43 +628,6 @@ CREATE TABLE msabort_reason (
 ) TYPE=InnoDB;
 </source>
 
-==== build_conf ====
-Build configurations.
-* conf_id
-* hash
-* cc
-* devel
-* optimize
-* alias_conf_id - another conf with the same semantics, but different syntax
-<source lang=sql>
-CREATE TABLE build_conf (
-    build_conf_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    hash            VARCHAR(50) NOT NULL,
-    cc              VARCHAR(255) DEFAULT NULL,
-    devel           VARCHAR(255) DEFAULT NULL,
-    `optimize`      VARCHAR(255) DEFAULT NULL,
-    alias_conf_id   INT UNSIGNED DEFAULT NULL,
-    INDEX i_hash (hash),
-    CONSTRAINT fk_build_conf_alias_conf_id FOREIGN KEY (alias_conf_id) REFERENCES build_conf (build_conf_id)
-) TYPE=InnoDB;
-</source>
-
-==== build ====
-* build_id
-* msjobp_cmd_id
-* conf_id - build configuration id
-<source lang=sql>
-CREATE TABLE build (
-    build_id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    msjobp_cmd_id   INT UNSIGNED NOT NULL,
-    conf_id         INT UNSIGNED NOT NULL,
-    INDEX i_msjobp_cmd_id (msjobp_cmd_id),
-    INDEX i_conf_id (conf_id),
-    CONSTRAINT fk_build_msjobp_cmd_id FOREIGN KEY (msjobp_cmd_id) REFERENCES msjobp_cmd (msjobp_cmd_id),
-    CONSTRAINT fk_build_conf_id FOREIGN KEY (conf_id) REFERENCES build_conf (build_conf_id)
-) TYPE=InnoDB;
-</source>
-
 === trun_status ===
 Test run loading status.
 * trun_status_id
