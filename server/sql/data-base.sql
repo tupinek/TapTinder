@@ -68,15 +68,25 @@ VALUES (
     1, 1, '0.09'
 );
 
+INSERT INTO trun_status ( trun_status_id, name, `desc` )
+VALUES (
+    1, 'loading started',  NULL ), (
+    2, 'ok',  NULL ), (
+    3, 'unknown error',  NULL ), (
+    4, 'extract error', 'archive extracting error' ), (
+    5, 'no files found error', NULL ), (
+    6, 'no meta.yml file error', NULL ), (
+    7, 'meta match error', 'some files from meta.yml not found in archive, or archive contains more files than meta.yml'
+);
+
 
 INSERT INTO trest ( trest_id, name, `desc` )
 VALUES (
-    0, 'not seen',  NULL ), (
-    1, 'failed',    NULL ), (
-    2, 'unknown',   NULL ), (
+    1, 'not seen',  NULL ), (
+    2, 'failed',    NULL ), (
     3, 'todo',      NULL ), (
-    4, 'bonus',     NULL ), (
-    5, 'skip',      NULL ), (
+    4, 'skip',      NULL ), (
+    5, 'bonus',     NULL ), (
     6, 'ok',        NULL
 );
 

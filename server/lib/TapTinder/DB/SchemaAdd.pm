@@ -114,7 +114,6 @@ TapTinder::DB::Schema->register_source( 'NextJobCmd' => $new_source2 );
 
 
 
-package TapTinder::DB::Schema::msession;
 
 my $source3 = __PACKAGE__->result_source_instance();
 my $new_source3 = $source3->new( $source3 );
@@ -230,7 +229,7 @@ where mjpc.outdata_id is not null
     and not exists (
     select 1
       from trun tr
-      where tr.msjobp_cmd_id = mjpc.msjobp_cmd_id
+     where tr.msjobp_cmd_id = mjpc.msjobp_cmd_id
   )
   and fsf.fsfile_id = mjpc.outdata_id
   and fsp.fspath_id = fsf.fspath_id

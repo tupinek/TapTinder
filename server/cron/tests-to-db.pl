@@ -16,7 +16,6 @@ use Archive::Tar;
 use Cwd;
 use YAML::Syck;
 use TAP::Parser;
-use TAP::Parser::Aggregator;
 
 use lib "$FindBin::Bin/../lib";
 use TapTinder::DB;
@@ -64,32 +63,58 @@ $summary_methods{total}   = 'tests_run';
 $summary_methods{planned} = 'tests_planned';
 
 my %aggregator_summary_methods = map { $_ => $_ } qw(
-  failed
-  parse_errors
-  passed
   planned
+  parse_errors
+  failed
   skipped
   todo
   todo_passed
+  passed
   wait
   exit
 );
 
 
 my %trest = (
-    1 => 'not seen',
+    1 => 'not_seen',
     2 => 'failed',
-    3 => 'unknown',
-    4 => 'todo',
+    3 => 'todo',
+    4 => 'skip',
     5 => 'bonus',
-    6 => 'skip',
-    7 => 'ok',
+    6 => 'ok',
 );
+
+
+sub trun_create {
+    my ( $schema, $trun_status_id, $msjobp_cmd_id ) = @_;
+    my $rs = $schema->resultset('trun')->create({
+        msjobp_cmd_id => $msjobp_cmd_id,
+        trun_status_id => $trun_status_id,
+    });
+    return undef unless $rs;
+    my $trun_id = $rs->get_column('trun_id');
+    return $trun_id;
+}
+
+
+sub trun_update {
+    my ( $schema, $trun_id, $rh_new_values ) = @_;
+
+    my $trun_rs = $schema->resultset('trun')->search( {
+        trun_id => $trun_id,
+    } );
+
+    my $ret_val = $trun_rs->update( $rh_new_values );
+    return undef unless $ret_val;
+
+}
+
 
 while ( my $row = $rs->next ) {
     my $rdata = { $row->get_columns };
     #print Dumper( $row_data );
     my $fpath = catfile( $rdata->{file_path}, $rdata->{file_name} );
+    my $msjobp_cmd_id = $rdata->{msjobp_cmd_id};
     print "archive file: '$fpath'\n\n" if $debug;
 
     my $tar = Archive::Tar->new();
@@ -99,6 +124,9 @@ while ( my $row = $rs->next ) {
 
     my @files = $tar->read( $fpath, undef );
     $tar->extract() if $save_extracted;
+
+    my $trun_status_id = 1;
+    my $trun_id = trun_create( $schema, $trun_status_id, $msjobp_cmd_id );
 
     my %file_names = ();
     foreach my $file_num ( 0..$#files ) {
@@ -111,8 +139,7 @@ while ( my $row = $rs->next ) {
     my $meta_yaml = $files[$file_num]->get_content;
     my $meta = Load( $meta_yaml );
 
-    my $aggregator = TAP::Parser::Aggregator->new();
-    my %all_aggr = ( 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0, 6 => 0, 7 => 0, );
+    my %all_aggr = ( 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0, 6 => 0 );
     my $all_my_parse_errors = 0;
     my $all_my_planned = 0;
     foreach my $tap_file_path ( @{ $meta->{file_order} } ) {
@@ -128,7 +155,7 @@ while ( my $row = $rs->next ) {
         my $actual_num = 0;
         my $trest_id = 0;
 
-        my %aggr = ( 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0, 6 => 0, 7 => 0, );
+        my %aggr = ( 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0, 6 => 0 );
         my $my_parse_errors = 0;
         my $my_planned = undef;
         while ( my $result = $tap_parser->next ) {
@@ -163,20 +190,20 @@ while ( my $row = $rs->next ) {
                     my $directive = $result->directive;
                     if ( $directive eq 'TODO' ) {
                         if ( ! $result->is_actual_ok ) {
-                            $trest_id = 4; # todo
+                            $trest_id = 3; # todo
                         } else {
                             $trest_id = 5; # bonus
                         }
 
                     } elsif ( $directive eq 'SKIP' ) {
-                        $trest_id = 6; # skip
-
-                    } elsif ( $directive ) {
-                        $trest_id = 3; # unknown
+                        $trest_id = 4; # skip
 
                     } else {
+                        if ( $directive ) {
+                            carp "Unknown directive '$directive'\n";
+                        }
                         if ( $result->is_actual_ok ) {
-                            $trest_id = 7; # ok
+                            $trest_id = 6; # ok
                         } else {
                             $trest_id = 2; # failed
                         }
@@ -201,7 +228,7 @@ while ( my $row = $rs->next ) {
             }
         }
 
-        foreach my $trest_id ( 1..7 ) {
+        foreach my $trest_id ( 1..6 ) {
             $all_aggr{$trest_id} += $aggr{$trest_id};
         }
 
@@ -210,7 +237,7 @@ while ( my $row = $rs->next ) {
 
             print "  my my_planned: $my_planned\n";
             print "  my my_parse_errors: $my_parse_errors\n";
-            foreach my $trest_id ( 1..7 ) {
+            foreach my $trest_id ( 1..6 ) {
                 print "  my $trest{$trest_id}: $aggr{$trest_id}\n";
             }
             print "\n";
@@ -233,22 +260,28 @@ while ( my $row = $rs->next ) {
         $all_my_planned += $my_planned;
         $all_my_parse_errors += $my_parse_errors;
 
-        $aggregator->add( $tap_file_path, $tap_parser );
     }
     print "\n" if $debug;
 
     print "my all_my_planned: $all_my_planned\n";
     print "my all_my_parse_errors: $all_my_parse_errors\n";
-    foreach my $trest_id ( 1..7 ) {
+    foreach my $trest_id ( 1..6 ) {
         print "my all $trest{$trest_id}: $all_aggr{$trest_id}\n";
     }
     print "\n";
-    while ( my ( $summary, $method ) = each %aggregator_summary_methods ) {
-        if ( my $count = $aggregator->$method() ) {
-            print "all $summary: $count\n";
-        }
-    }
-    print "\n";
+
+    my $new_trun_values = {};
+    $new_trun_values = {
+        trun_status_id => 2, # ok
+        not_seen    => $all_aggr{1},
+        failed      => $all_aggr{2},
+        todo        => $all_aggr{3},
+        skip        => $all_aggr{4},
+        bonus       => $all_aggr{5},
+        ok          => $all_aggr{6},
+
+    };
+    my $ret_val = trun_update( $schema, $trun_id, $new_trun_values );
 
     last if $first_archive_only;
 }

@@ -59,56 +59,6 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('rep_path_id');
 
 
-package TapTinder::DB::Schema::trun_conf;
-use base 'DBIx::Class';
-use strict;
-use warnings;
-
-__PACKAGE__->load_components(qw/Core ViewMD/);
-__PACKAGE__->table('trun_conf');
-
-
-__PACKAGE__->add_columns(
-    'trun_conf_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 1,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'trun_conf_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'hash' => {
-      'data_type' => 'VARCHAR',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'hash',
-      'is_nullable' => 0,
-      'size' => '50'
-    },
-    'harness_args' => {
-      'data_type' => 'VARCHAR',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 0,
-      'name' => 'harness_args',
-      'is_nullable' => 1,
-      'size' => '255'
-    },
-    'alias_conf_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 1,
-      'name' => 'alias_conf_id',
-      'is_nullable' => 1,
-      'size' => '11'
-    },
-);
-__PACKAGE__->set_primary_key('trun_conf_id');
-
-
 package TapTinder::DB::Schema::rev_rep_path;
 use base 'DBIx::Class';
 use strict;
@@ -710,6 +660,47 @@ __PACKAGE__->add_columns(
     },
 );
 __PACKAGE__->set_primary_key('cmd_id');
+
+
+package TapTinder::DB::Schema::trun_status;
+use base 'DBIx::Class';
+use strict;
+use warnings;
+
+__PACKAGE__->load_components(qw/Core ViewMD/);
+__PACKAGE__->table('trun_status');
+
+
+__PACKAGE__->add_columns(
+    'trun_status_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'trun_status_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'name' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'name',
+      'is_nullable' => 1,
+      'size' => '25'
+    },
+    'desc' => {
+      'data_type' => 'TEXT',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'desc',
+      'is_nullable' => 1,
+      'size' => '65535'
+    },
+);
+__PACKAGE__->set_primary_key('trun_status_id');
 
 
 package TapTinder::DB::Schema::bfile;
@@ -2530,84 +2521,75 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'loaded_ok' => {
-      'data_type' => 'BOOLEAN',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'loaded_ok',
-      'is_nullable' => 0,
-      'size' => 0
-    },
-    'conf_id' => {
+    'trun_status_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 1,
-      'name' => 'conf_id',
+      'name' => 'trun_status_id',
       'is_nullable' => 0,
       'size' => '11'
     },
-    'num_notseen' => {
+    'parse_errors' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'num_notseen',
+      'name' => 'parse_errors',
       'is_nullable' => 0,
       'size' => '11'
     },
-    'num_failed' => {
+    'not_seen' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'num_failed',
+      'name' => 'not_seen',
       'is_nullable' => 0,
       'size' => '11'
     },
-    'num_unknown' => {
+    'failed' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'num_unknown',
+      'name' => 'failed',
       'is_nullable' => 0,
       'size' => '11'
     },
-    'num_todo' => {
+    'todo' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'num_todo',
+      'name' => 'todo',
       'is_nullable' => 0,
       'size' => '11'
     },
-    'num_bonus' => {
+    'skip' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'num_bonus',
+      'name' => 'skip',
       'is_nullable' => 0,
       'size' => '11'
     },
-    'num_skip' => {
+    'bonus' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'num_skip',
+      'name' => 'bonus',
       'is_nullable' => 0,
       'size' => '11'
     },
-    'num_ok' => {
+    'ok' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'num_ok',
+      'name' => 'ok',
       'is_nullable' => 0,
       'size' => '11'
     },
@@ -2820,13 +2802,6 @@ __PACKAGE__->has_many('get_jobp', 'TapTinder::DB::Schema::jobp', 'rep_path_id');
 __PACKAGE__->has_many('get_machine_job_conf', 'TapTinder::DB::Schema::machine_job_conf', 'rep_path_id');
 __PACKAGE__->has_many('get_fspath_select', 'TapTinder::DB::Schema::fspath_select', 'rep_path_id');
 
-package TapTinder::DB::Schema::trun_conf;
-
-__PACKAGE__->belongs_to('alias_conf_id','TapTinder::DB::Schema::trun_conf','alias_conf_id',{join_type => 'left'});
-
-__PACKAGE__->has_many('get_trun_conf', 'TapTinder::DB::Schema::trun_conf', 'alias_conf_id');
-__PACKAGE__->has_many('get_trun', 'TapTinder::DB::Schema::trun', 'conf_id');
-
 package TapTinder::DB::Schema::rev_rep_path;
 
 __PACKAGE__->belongs_to('rev_id','TapTinder::DB::Schema::rev','rev_id');
@@ -2891,6 +2866,10 @@ __PACKAGE__->has_many('get_fspath_select', 'TapTinder::DB::Schema::fspath_select
 package TapTinder::DB::Schema::cmd;
 
 __PACKAGE__->has_many('get_jobp_cmd', 'TapTinder::DB::Schema::jobp_cmd', 'cmd_id');
+
+package TapTinder::DB::Schema::trun_status;
+
+__PACKAGE__->has_many('get_trun', 'TapTinder::DB::Schema::trun', 'trun_status_id');
 
 package TapTinder::DB::Schema::bfile;
 
@@ -3126,9 +3105,9 @@ __PACKAGE__->has_many('get_patch', 'TapTinder::DB::Schema::patch', 'author_id');
 
 package TapTinder::DB::Schema::trun;
 
-__PACKAGE__->belongs_to('msjobp_cmd_id','TapTinder::DB::Schema::msjobp_cmd','msjobp_cmd_id');
+__PACKAGE__->belongs_to('trun_status_id','TapTinder::DB::Schema::trun_status','trun_status_id');
 
-__PACKAGE__->belongs_to('conf_id','TapTinder::DB::Schema::trun_conf','conf_id');
+__PACKAGE__->belongs_to('msjobp_cmd_id','TapTinder::DB::Schema::msjobp_cmd','msjobp_cmd_id');
 
 __PACKAGE__->has_many('get_tfile', 'TapTinder::DB::Schema::tfile', 'trun_id');
 __PACKAGE__->has_many('get_ttest', 'TapTinder::DB::Schema::ttest', 'trun_id');
@@ -3169,8 +3148,6 @@ use warnings;
 
 __PACKAGE__->register_class('rep_path', 'TapTinder::DB::Schema::rep_path');
 
-__PACKAGE__->register_class('trun_conf', 'TapTinder::DB::Schema::trun_conf');
-
 __PACKAGE__->register_class('rev_rep_path', 'TapTinder::DB::Schema::rev_rep_path');
 
 __PACKAGE__->register_class('jobp_cmd', 'TapTinder::DB::Schema::jobp_cmd');
@@ -3192,6 +3169,8 @@ __PACKAGE__->register_class('msjob', 'TapTinder::DB::Schema::msjob');
 __PACKAGE__->register_class('fsfile_type', 'TapTinder::DB::Schema::fsfile_type');
 
 __PACKAGE__->register_class('cmd', 'TapTinder::DB::Schema::cmd');
+
+__PACKAGE__->register_class('trun_status', 'TapTinder::DB::Schema::trun_status');
 
 __PACKAGE__->register_class('bfile', 'TapTinder::DB::Schema::bfile');
 

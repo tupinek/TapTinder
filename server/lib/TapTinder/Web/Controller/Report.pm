@@ -487,77 +487,57 @@ sub index : Path  {
     );
 
     my $build_search = {
-            join => [
-                { msession_id => 'machine_id', },
-                'conf_id',
-                { get_trun => 'conf_id', },
-            ],
-            'select' => [qw/
-                me.build_id
+        join => [
+            { msjobp_cmd_id => { msjobp_id => [ 'jobp_id', { msjob_id => { msession_id => 'machine_id', } } ] } },
+        ],
+        'select' => [qw/
+            machine_id.machine_id
+            machine_id.name
+            machine_id.cpuarch
+            machine_id.osname
+            machine_id.archname
 
-                machine_id.machine_id
-                machine_id.name
-                machine_id.cpuarch
-                machine_id.osname
-                machine_id.archname
+            me.trun_id
+            me.msjobp_cmd_id
+            me.parse_errors
+            me.not_seen
+            me.failed
+            me.todo
+            me.skip
+            me.bonus
+            me.ok
+        /],
+        'as' => [qw/
+            machine_id
+            machine_name
+            cpuarch
+            osname
+            archname
 
-                conf_id.build_conf_id
-                conf_id.cc
-                conf_id.devel
-                conf_id.optimize
+            trun_id
+            msjobp_cmd_id
+            parse_errors
+            not_seen
+            failed
+            todo
+            skip
+            bonus
+            ok
+        /],
+        order_by => 'machine_id',
 
-                get_trun.trun_id
-                get_trun.num_notseen
-                get_trun.num_failed
-                get_trun.num_unknown
-                get_trun.num_todo
-                get_trun.num_bonus
-                get_trun.num_skip
-                get_trun.num_ok
-
-                conf_id_2.trun_conf_id
-                conf_id_2.harness_args
-            /],
-            'as' => [qw/
-                build_id
-
-                machine_id
-                machine_name
-                cpuarch
-                osname
-                archname
-
-                build_conf_id
-                cc
-                devel
-                optimize
-
-                trun_id
-                num_notseen
-                num_failed
-                num_unknown
-                num_todo
-                num_bonus
-                num_skip
-                num_ok
-
-                trun_conf_id
-                harness_args
-            /],
-            order_by => 'machine_id',
-
-        };
-
+    };
 
     my @revs = ();
     my $builds = {};
     while (my $rev = $rs->next) {
         my %rev_rows = ( $rev->get_columns() );
 
-        my $rs_build = $c->model('WebDB::build')->search(
+        my $rs_build = $c->model('WebDB::trun')->search(
             {
-                'me.rep_path_id' => $rev_rows{rep_path_id},
-                'me.rev_id' => $rev_rows{rev_id},
+                'me.trun_status_id' => 2, # ok
+                'jobp_id.rep_path_id' => $rev_rows{rep_path_id},
+                'msjobp_id.rev_id' => $rev_rows{rev_id},
             },
             $build_search
         );
@@ -565,6 +545,7 @@ sub index : Path  {
 
         while (my $build = $rs_build->next) {
             my %build_rows = ( $build->get_columns() );
+            $self->dumper( $c, \%build_rows );
             push @{$builds->{ $rev_rows{rev_id} }->{ $rev_rows{rep_path_id} }}, \%build_rows;
         }
     }

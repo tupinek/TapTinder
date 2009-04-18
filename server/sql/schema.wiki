@@ -665,20 +665,16 @@ CREATE TABLE build (
 ) TYPE=InnoDB;
 </source>
 
-==== trun_conf ====
-Test run configurations.
-* trun_conf_id
-* hash
-* harness_args
-* alias_conf_id - another conf with the same semantics, but different syntax
+=== trun_status ===
+Test run loading status.
+* trun_status_id
+* name
+* desc
 <source lang=sql>
-CREATE TABLE trun_conf (
-    trun_conf_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    hash            VARCHAR(50) NOT NULL,
-    harness_args    VARCHAR(255) DEFAULT NULL,
-    alias_conf_id   INT UNSIGNED DEFAULT NULL,
-    INDEX i_hash (hash),
-    CONSTRAINT fk_trun_conf_alias_conf_id FOREIGN KEY (alias_conf_id) REFERENCES trun_conf (trun_conf_id)
+CREATE TABLE trun_status (
+    trun_status_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(25),
+    `desc`              TEXT DEFAULT NULL
 ) TYPE=InnoDB;
 </source>
 
@@ -686,32 +682,29 @@ CREATE TABLE trun_conf (
 Test run info and test run statistics (cache).
 * trun_id
 * msjobp_cmd_id
-* loaded_ok - if parsing and saving outdata was successful (1) or not (0)
-* conf_id - test configuration id
-* num_notseen - cache
-* num_failed - cache
-* num_unknown - cache
-* num_todo - cache
-* num_bonus - cache
-* num_skip - cache
-* num_ok - cache
+* trun_status_id
+* parse_errors  - ttest sum cache
+* not_seen - ttest sum cache
+* failed - ttest sum cache
+* todo - ttest sum cache
+* skip - ttest sum cache
+* bonus - ttest sum cache
+* ok - ttest sum cache
 <source lang=sql>
 CREATE TABLE trun (
     trun_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msjobp_cmd_id   INT UNSIGNED NOT NULL,
-    loaded_ok       BOOLEAN NOT NULL,
-    conf_id         INT UNSIGNED NOT NULL,
-    num_notseen     INT UNSIGNED NOT NULL,
-    num_failed      INT UNSIGNED NOT NULL,
-    num_unknown     INT UNSIGNED NOT NULL,
-    num_todo        INT UNSIGNED NOT NULL,
-    num_bonus       INT UNSIGNED NOT NULL,
-    num_skip        INT UNSIGNED NOT NULL,
-    num_ok          INT UNSIGNED NOT NULL,
+    trun_status_id  INT UNSIGNED NOT NULL,
+    parse_errors    INT UNSIGNED NOT NULL,
+    not_seen        INT UNSIGNED NOT NULL,
+    failed          INT UNSIGNED NOT NULL,
+    todo            INT UNSIGNED NOT NULL,
+    skip            INT UNSIGNED NOT NULL,
+    bonus           INT UNSIGNED NOT NULL,
+    ok              INT UNSIGNED NOT NULL,
     INDEX i_msjobp_cmd_id (msjobp_cmd_id),
-    INDEX i_conf_id (conf_id),
-    CONSTRAINT fk_trun_msjobp_cmd_id FOREIGN KEY (msjobp_cmd_id) REFERENCES msjobp_cmd (msjobp_cmd_id),
-    CONSTRAINT fk_trun_conf_id FOREIGN KEY (conf_id) REFERENCES trun_conf (trun_conf_id)
+    CONSTRAINT fk_trun_trun_status_id FOREIGN KEY (trun_status_id) REFERENCES trun_status (trun_status_id),
+    CONSTRAINT fk_trun_msjobp_cmd_id FOREIGN KEY (msjobp_cmd_id) REFERENCES msjobp_cmd (msjobp_cmd_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -789,13 +782,13 @@ CREATE TABLE tfile (
 Test result info.
 * tresult_id
 * name
-** 0 .. not seen
-** 1 .. failed
-** 2 .. unknown
-** 3 .. todo
-** 4 .. bonus -- unexpectedly succeeded
-** 5 .. skip
-** 6 .. ok
+** 1 .. not seen
+** 2 .. failed
+** 3 .. unknown
+** 4 .. todo
+** 5 .. bonus -- unexpectedly succeeded
+** 6 .. skip
+** 7 .. ok
 * desc
 <source lang=sql>
 CREATE TABLE trest (

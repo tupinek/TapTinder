@@ -27,19 +27,13 @@
     <tr>
     <th>&nbsp;</th>
     <th colspan=4>Machine</th>
-    <th colspan=3>Build</th>
     <th colspan=1>Test</th>
-    <th colspan=8>Results</th>
+    <th colspan=7>Results</th>
     <th>&nbsp;</th>
     </tr>
 
     <tr>
     <th>&nbsp;</th>
-
-    <th>Name</th>
-    <th>CPU</th>
-    <th>OS</th>
-    <th>Arch</th>
 
     <th>cc</th>
     <th>devel</th>
@@ -48,9 +42,9 @@
     <th>Harness</th>
 
     <th>id</th>
+    <th align=center>P.Err.</th>
     <th align=center>Not seen</th>
     <th align=center>Failed</th>
-    <th align=center>Unknown</th>
     <th align=center>Todo</th>
     <th align=center>Bonus</th>
     <th align=center>Skip</th>
@@ -68,20 +62,14 @@
     <td>[% build.osname %]</td>
     <td>[% build.archname %]</td>
 
-    <td><a href="[% c.uri_for( '/table/build_conf/id-' _ build.build_conf_id ) %]">[% build.cc %]</a></td>
-    <td>[% build.devel %]</td>
-    <td>[% build.optimize %]</td>
-
-    <td><a href="[% c.uri_for( '/table/trun_conf/id-' _ build.trun_conf_id ) %]">[% build.harness_args %]</a></td>
-
     <td><a href="[% c.uri_for( '/table/trun/id-' _ build.trun_id ) %]">[% build.trun_id %]</a></td>
-    <td>[% build.num_notseen %]</td>
-    <td>[% build.num_failed %]</td>
-    <td>[% build.num_unknown %]</td>
-    <td>[% build.num_todo %]</td>
-    <td>[% build.num_bonus %]</td>
-    <td>[% build.num_skip %]</td>
-    <td>[% build.num_ok %]</td>
+    <td>[% build.parse_errors %]</td>
+    <td>[% build.not_seen %]</td>
+    <td>[% build.failed %]</td>
+    <td>[% build.todo %]</td>
+    <td>[% build.bonus %]</td>
+    <td>[% build.skip %]</td>
+    <td>[% build.ok %]</td>
 
     <td><input type=checkbox name="[% 'trun-' _ build.trun_id  | html %]" /></td>
   </tr>
