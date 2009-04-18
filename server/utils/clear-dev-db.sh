@@ -20,7 +20,7 @@ if [ "$1" = "1" ]; then
         echo ""
     fi
 
-    echo "Loading DD dump temp/tt-dump.sql (perl utils/db-run-sqlscript.pl ...):"
+    echo "Loading DB dump temp/tt-dump.sql (perl utils/db-run-sqlscript.pl ...):"
     perl ./utils/db-run-sqlscript.pl ./temp/ttdev-dump.sql 1
     echo ""
 

@@ -25,7 +25,7 @@ if [ "$1" = "1" ]; then
     perl ./utils/db-dump.pl ./../../tt/server/conf/web_db.yml
     echo ""
 
-    echo "Loading DD dump temp/tt-dump.sql (perl utils/db-run-sqlscript.pl ...):"
+    echo "Loading DB dump temp/tt-dump.sql (perl utils/db-run-sqlscript.pl ...):"
     perl ./utils/db-run-sqlscript.pl ./temp/tt-dump.sql 1
     echo ""
 
