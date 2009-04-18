@@ -394,74 +394,6 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('msession_id');
 
 
-package TapTinder::DB::Schema::build_conf;
-use base 'DBIx::Class';
-use strict;
-use warnings;
-
-__PACKAGE__->load_components(qw/Core ViewMD/);
-__PACKAGE__->table('build_conf');
-
-
-__PACKAGE__->add_columns(
-    'build_conf_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 1,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'build_conf_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'hash' => {
-      'data_type' => 'VARCHAR',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'hash',
-      'is_nullable' => 0,
-      'size' => '50'
-    },
-    'cc' => {
-      'data_type' => 'VARCHAR',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 0,
-      'name' => 'cc',
-      'is_nullable' => 1,
-      'size' => '255'
-    },
-    'devel' => {
-      'data_type' => 'VARCHAR',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 0,
-      'name' => 'devel',
-      'is_nullable' => 1,
-      'size' => '255'
-    },
-    'optimize' => {
-      'data_type' => 'VARCHAR',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 0,
-      'name' => 'optimize',
-      'is_nullable' => 1,
-      'size' => '255'
-    },
-    'alias_conf_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 1,
-      'name' => 'alias_conf_id',
-      'is_nullable' => 1,
-      'size' => '11'
-    },
-);
-__PACKAGE__->set_primary_key('build_conf_id');
-
-
 package TapTinder::DB::Schema::msabort_reason;
 use base 'DBIx::Class';
 use strict;
@@ -2266,47 +2198,6 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('brun_conf_id');
 
 
-package TapTinder::DB::Schema::build;
-use base 'DBIx::Class';
-use strict;
-use warnings;
-
-__PACKAGE__->load_components(qw/Core ViewMD/);
-__PACKAGE__->table('build');
-
-
-__PACKAGE__->add_columns(
-    'build_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 1,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'build_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'msjobp_cmd_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'msjobp_cmd_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'conf_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'conf_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-);
-__PACKAGE__->set_primary_key('build_id');
-
-
 package TapTinder::DB::Schema::job;
 use base 'DBIx::Class';
 use strict;
@@ -2840,13 +2731,6 @@ __PACKAGE__->belongs_to('abort_reason_id','TapTinder::DB::Schema::msabort_reason
 __PACKAGE__->has_many('get_msjob', 'TapTinder::DB::Schema::msjob', 'msession_id');
 __PACKAGE__->has_many('get_mslog', 'TapTinder::DB::Schema::mslog', 'msession_id');
 
-package TapTinder::DB::Schema::build_conf;
-
-__PACKAGE__->belongs_to('alias_conf_id','TapTinder::DB::Schema::build_conf','alias_conf_id',{join_type => 'left'});
-
-__PACKAGE__->has_many('get_build_conf', 'TapTinder::DB::Schema::build_conf', 'alias_conf_id');
-__PACKAGE__->has_many('get_build', 'TapTinder::DB::Schema::build', 'conf_id');
-
 package TapTinder::DB::Schema::msjob;
 
 __PACKAGE__->belongs_to('msession_id','TapTinder::DB::Schema::msession','msession_id');
@@ -3021,7 +2905,6 @@ __PACKAGE__->belongs_to('output_id','TapTinder::DB::Schema::fsfile','output_id',
 
 __PACKAGE__->belongs_to('outdata_id','TapTinder::DB::Schema::fsfile','outdata_id',{join_type => 'left'});
 
-__PACKAGE__->has_many('get_build', 'TapTinder::DB::Schema::build', 'msjobp_cmd_id');
 __PACKAGE__->has_many('get_trun', 'TapTinder::DB::Schema::trun', 'msjobp_cmd_id');
 __PACKAGE__->has_many('get_brun', 'TapTinder::DB::Schema::brun', 'msjobp_cmd_id');
 
@@ -3069,13 +2952,6 @@ __PACKAGE__->belongs_to('alias_conf_id','TapTinder::DB::Schema::brun_conf','alia
 
 __PACKAGE__->has_many('get_brun_conf', 'TapTinder::DB::Schema::brun_conf', 'alias_conf_id');
 __PACKAGE__->has_many('get_brun', 'TapTinder::DB::Schema::brun', 'conf_id');
-
-package TapTinder::DB::Schema::build;
-
-__PACKAGE__->belongs_to('msjobp_cmd_id','TapTinder::DB::Schema::msjobp_cmd','msjobp_cmd_id');
-
-__PACKAGE__->belongs_to('conf_id','TapTinder::DB::Schema::build_conf','conf_id');
-
 
 package TapTinder::DB::Schema::job;
 
@@ -3160,8 +3036,6 @@ __PACKAGE__->register_class('param', 'TapTinder::DB::Schema::param');
 
 __PACKAGE__->register_class('msession', 'TapTinder::DB::Schema::msession');
 
-__PACKAGE__->register_class('build_conf', 'TapTinder::DB::Schema::build_conf');
-
 __PACKAGE__->register_class('msabort_reason', 'TapTinder::DB::Schema::msabort_reason');
 
 __PACKAGE__->register_class('msjob', 'TapTinder::DB::Schema::msjob');
@@ -3221,8 +3095,6 @@ __PACKAGE__->register_class('ttest', 'TapTinder::DB::Schema::ttest');
 __PACKAGE__->register_class('tdiag_msg', 'TapTinder::DB::Schema::tdiag_msg');
 
 __PACKAGE__->register_class('brun_conf', 'TapTinder::DB::Schema::brun_conf');
-
-__PACKAGE__->register_class('build', 'TapTinder::DB::Schema::build');
 
 __PACKAGE__->register_class('job', 'TapTinder::DB::Schema::job');
 
