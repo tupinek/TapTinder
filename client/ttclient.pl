@@ -25,6 +25,7 @@ my $project_name = 'tt-test-proj';
 my $conf_fpath = catfile( $RealBin, '..', 'client-conf', 'client-conf.yml' );
 my $ver = 2; # verbosity level
 my $debug = 0; # debug
+my $end_after_no_new_job = 0;
 
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
@@ -32,6 +33,7 @@ my $options_ok = GetOptions(
     'conf_fpath|cfp=s' => \$conf_fpath,
     'verbose|v=i' => \$ver,
     'debug|d=i' => \$debug,
+    'end_after_no_new_job' => \$end_after_no_new_job,
 );
 pod2usage(1) if $help || !$options_ok;
 
@@ -54,7 +56,13 @@ print "Starting Client.\n" if $ver >= 3;
 
 my $base_dir = catdir( $RealBin, '..' );
 my $client = TapTinder::Client->new(
-    $client_conf, $base_dir, $ver, $debug
+    $client_conf,
+    $base_dir,
+    {
+        ver => $ver,
+        debug => $debug,
+        end_after_no_new_job => $end_after_no_new_job,
+    }
 );
 $client->run();
 
@@ -75,6 +83,7 @@ ttclient [options]
    --project ... Project name.
    --conf_fpath ... Config file path.
    --ver ... Verbose level, 0-5, default 2.
+   --end_after_no_new_job ... Will end if new job not found.
 
 =head1 DESCRIPTION
 

@@ -50,12 +50,10 @@ Create Client object.
 =cut
 
 sub new {
-    my ( $class, $client_conf, $base_dir, $t_ver, $t_debug ) = @_;
+    my ( $class, $client_conf, $base_dir, $params ) = @_;
 
-    $t_ver = 2 unless defined $t_ver;
-    $t_debug = 0 unless defined $t_debug;
-    $ver = $t_ver;
-    $debug = $t_debug;
+    $ver = $params->{ver};
+    $debug = $params->{debug};
 
     my $self = {};
     $self->{client_conf} = $client_conf;
@@ -65,6 +63,8 @@ sub new {
     $self->{agent} = undef;
     $self->{msession_id} = undef;
     $self->{msjobp_cmd_id} = undef;
+
+    $self->{params} = $params;
 
     # current work directory on start
     $self->{orginal_cwd} = Cwd::getcwd;
@@ -492,6 +492,7 @@ sub run {
             $next_attempt_number++;
 
             print "New msjobp_cmd_id not found.\n";
+            last if $self->{params}->{end_after_no_new_job};
             last if $debug; # debug - end forced by debug
 
             my $sleep_time = 15;
