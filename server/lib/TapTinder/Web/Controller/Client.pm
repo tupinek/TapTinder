@@ -39,6 +39,43 @@ sub dump_rs {
 }
 
 
+=head2 txn_begin
+
+Start transaction.
+
+=cut
+
+sub txn_begin {
+    my ( $self, $c ) = @_;
+    return $c->model('WebDB')->schema->storage->txn_begin();
+}
+
+
+=head2 txn_end
+
+Commit or rollback transaction.
+
+=cut
+
+sub txn_end {
+    my ( $self, $c, $data, $do_commit ) = @_;
+
+    if ( $do_commit ) {
+        # ToDo - commit finished ok?
+        $c->model('WebDB')->schema->txn_commit();
+        my $commit_ok = 1;
+        unless ( $commit_ok ) {
+            $data->{err} = 1;
+            $data->{err_msg} = "Error: Transaction commit failed.";
+            return 0;
+        }
+        return 1;
+    }
+    $c->model('WebDB')->schema->txn_rollback();
+    return 0;
+}
+
+
 =head2 login_ok
 
 Check and log login params - machine_id and password.
@@ -598,6 +635,7 @@ sub cmd_cget {
     } else {
         # check if previous command wasn't last one in job
         # pmcid - previous msjobp_cmd_id
+        $self->txn_begin( $c );
         my $cmds_data = $self->get_next_cmd_pmcid( $c, $data, $msession_id, $params->{pmcid} );
         # next command in job found (in same jop part or new job part)
         if ( $cmds_data && $cmds_data->{new}->{jobp_cmd_id} ) {
@@ -621,7 +659,7 @@ sub cmd_cget {
                 my $rev_id = $self->get_rep_path_newest_rev_id( $c, $data, $rep_path_id );
 
                 $msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rev_id, $patch_id );
-                return 0 unless defined $msjobp_id;
+                return $self->txn_end( $c, $data, 0 ) unless defined $msjobp_id;
 
                 # need to be in sync with start_new_job
                 $data->{msjob_id} = $msjob_id;
@@ -632,7 +670,7 @@ sub cmd_cget {
             }
 
             my $msjobp_cmd_id = $self->create_msjobp_cmd( $c, $data, $msjobp_id, $jobp_cmd_id );
-            return 0 unless defined $msjobp_cmd_id;
+            return $self->txn_end( $c, $data, 0 ) unless defined $msjobp_cmd_id;
 
             #$self->dumper( $c, "jobp_cmd_id: $jobp_cmd_id, msjobp_id: $msjobp_id, msjobp_cmd_id: $msjobp_cmd_id" );
             $data->{msjobp_cmd_id} = $msjobp_cmd_id;
@@ -641,11 +679,13 @@ sub cmd_cget {
         } else {
             $start_new_job = 1;
         }
+        $self->txn_end( $c, $data, 1 ) || return 0;
     }
 
-    my $ret_val;
     if ( $start_new_job ) {
+        $self->txn_begin( $c );
         my $ret_val = $self->start_new_job( $c, $data, $machine_id, $msession_id );
+        $self->txn_end( $c, $data, 1 ); # without return
         unless ( defined $ret_val ) {
             # create mslog
             my $ret_code = $self->create_mslog(
