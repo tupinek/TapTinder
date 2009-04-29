@@ -147,6 +147,22 @@ sub init_agent {
 }
 
 
+=head2 process_agent_errors
+
+Process data from server response for errors. Croak if error is fatal. Return 0 if not fatal error found.
+
+=cut
+
+sub process_agent_errors {
+    my ( $self, $data ) = @_;
+
+    $self->my_croak( "Unknown error. No data found." ) unless $data;
+    $self->my_croak( $data->{ag_err_msg} ) if $data->{ag_err};
+    $self->my_croak( $data->{err_msg} ) if $data->{err};
+    return 1;
+}
+
+
 =head2 init_agent
 
 Initialize WebAgent object.
@@ -195,8 +211,7 @@ sub ccmd_get_src {
     $data = $self->{agent}->rriget(
         $self->{msession_id}, $cmd_env->{rep_path_id}, $cmd_env->{rev_id}
     );
-    $self->my_croak("Cmd rriget error.") unless defined $data;
-    $self->my_croak( $data->{err_msg} ) if $data->{err};
+    return 0 unless $self->process_agent_errors( $data );
 
     my $rep_rev_info = { %$data };
     $cmd_env->{project_name} = $data->{project_name};
@@ -209,18 +224,19 @@ sub ccmd_get_src {
     print "Getting revision $data->{rev_num} from $rep_full_path.\n" if $ver >= 2;
 
     $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 2 ); # running, $cmd_status_id
-    $self->my_croak( $data->{err_msg} ) if $data->{err};
+    return 0 unless $self->process_agent_errors( $data );
 
     my $dirs = $self->{repman}->prepare_temp_copy( $rep_rev_info );
     unless ( $dirs ) {
         $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 6 ); # error, $cmd_status_id
-        $self->my_croak( $data->{err_msg} ) if $data->{err};
-        return 0; # not needed
+        return 0 unless $self->process_agent_errors( $data );
     }
     $cmd_env->{temp_dir} = $dirs->{temp_dir};
     $cmd_env->{results_dir} = $dirs->{results_dir};
 
     $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 4 ); # ok, $cmd_status_id
+    return 0 unless $self->process_agent_errors( $data );
+
     return 1;
 }
 
@@ -235,11 +251,13 @@ sub ccmd_prepare {
     my ( $self, $cmd_name, $cmd_env ) = @_;
 
     my $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 2 ); # running, $cmd_status_id
+    return 0 unless $self->process_agent_errors( $data );
 
     my $src_add_project_dir = catdir( $self->{src_add_dir}, $cmd_env->{project_name} );
     $self->{repman}->add_merge_copy( $src_add_project_dir, $cmd_env->{temp_dir} );
 
     $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 4 ); # ok, $cmd_status_id
+    return 0 unless $self->process_agent_errors( $data );
 
     return 1;
 }
@@ -289,6 +307,8 @@ sub run_cmd {
         undef, # $end_time
         undef  # $file_path
     );
+    return 0 unless $self->process_agent_errors( $data );
+
 
     my ( $cmd_rc, $out ) = sys_for_watchdog(
         $cmd,
@@ -325,9 +345,8 @@ sub run_cmd {
         $cmd_log_fp,
         $outdata_file_full_path
     );
-    return $self->my_croak( "Unknown error" ) unless $data;
-    $self->my_croak( $data->{ag_err_msg} ) if $data->{ag_err};
-    $self->my_croak( $data->{err_msg} ) if $data->{err};
+    return 0 unless $self->process_agent_errors( $data );
+
     return 1;
 }
 
@@ -484,6 +503,8 @@ sub run {
     my $next_attempt_number = 1;
     my $estimated_finish_time = undef;
 
+    my $ret_code; # last command return code
+
     while ( 1 ) {
         # try to get command from server
         my $data = $self->{agent}->cget(
@@ -492,8 +513,7 @@ sub run {
             $estimated_finish_time,
             $self->{msjobp_cmd_id} # use actual id to get new one
         );
-        $self->my_croak("Cmd cget error.") unless defined $data;
-        $self->my_croak( $data->{err_msg} ) if $data->{err};
+        return 0 unless $self->process_agent_errors( $data );
 
         # new cmd not found
         if ( ! $data->{msjobp_cmd_id} ) {
@@ -544,37 +564,37 @@ sub run {
                 $cmd_env->{rep_path_id} = $data->{rep_path_id};
                 $cmd_env->{rev_id} = $data->{rev_id};
                 # will set another keys to $cmd_env
-                $self->ccmd_get_src( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_get_src( $cmd_name, $cmd_env );
 
                 # change current working directory (cwd, pwd)
                 chdir( $cmd_env->{temp_dir} );
 
             } elsif ( $cmd_name eq 'prepare' ) {
-                $self->ccmd_prepare( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_prepare( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'patch' ) {
-                $self->ccmd_patch( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_patch( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'perl_configure' ) {
-                $self->ccmd_perl_configure( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_perl_configure( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'make' ) {
-                $self->ccmd_make( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_make( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'trun' ) {
-                $self->ccmd_trun( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_trun( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'test' ) {
-                $self->ccmd_test( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_test( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'bench' ) {
-                $self->ccmd_bench( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_bench( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'install' ) {
-                $self->ccmd_install( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_install( $cmd_name, $cmd_env );
 
             } elsif ( $cmd_name eq 'clean' ) {
-                $self->ccmd_clean( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_clean( $cmd_name, $cmd_env );
             }
 
             # debug sleep
