@@ -12,8 +12,9 @@
 
    # define a data structure to hold sitewide data
    site = {
-     title     => 'TapTinder reports',
+     title     => 'My TapTinder reports',
      poweredby => 'Powered by <a href="http://taptinder.org/">TapTinder</a>.',
+     before_body_end => '', # Google Analytics javascript
    };
 
    # load up any other configuration items 
