@@ -20,5 +20,6 @@
 <pre>[% ot | html %]</pre>
 [% END %]
 <div id="footer">[% site.poweredby %]</div>
+[% site.before_body_end %]
 </body>
 </html>
