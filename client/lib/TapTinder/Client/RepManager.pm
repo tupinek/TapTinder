@@ -13,7 +13,6 @@ use File::Copy;
 
 use Watchdog qw(sys sys_for_watchdog);
 use SVNShell qw(svnversion svnup svndiff);
-use TapTinder::Client::KeyPress qw(process_keypress sleep_and_process_keypress);
 use SVN::PropBug qw(diff_contains_real_change);
 $SVN::PropBug::ver = 0;
 
@@ -36,12 +35,13 @@ Create RepManager object.
 =cut
 
 sub new {
-    my ( $class, $dir, $ver, $debug ) = @_;
+    my ( $class, $dir, $keypress_obj, $ver, $debug ) = @_;
 
     croak "Directory '$dir' not found.\n" unless -d $dir;
 
     my $self  = {};
     $self->{dir} = $dir;
+    $self->{keypress} = $keypress_obj;
 
     $ver = 2 unless defined $ver;
     $debug = 0 unless defined $debug;
@@ -209,7 +209,7 @@ sub remove_dir_loop {
             print "Remove temp dir '$dir_path' failed.\n" if $self->{ver} >= 2;
             my $wait_time = 5;
             print "Waiting for ${wait_time}s.\n" if $self->{ver} >= 2;
-            sleep_and_process_keypress( $wait_time );
+            $self->{keypress}->sleep_and_process_keypress( $wait_time );
             rmtree( $dir_path ) or croak $!;
         }
         print "Dir '$dir_path' removed.\n" if $self->{ver} >= 2;
@@ -231,7 +231,7 @@ sub prepare_temp_from_src {
 
     $self->remove_dir_loop( $temp_dir_path );
     mkdir( $temp_dir_path ) or croak "Can't mkdir '$temp_dir_path':\n  $!";
-    process_keypress();
+    $self->{keypress}->process_keypress();
 
     print "Copying src '$src_dir_path' to temp '$temp_dir_path' ...\n" if $self->{ver} >= 2;
     dircopy( $src_dir_path, $temp_dir_path ) or croak "Can't copy dir '$src_dir_path' to '$temp_dir_path' $!";
@@ -316,7 +316,7 @@ sub prepare_temp_copy {
     return undef unless $self->check_not_modified( $src_dir_path, 0 );
 
     return undef unless $ret_code;
-    process_keypress();
+    $self->{keypress}->process_keypress();
 
     # create temp dir from src dir
     my $temp_dir_path = $self->get_dir_path( $rp_dir_base_name, 'temp' );

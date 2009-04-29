@@ -12,7 +12,7 @@ use Cwd;
 use File::Copy;
 
 use Watchdog qw(sys sys_for_watchdog);
-use TapTinder::Client::KeyPress qw(process_keypress sleep_and_process_keypress cleanup_before_exit);
+use TapTinder::Client::KeyPress;
 use TapTinder::Client::WebAgent;
 use TapTinder::Client::RepManager;
 
@@ -70,11 +70,56 @@ sub new {
     $self->{orginal_cwd} = Cwd::getcwd;
 
     bless ($self, $class);
-    $self->init_agent();
-    $self->init_repmanager();
+
+    # Must be first, because used in agent and repmanager.
     $self->init_keypress();
 
+    $self->init_agent();
+    $self->init_repmanager();
+
     return $self;
+}
+
+
+=head2 init_agent
+
+Initialize KeyPress object.
+
+=cut
+
+sub init_keypress {
+    my ( $self ) = @_;
+
+    my $keypress = TapTinder::Client::KeyPress->new(
+        $ver,
+        $debug
+    );
+
+    # Closure - take $self.
+    my $before_exit_sub = sub {
+        chdir( $self->{orginal_cwd} );
+        if ( $self->{msession_id} ) {
+            $self->{agent}->msdestroy( $self->{msession_id} );
+        }
+    };
+    $keypress->set_before_exit_sub( $before_exit_sub );
+
+    my $pause_begin_sub = sub {
+        if ( $self->{msession_id} ) {
+            $self->{agent}->mevent( $self->{msession_id}, $self->{msjobp_cmd_id}, 'pause' );
+        }
+    };
+    $keypress->set_pause_begin_sub( $pause_begin_sub );
+
+    my $pause_end_sub = sub {
+        if ( $self->{msession_id} ) {
+            $self->{agent}->mevent( $self->{msession_id}, $self->{msjobp_cmd_id}, 'continue' );
+        }
+    };
+    $keypress->set_pause_end_sub( $pause_end_sub );
+
+    $self->{keypress} = $keypress;
+    return 1;
 }
 
 
@@ -92,6 +137,7 @@ sub init_agent {
         $self->{client_conf}->{taptinderserv},
         $self->{client_conf}->{machine_id},
         $self->{client_conf}->{machine_passwd},
+        $self->{keypress},
         $ver,
         $debug
     );
@@ -113,49 +159,12 @@ sub init_repmanager {
     print "Starting RepManager.\n" if $ver >= 3;
     my $repman = TapTinder::Client::RepManager->new(
         $self->{data_dir},
+        $self->{keypress},
         $ver,
         $debug
     );
 
     $self->{repman} = $repman;
-    return 1;
-}
-
-
-=head2 init_agent
-
-Initialize KeyPress.
-
-=cut
-
-sub init_keypress {
-    my ( $self ) = @_;
-
-    $TapTinder::Client::KeyPress::ver = $ver;
-    Term::ReadKey::ReadMode('cbreak');
-    select(STDOUT); $| = 1;
-
-    # closure - take $self
-    $TapTinder::Client::KeyPress::hooks->{before_exit} = sub {
-        chdir( $self->{orginal_cwd} );
-        Term::ReadKey::ReadMode('normal');
-        if ( $self->{msession_id} ) {
-            $self->{agent}->msdestroy( $self->{msession_id} );
-        }
-    };
-
-    $TapTinder::Client::KeyPress::hooks->{pause_begin} = sub {
-        if ( $self->{msession_id} ) {
-            $self->{agent}->mevent( $self->{msession_id}, $self->{msjobp_cmd_id}, 'pause' );
-        }
-    };
-
-    $TapTinder::Client::KeyPress::hooks->{pause_end} = sub {
-        if ( $self->{msession_id} ) {
-            $self->{agent}->mevent( $self->{msession_id}, $self->{msjobp_cmd_id}, 'continue' );
-        }
-    };
-
     return 1;
 }
 
@@ -168,7 +177,7 @@ Cleanup and croak.
 
 sub my_croak {
     my ( $self, $err_msg ) = @_;
-    cleanup_before_exit();
+    $self->{keypress}->cleanup_before_exit();
     croak $err_msg;
 }
 
@@ -452,7 +461,7 @@ sub run {
     my ( $login_rc, $msession_id ) = $self->{agent}->mscreate();
     $self->my_croak("Login failed.") unless $login_rc;
     $self->{msession_id} = $msession_id;
-    process_keypress();
+    $self->{keypress}->process_keypress();
 
     # current (or last successful) ids
     my $msjob_id = undef;
@@ -497,7 +506,7 @@ sub run {
 
             my $sleep_time = 15;
             print "Waiting for $sleep_time s ...\n" if $ver >= 1;
-            sleep_and_process_keypress( $sleep_time );
+            $self->{keypress}->sleep_and_process_keypress( $sleep_time );
 
         # new cmd found
         } else {
@@ -572,13 +581,13 @@ sub run {
             if ( 0 ) {
                 my $sleep_time = 5;
                 print "Debug sleep. Waiting for $sleep_time s ...\n" if $ver >= 1;
-                sleep_and_process_keypress( $sleep_time );
+                $self->{keypress}->sleep_and_process_keypress( $sleep_time );
             }
         }
-        process_keypress(); # after each command
+        $self->{keypress}->process_keypress(); # after each command
     }
 
-    cleanup_before_exit();
+    $self->{keypress}->cleanup_before_exit();
     return 1;
 }
 

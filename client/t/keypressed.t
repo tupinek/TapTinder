@@ -2,8 +2,7 @@ use strict;
 use warnings;
 use lib qw( lib . ../lib ../../lib );
 
-use TapTinder::Client::KeyPress qw(process_keypress sleep_and_process_keypress);
-$TapTinder::Client::KeyPress::ver = 10;
+use TapTinder::Client::KeyPress;
 
 Term::ReadKey::ReadMode('cbreak');
 
@@ -37,23 +36,23 @@ $SIG{'KILL'}  = \&sig_handler;
 $SIG{'INT'}  = \&sig_handler;
 $SIG{'QUIT'} = \&sig_handler;
 
-select(STDOUT); $| = 1;
+my $keypress = TapTinder::Client::KeyPress->new( 10 );
 
 print "Begin.\n";
 
 run_sleep( 2, 'a1-2 ' );
-process_keypress();
+$keypress->process_keypress();
 
 run_sleep( 2, 'a2-2 ' );
-process_keypress();
+$keypress->process_keypress();
 
 print 'b1-3 ';
-sleep_and_process_keypress( 3 );
+$keypress->sleep_and_process_keypress( 3 );
 
 print 'b2-3 ';
-sleep_and_process_keypress( 3 );
+$keypress->sleep_and_process_keypress( 3 );
 
 print 'c2-35 ';
-sleep_and_process_keypress( 35 );
+$keypress->sleep_and_process_keypress( 35 );
 
 print "Normal end.\n";

@@ -29,12 +29,16 @@ TapTinder client ...
 
 
 sub new {
-    my ( $class, $taptinderserv, $machine_id, $machine_passwd, $ver, $debug ) = @_;
+    my (
+        $class, $taptinderserv, $machine_id, $machine_passwd, $keypress_obj,
+        $ver, $debug
+    ) = @_;
 
     my $self  = {};
     $self->{taptinderserv} = $taptinderserv;
     $self->{machine_id} = $machine_id;
     $self->{machine_passwd} = $machine_passwd;
+    $self->{keypress} = $keypress_obj;
 
     $ver = 2 unless defined $ver;
     $debug = 0 unless defined $debug;
@@ -72,15 +76,26 @@ sub run_action {
 
     my $taptinder_server_url = $self->{taptinderserv} . 'client/' . $action;
     my $resp;
-    if ( $form_data ) {
-        $resp = $self->{ua}->post( $taptinder_server_url, Content_Type => 'form-data', Content => $request );
-    } else {
-        $resp = $self->{ua}->post( $taptinder_server_url, $request );
-    }
-    if ( !$resp->is_success ) {
-        carp "error: " . $resp->status_line . ' --- ' . $resp->content . "\n";
-        return undef;
-    }
+
+    my $attempt_num = 0;
+    do {
+        $attempt_num++;
+        if ( $attempt_num > 1 ) {
+            my $sleep_time = 150; # maximum is 2.5 minutes
+            $sleep_time = ($attempt_num-1)*($attempt_num-1) if $attempt_num <= 13; # 12*12 = 144 s
+            print "Sleeping $sleep_time s before attempt number $attempt_num ...\n";
+            $self->{keypress}->sleep_and_process_keypress( $sleep_time );
+        }
+        if ( $form_data ) {
+            $resp = $self->{ua}->post( $taptinder_server_url, Content_Type => 'form-data', Content => $request );
+        } else {
+            $resp = $self->{ua}->post( $taptinder_server_url, $request );
+        }
+        if ( !$resp->is_success ) {
+            print "WebAgent response error: '" . $resp->status_line . "'\n";
+        }
+    } while ( !$resp->is_success );
+    return undef unless $resp->is_success;
 
     my $json_text = $resp->content;
     my $json = from_json( $json_text, {utf8 => 1} );
