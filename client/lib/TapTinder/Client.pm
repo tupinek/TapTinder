@@ -147,19 +147,29 @@ sub init_agent {
 }
 
 
-=head2 process_agent_errors
+=head2 process_agent_errors_get_err_num
 
-Process data from server response for errors. Croak if error is fatal. Return 0 if not fatal error found.
+Process data from server response for errors. Croak if error is fatal.
+Return error number if not fatal error found. Return 0 unless error found.
 
 =cut
 
-sub process_agent_errors {
+sub process_agent_errors_get_err_num {
     my ( $self, $data ) = @_;
 
-    $self->my_croak( "Unknown error. No data found." ) unless $data;
-    $self->my_croak( $data->{ag_err_msg} ) if $data->{ag_err};
+    $self->my_croak( "Unknown error (no data found)." ) unless $data;
+    if ( $data->{ag_err} ) {
+
+        # No fatal errors:
+        # * 101 msession_id not found, need to create new msession
+        if ( $data->{ag_err} >= 101 ) {
+            return $data->{ag_err};
+        }
+
+        $self->my_croak( $data->{ag_err_msg} );
+    }
     $self->my_croak( $data->{err_msg} ) if $data->{err};
-    return 1;
+    return 0; # error num = 0 -> no error found
 }
 
 
@@ -211,7 +221,7 @@ sub ccmd_get_src {
     $data = $self->{agent}->rriget(
         $self->{msession_id}, $cmd_env->{rep_path_id}, $cmd_env->{rev_id}
     );
-    return 0 unless $self->process_agent_errors( $data );
+    return 0 if $self->process_agent_errors_get_err_num( $data );
 
     my $rep_rev_info = { %$data };
     $cmd_env->{project_name} = $data->{project_name};
@@ -224,18 +234,18 @@ sub ccmd_get_src {
     print "Getting revision $data->{rev_num} from $rep_full_path.\n" if $ver >= 2;
 
     $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 2 ); # running, $cmd_status_id
-    return 0 unless $self->process_agent_errors( $data );
+    return 0 if $self->process_agent_errors_get_err_num( $data );
 
     my $dirs = $self->{repman}->prepare_temp_copy( $rep_rev_info );
     unless ( $dirs ) {
         $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 6 ); # error, $cmd_status_id
-        return 0 unless $self->process_agent_errors( $data );
+        return 0 if $self->process_agent_errors_get_err_num( $data );
     }
     $cmd_env->{temp_dir} = $dirs->{temp_dir};
     $cmd_env->{results_dir} = $dirs->{results_dir};
 
     $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 4 ); # ok, $cmd_status_id
-    return 0 unless $self->process_agent_errors( $data );
+    return 0 if $self->process_agent_errors_get_err_num( $data );
 
     return 1;
 }
@@ -251,13 +261,13 @@ sub ccmd_prepare {
     my ( $self, $cmd_name, $cmd_env ) = @_;
 
     my $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 2 ); # running, $cmd_status_id
-    return 0 unless $self->process_agent_errors( $data );
+    return 0 if $self->process_agent_errors_get_err_num( $data );
 
     my $src_add_project_dir = catdir( $self->{src_add_dir}, $cmd_env->{project_name} );
     $self->{repman}->add_merge_copy( $src_add_project_dir, $cmd_env->{temp_dir} );
 
     $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 4 ); # ok, $cmd_status_id
-    return 0 unless $self->process_agent_errors( $data );
+    return 0 if $self->process_agent_errors_get_err_num( $data );
 
     return 1;
 }
@@ -307,7 +317,7 @@ sub run_cmd {
         undef, # $end_time
         undef  # $file_path
     );
-    return 0 unless $self->process_agent_errors( $data );
+    return 0 if $self->process_agent_errors_get_err_num( $data );
 
 
     my ( $cmd_rc, $out ) = sys_for_watchdog(
@@ -345,7 +355,7 @@ sub run_cmd {
         $cmd_log_fp,
         $outdata_file_full_path
     );
-    return 0 unless $self->process_agent_errors( $data );
+    return 0 if $self->process_agent_errors_get_err_num( $data );
 
     return 1;
 }
@@ -513,7 +523,7 @@ sub run {
             $estimated_finish_time,
             $self->{msjobp_cmd_id} # use actual id to get new one
         );
-        return 0 unless $self->process_agent_errors( $data );
+        return 0 if $self->process_agent_errors_get_err_num( $data );
 
         # new cmd not found
         if ( ! $data->{msjobp_cmd_id} ) {

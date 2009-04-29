@@ -116,7 +116,7 @@ sub msession_ok {
     } );
     my $row = $rs->next;
     if ( !$row ) {
-        $data->{ag_err} = 1;
+        $data->{ag_err} = 101; # special ag_err def
         $data->{ag_err_msg} = "Error: Msession (msession_id=$msession_id) not found.";
         return 0;
     }
