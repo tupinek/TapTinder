@@ -42,8 +42,8 @@ echo "Executing utils/reptable-load.sh:"
 ./utils/reptables-load.sh
 echo ""
 
-echo "Executing cron/repository-update.pl -p Parrot (perl):"
-perl ./cron/repository-update.pl -p Parrot
+echo "Executing cron/repository-update.pl --project=Parrot (perl):"
+perl ./cron/repository-update.pl --project=Parrot
 echo ""
 
 echo "Executing utils/rm_uploaded_files.pl --remove (perl):"
