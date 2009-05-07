@@ -45,10 +45,7 @@ delete from msjobp;
 delete from msjobp_cmd;
 delete from mslog;
 
-delete from build;
-delete from build_conf;
 delete from trun;
-delete from trun_conf;
 delete from rep_test;
 delete from tfile;
 delete from ttest;

@@ -2,10 +2,8 @@ start transaction;
 
 SET FOREIGN_KEY_CHECKS=0;
 
-delete from build;
-delete from build_conf;
+-- delete test results
 delete from trun;
-delete from trun_conf;
 delete from rep_test;
 delete from tfile;
 delete from ttest;
