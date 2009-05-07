@@ -12,7 +12,10 @@ use Data::Dumper;
 use File::Spec::Functions;
 use Devel::StackTrace;
 
+use lib "$FindBin::Bin/../lib";
 use SVN::Log;
+
+#$SVN::Log::FORCE_COMMAND_LINE_SVN = 1;
 
 use lib "$FindBin::Bin/../lib";
 use TapTinder::DB;
@@ -20,9 +23,12 @@ use TapTinder::Utils::Conf qw(load_conf_multi);
 
 my $help = 0;
 my $project_name = undef;
+my $debug = 0;
+my $debug_logpart = 0;
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
     'project|p=s' => \$project_name,
+    'debug|p=i' => \$debug,
 );
 pod2usage(1) if $help || !$options_ok;
 
@@ -44,10 +50,7 @@ unless ( $conf->{project}->{ $project_name } ) {
 }
 
 my $conf_rep = $conf->{project}->{$project_name};
-
-my $log_dump_refresh = $ARGV[0] || $conf_rep->{log_dump_refresh} || 150;
-my $debug = $ARGV[1] || 0;
-my $debug_logpart = $ARGV[2] || 0;
+my $log_dump_refresh = $conf_rep->{log_dump_refresh} || 150;
 
 my $state_fn = catfile( $RealBin,'..', 'conf', $project_name . '-replog-state.pl' );
 my $log_dump_file = $project_name.'-replog-dump.pl';
@@ -115,8 +118,8 @@ if ( ( !$debug_logpart || (not -e $log_dump_fn) )
 {
     my $to_rev = 'HEAD';
     $to_rev = '100' if $debug_logpart;
-    print "getting svn log for revisions $last_log_rev..$to_rev online...\n";
-    my $new_revs = SVN::Log::retrieve ($conf_rep->{repository}, $last_log_rev, $to_rev);
+    print "getting svn log for revisions $last_log_rev..$to_rev for $conf_rep->{repository} online...\n";
+    my $new_revs = SVN::Log::retrieve( $conf_rep->{repository}, $last_log_rev, $to_rev );
 
     #shift @$new_revs;
     #print dmp( $new_revs );
@@ -154,12 +157,13 @@ print "max_revnum_in_db: $max_revnum_in_db\n" if $debug > 3;
 # debug - probably disabled below
 my $this_rev_nums_only;
 $this_rev_nums_only = {
-     9619 => 1, # D /branhces/debian
-    22647 => 1, # D /branches/autogcc
-    22648 => 1, # D /tags/autogcc-22642
-
-     1853 => 1, # A /branches/PERL6
-    23145 => 1, # D /branches/PERL6
+     1907 => 1, # A /branches/REL_0_0_7
+#     9619 => 1, # D /branhces/debian
+#    22647 => 1, # D /branches/autogcc
+#    22648 => 1, # D /tags/autogcc-22642
+#
+#     1853 => 1, # A /branches/PERL6
+#    23145 => 1, # D /branches/PERL6
 };
 $this_rev_nums_only = undef; # disable debug
 
