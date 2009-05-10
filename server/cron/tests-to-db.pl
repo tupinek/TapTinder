@@ -26,11 +26,13 @@ my $help = 0;
 my $debug = 0;
 my $save_extracted = 0;
 my $first_archive_only = 0;
+my $msjobp_cmd_id = undef;
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
     'debug|d' => \$debug,
     'save_extracted' => \$save_extracted,
     'first_archive_only' => \$first_archive_only,
+    'msjobp_cmd_id=i' => \$msjobp_cmd_id,
 );
 pod2usage(1) if $help || !$options_ok;
 
@@ -40,11 +42,18 @@ croak "Configuration for database is empty.\n" unless $conf->{db};
 my $schema = get_connected_schema( $conf->{db} );
 
 my $plus_rows = [ qw/ msjobp_cmd_id file_path file_name /];
-my $search_conf = {
+my $search_cond = {};
+if ( defined $msjobp_cmd_id ) {
+     $search_cond->{msjobp_cmd_id} = $msjobp_cmd_id;
+}
+my $search_attrs = {
     'select' => $plus_rows,
     'as'     => $plus_rows,
 };
-my $rs = $schema->resultset( 'NotLoadedTruns' )->search( {}, $search_conf );
+my $rs = $schema->resultset( 'NotLoadedTruns' )->search( $search_cond, $search_attrs );
+unless ( $rs ) {
+    croak "No files found\n";
+}
 
 my %summary_methods = map { $_ => $_ } qw(
   failed
