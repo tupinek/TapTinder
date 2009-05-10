@@ -23,13 +23,13 @@ use TapTinder::Utils::Conf qw(load_conf_multi);
 use TapTinder::Utils::DB qw(get_connected_schema);
 
 my $help = 0;
-my $debug = 0;
+my $ver = 2;
 my $save_extracted = 0;
 my $first_archive_only = 0;
 my $msjobp_cmd_id = undef;
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
-    'debug|d' => \$debug,
+    'verbosity|v=i' => \$ver,
     'save_extracted' => \$save_extracted,
     'first_archive_only' => \$first_archive_only,
     'msjobp_cmd_id=i' => \$msjobp_cmd_id,
@@ -41,7 +41,7 @@ croak "Configuration for database is empty.\n" unless $conf->{db};
 
 my $schema = get_connected_schema( $conf->{db} );
 
-my $plus_rows = [ qw/ msjobp_cmd_id file_path file_name /];
+my $plus_rows = [ qw/ msjobp_cmd_id file_path file_name rev_id rev_num rep_path_id /];
 my $search_cond = {};
 if ( defined $msjobp_cmd_id ) {
      $search_cond->{msjobp_cmd_id} = $msjobp_cmd_id;
@@ -121,10 +121,10 @@ sub trun_update {
 
 while ( my $row = $rs->next ) {
     my $rdata = { $row->get_columns };
-    #print Dumper( $row_data );
+    print Dumper( $rdata ) if $ver >= 4;
     my $fpath = catfile( $rdata->{file_path}, $rdata->{file_name} );
     my $msjobp_cmd_id = $rdata->{msjobp_cmd_id};
-    print "archive file: '$fpath'\n\n" if $debug;
+    print "Archive file: '$fpath':\n" if $ver >= 1;
 
     my $tar = Archive::Tar->new();
 
@@ -142,7 +142,7 @@ while ( my $row = $rs->next ) {
         my $file = $files[ $file_num ];
         $file_names{ $file->full_path } = $file_num;
     }
-    #print Dumper( \%file_names ) if $debug;
+    print Dumper( \%file_names ) if $ver >= 5;
 
     my $file_num = $file_names{ 'meta.yml' };
     my $meta_yaml = $files[$file_num]->get_content;
@@ -155,10 +155,10 @@ while ( my $row = $rs->next ) {
         carp "$tap_file_path not foun." unless exists $file_names{ $tap_file_path };
         my $file_num = $file_names{ $tap_file_path };
         my $file = $files[ $file_num ];
-        #print Dumper( \$file ) if $debug;
+        print Dumper( \$file ) if $ver>= 5;
         my $tap_source = $file->{data};
 
-        print "test file: '$tap_file_path'\n" if $debug;
+        print "Test file: '$tap_file_path'\n" if $ver >= 3;
         my $tap_parser = TAP::Parser->new( { tap => $tap_source } );
         my $prev_num = 0;
         my $actual_num = 0;
@@ -168,11 +168,11 @@ while ( my $row = $rs->next ) {
         my $my_parse_errors = 0;
         my $my_planned = undef;
         while ( my $result = $tap_parser->next ) {
-            #print $result->as_string . "\n" if $debug;
+            print $result->as_string . "\n" if $ver >= 5;
             if ( $result->is_plan ) {
                 unless ( defined $my_planned ) {
                     $my_planned = $result->tests_planned;
-                    print "  my plan: " . $my_planned . "\n\n";
+                    print "  my plan: " . $my_planned . "\n\n" if $ver >= 4;
                 }
 
             } elsif ( $result->is_test ) {
@@ -181,11 +181,11 @@ while ( my $row = $rs->next ) {
                 # error, skip this
                 if ( $actual_num < $prev_num + 1 ) {
                     $my_parse_errors++;
-                    print "    my parse error $my_parse_errors (test num $actual_num): " . $result->as_string . "\n" if $debug;
+                    print "    my parse error $my_parse_errors (test num $actual_num): " . $result->as_string . "\n" if $ver >= 1;
 
                 } elsif ( defined $my_planned && $actual_num > $my_planned ) {
                     $my_parse_errors++;
-                    print "    my parse error $my_parse_errors (test num $actual_num): " . $result->as_string . "\n" if $debug;
+                    print "    my parse error $my_parse_errors (test num $actual_num): " . $result->as_string . "\n" if $ver >= 1;
 
                 } else {
                     if ( $actual_num > $prev_num + 1 ) {
@@ -193,7 +193,7 @@ while ( my $row = $rs->next ) {
                         foreach my $not_seen_num ( ($prev_num+1)..($actual_num-1) ) {
                             $aggr{ $trest_id }++;
                             # do not count not seen as parse errors
-                            print "  " . $not_seen_num . " $trest{$trest_id}:\n";
+                            print "  " . $not_seen_num . " $trest{$trest_id}:\n" if $ver >= 3;
                         }
                     }
                     my $directive = $result->directive;
@@ -218,7 +218,7 @@ while ( my $row = $rs->next ) {
                         }
                     }
 
-                    print "  " . $actual_num . " $trest{$trest_id}: " . $result->as_string . "\n" if $debug;
+                    print "  " . $actual_num . " $trest{$trest_id}: " . $result->as_string . "\n" if $ver >= 4;
                     my $description = $result->description;
                     $aggr{ $trest_id }++;
                     $prev_num = $actual_num;
@@ -233,7 +233,7 @@ while ( my $row = $rs->next ) {
             foreach my $not_seen_num ( ($actual_num+1)..$my_planned ) {
                 $aggr{ $trest_id }++;
                 # do not count not seen as parse errors
-                print "  " . $not_seen_num . " $trest{$trest_id}:\n";
+                print "  " . $not_seen_num . " $trest{$trest_id}:\n" if $ver >= 3;
             }
         }
 
@@ -241,7 +241,7 @@ while ( my $row = $rs->next ) {
             $all_aggr{$trest_id} += $aggr{$trest_id};
         }
 
-        if ( $debug ) {
+        if ( $ver >= 3 ) {
             print "\n";
 
             print "  my my_planned: $my_planned\n";
@@ -270,14 +270,15 @@ while ( my $row = $rs->next ) {
         $all_my_parse_errors += $my_parse_errors;
 
     }
-    print "\n" if $debug;
 
-    print "my all_my_planned: $all_my_planned\n";
-    print "my all_my_parse_errors: $all_my_parse_errors\n";
-    foreach my $trest_id ( 1..6 ) {
-        print "my all $trest{$trest_id}: $all_aggr{$trest_id}\n";
+    if ( $ver >= 2 ) {
+        print "my all_my_planned: $all_my_planned\n";
+        print "my all_my_parse_errors: $all_my_parse_errors\n";
+        foreach my $trest_id ( 1..6 ) {
+            print "my all $trest{$trest_id}: $all_aggr{$trest_id}\n";
+        }
+        print "\n";
     }
-    print "\n";
 
     my $new_trun_values = {};
     $new_trun_values = {
@@ -308,6 +309,8 @@ perl tests-to-db.pl [options]
    --help
    --debug
    --save_extracted
+   --first_archive_only .. Process only first test harness archive file found.
+   --msjobp_cmd_id=$ID .. Process only archive for $ID job part command id.
 
 =head1 DESCRIPTION
 
