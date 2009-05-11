@@ -24,12 +24,14 @@ use TapTinder::Utils::DB qw(get_connected_schema);
 
 my $help = 0;
 my $ver = 2;
+my $archive_num_limit = undef;
 my $save_extracted = 0;
 my $first_archive_only = 0;
 my $msjobp_cmd_id = undef;
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
     'verbosity|v=i' => \$ver,
+    'limit|l=i' => \$archive_num_limit,
     'save_extracted' => \$save_extracted,
     'first_archive_only' => \$first_archive_only,
     'msjobp_cmd_id=i' => \$msjobp_cmd_id,
@@ -198,7 +200,9 @@ sub my_find_or_create_rep_test {
 }
 
 
-while ( my $row = $rs->next ) {
+my $archiv_num = 0;
+ARCHIVE: while ( my $row = $rs->next ) {
+    $archiv_num++;
     my $rdata = { $row->get_columns };
     print Dumper( $rdata ) if $ver >= 4;
     my $fpath = catfile( $rdata->{file_path}, $rdata->{file_name} );
@@ -232,7 +236,7 @@ while ( my $row = $rs->next ) {
     my %all_aggr = ( 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0, 6 => 0 );
     my $all_my_parse_errors = 0;
     my $all_my_planned = 0;
-    foreach my $tap_file_path ( @{ $meta->{file_order} } ) {
+    TAP_FILE: foreach my $tap_file_path ( @{ $meta->{file_order} } ) {
         carp "Path '$tap_file_path' not found." unless exists $file_names{ $tap_file_path };
         my $file_num = $file_names{ $tap_file_path };
         my $file = $files[ $file_num ];
@@ -243,7 +247,7 @@ while ( my $row = $rs->next ) {
         my $rep_file_id = rep_file_find( $schema, $rep_path_id, $tap_file_path, $rev_num );
         unless ( $rep_file_id ) {
             carp "Can't find rep_file_id for rep_path_id:$rep_path_id, sub_path:'$tap_file_path', rev_num:$rev_num\n";
-            next;
+            next TAP_FILE;
         }
         print "  rep_file_id: $rep_file_id\n" if $ver >= 5;
 
@@ -319,7 +323,7 @@ while ( my $row = $rs->next ) {
                     );
                     unless ( $rep_test_id ) {
                         carp "Can't find or create rep_test for rep_file_id:$rep_file_id, number:'$actual_num', name:'$test_name'\n";
-                        next;
+                        next TAP_FILE;
                     }
                     print "    rep_test_id: $rep_test_id\n" if $ver >= 5;
 
@@ -336,7 +340,7 @@ while ( my $row = $rs->next ) {
                         } );
                         unless ( $rep_test_id ) {
                             carp "Can't create ttest for trun_id:$trun_id, rep_test_id:$rep_test_id, trest_id:$trest_id\n";
-                            next;
+                            next TAP_FILE;
                         }
                         print "    ttest_id: $ttest_id\n" if $ver >= 5;
                     }
@@ -437,7 +441,12 @@ while ( my $row = $rs->next ) {
     };
     my $ret_val = trun_update( $schema, $trun_id, $new_trun_values );
 
-    last if $first_archive_only;
+    last ARCHIVE if $first_archive_only;
+
+    if ( $archiv_num >= $archive_num_limit ) {
+        print "Archive number limit $archive_num_limit reached." if $ver >= 2;
+        last ARCHIVE;
+    }
 }
 
 
@@ -451,8 +460,9 @@ perl tests-to-db.pl [options]
 
  Options:
    --help
-   --debug
-   --save_extracted
+   --ver .. Verbosity level. Default 2.
+   --limit=$NUM .. Archive number limit. Process only first $NUM archives.
+   --save_extracted .. Save files extracted from archive.
    --first_archive_only .. Process only first test harness archive file found.
    --msjobp_cmd_id=$ID .. Process only archive for $ID job part command id.
 

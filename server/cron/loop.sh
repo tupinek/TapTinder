@@ -8,10 +8,10 @@ nice -n 10 perl repository-update.pl --project=Parrot
 echo ""
 
 echo "Tests to DB:"
-nice -n 10 perl tests-to-db.pl
+nice -n 10 perl tests-to-db.pl --limit=10 --ver=2
 echo ""
 
-echo "Sleeping for 30 s ..."
+echo "Sleeping for 5 s ..."
 
 sleep 30
 echo ""
