@@ -1,7 +1,7 @@
 [% DEFAULT title = 'Report for ' _ project_name _ ', ' _ rep_path_full -%]
 <div class=nav><a href="javascript:history.back();">Back</a>, <a href="[% c.uri_for('/') %]">homepage</a> or <a href="[% c.uri_for( '/report/pr-' _ project_name ) %]">[% project_name %] report list</a>.</div>
 
-<form method="GET" action="[% project_uri _ 'do' %]">
+<form method="get" action="[% project_uri _ 'do' %]">
 
 [% table_col_num = 18 %]
 <table class=data>

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" dir="ltr">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=iso8859-1" />
-  <title>[% title %][% IF title != site.title %] - [% site.title %][% END %]</title>
+  <title>[% IF title %][% title %] - [% END %][% IF title != site.title %][% site.title %][% END %]</title>
   <link rel="shortcut icon" href="[%+ site.r_url.base %]favicon.ico" />
   <link rel="stylesheet" type="text/css" href="[%+ site.r_url.base %]css/base.css" />
 </head>
