@@ -60,7 +60,7 @@ sub get_projname_params {
         $project_name =~ s{^pr-}{};
         $c->stash->{project_name} = $project_name;
     }
-    $c->stash->{project_uri} = $c->uri_for( $c->action->namespace . '/pr-'.$project_name.'/' );
+    $c->stash->{project_uri} = $c->uri_for( '/' . $c->action->namespace . '/pr-'.$project_name.'/' );
 
     # project name, nothing else
     if ( !$par1 ) {
@@ -74,8 +74,8 @@ sub get_projname_params {
         $params = $par2 if $par2;
     }
 
-    $self->dumper( $c, { p_project => $p_project, par1 => $par1, par2 => $par2 } );
-    $self->dumper( $c, { is_index => $is_index, project_name => $project_name, params => $params } );
+    $self->dumper( $c, { p_project => $p_project, par1 => $par1, par2 => $par2, } );
+    $self->dumper( $c, { is_index => $is_index, project_name => $project_name, params => $params, } );
 
     return ( $is_index, $project_name, $params );
 }
