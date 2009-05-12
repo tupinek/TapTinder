@@ -42,9 +42,10 @@ VALUES (
     2, 'shreck2',           1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90',   'i386',   'linux',   'i386-linux-thread-multi',  0, NULL, 1      ), (
     3, 'shreck3',           1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.90',   'i386',   'linux',   'i386-linux-thread-multi',  0, NULL, 1      ), (
     4, 'ent',               1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.49',   'i386',   'linux',   'i386-linux-thread-multi',  1, NULL, NULL   ), (
-    5, 'pc-jurosz (new)',   1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.124',  'i386',   'MSWin32', 'MSWin32-x86-multi-thread', 0, NULL, NULL   ), (
+    5, 'pc-jurosz2',        1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.124',  'x86_64', 'MSWin32', 'MSWin32-x86-multi-thread', 0, NULL, NULL   ), (
     6, 'tapir1',            1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.191.11', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, NULL, 2      ), (
-    7, 'tapir2',            1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.191.12', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, NULL, 2
+    7, 'tapir2',            1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.191.12', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, NULL, 2      ), (
+    8, 'pc-strakos',        1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.170',  'x86_64', 'MSWin32', 'MSWin32-x86-multi-thread', 0, NULL, NULL
 );
 
 
@@ -98,7 +99,10 @@ VALUES (
     4, 6, NULL, NULL, 2,    2  ), (
 
     5, 7, NULL, NULL, 1,    1  ), (
-    6, 7, NULL, NULL, 2,    2
+    6, 7, NULL, NULL, 2,    2  ), (
+
+    7, 8, NULL, NULL, 1,    1  ), (
+    8, 8, NULL, NULL, 2,    2
 );
 
 INSERT INTO fspath ( fspath_id, path, web_path, public, created, deleted, name, `desc` )
