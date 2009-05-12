@@ -70,13 +70,13 @@ if [ "$1" = "0" ]; then
     echo ""
 
     echo "Executing cron/repository-update.pl -p TapTinder-tr1 (perl):"
-    perl ./cron/repository-update.pl -p TapTinder-tr1
+    perl ./cron/repository-update.pl --project=TapTinder-tr1
     echo ""
     echo "Executing cron/repository-update.pl -p TapTinder-tr3 (perl):"
-    perl ./cron/repository-update.pl -p TapTinder-tr2
+    perl ./cron/repository-update.pl --project=TapTinder-tr2
     echo ""
     echo "Executing cron/repository-update.pl -p TapTinder-tr3 (perl):"
-    perl ./cron/repository-update.pl -p TapTinder-tr3
+    perl ./cron/repository-update.pl --project=TapTinder-tr3
     echo "";
 
     echo "Executing utils/rm_uploaded_files.pl --remove (perl):"
