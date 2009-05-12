@@ -724,7 +724,7 @@ Test file summary results - summary result for all tests in file. All_passed is 
 * trun_id
 * rep_file_id
 * all_passed -- (in Harness::Straps max == seen == ok)
-* tskippall_msg_id (can be null)
+* tskipall_msg_id (can be null)
 * hang - if test hang and was killed
 <source lang=sql>
 CREATE TABLE tfile (
