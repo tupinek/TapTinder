@@ -200,6 +200,44 @@ sub my_find_or_create_rep_test {
 }
 
 
+sub insert_ttest_and_msgs {
+    my ( $schema, $ver, $trun_id, $rep_file_id, $test_number, $test_description, $trest_id ) = @_;
+
+    my $test_name = $test_description;
+    $test_name =~ s{^\s*-\s*}{};
+
+    my $rep_test_id = my_find_or_create_rep_test(
+        $schema,
+        $rep_file_id,
+        $test_number, # $number
+        $test_name    # $name
+    );
+    unless ( $rep_test_id ) {
+        carp "Can't find or create rep_test for rep_file_id:$rep_file_id, number:'$test_number', name:'$test_name'\n";
+        return 0;
+    }
+    print "    rep_test_id: $rep_test_id\n" if $ver >= 5;
+
+    # Do not save results with ok status.
+    if ( $trest_id == 6 ) {
+        print "    ttest_id: not saved\n" if $ver >= 5;
+        return 1;
+    }
+
+    my $ttest_id = create_new_table_row( $schema, 'ttest',  {
+        trun_id => $trun_id,
+        rep_test_id => $rep_test_id,
+        trest_id => $trest_id,
+    } );
+    unless ( $ttest_id ) {
+        carp "Can't create ttest for trun_id:$trun_id, rep_test_id:$rep_test_id, trest_id:$trest_id\n";
+        return 0;
+    }
+    print "    ttest_id: $ttest_id\n" if $ver >= 5;
+    return 1;
+}
+
+
 my $archiv_num = 0;
 ARCHIVE: while ( my $row = $rs->next ) {
     $archiv_num++;
@@ -286,6 +324,15 @@ ARCHIVE: while ( my $row = $rs->next ) {
                             $aggr{ $trest_id }++;
                             # do not count not seen as parse errors
                             print "  " . $not_seen_num . " $trest{$trest_id}:\n" if $ver >= 3;
+                            insert_ttest_and_msgs(
+                                $schema,
+                                $ver,
+                                $trun_id,
+                                $rep_file_id,
+                                $not_seen_num,  # $test_number,
+                                '',             # $test_description,
+                                $trest_id
+                            ) || next TAP_FILE;;
                         }
                     }
                     my $directive = $result->directive;
@@ -311,40 +358,18 @@ ARCHIVE: while ( my $row = $rs->next ) {
                     }
 
                     print "  " . $actual_num . " $trest{$trest_id}: " . $result->as_string . "\n" if $ver >= 4;
-                    my $test_name = $result->description;
-                    $test_name =~ s{^\s*-\s*}{};
-                    $aggr{ $trest_id }++;
 
-                    my $rep_test_id = my_find_or_create_rep_test(
+                    insert_ttest_and_msgs(
                         $schema,
+                        $ver,
+                        $trun_id,
                         $rep_file_id,
-                        $actual_num,  # $number,
-                        $test_name    # $name
-                    );
-                    unless ( $rep_test_id ) {
-                        carp "Can't find or create rep_test for rep_file_id:$rep_file_id, number:'$actual_num', name:'$test_name'\n";
-                        next TAP_FILE;
-                    }
-                    print "    rep_test_id: $rep_test_id\n" if $ver >= 5;
+                        $actual_num, # $test_number,
+                        $result->description, # $test_description,
+                        $trest_id
+                    ) || next TAP_FILE;;
 
-
-                    # Do not save results with ok status.
-                    if ( $trest_id == 6 ) {
-                        print "    ttest_id: not saved\n" if $ver >= 5;
-
-                    } else {
-                        my $ttest_id = create_new_table_row( $schema, 'ttest',  {
-                            trun_id => $trun_id,
-                            rep_test_id => $rep_test_id,
-                            trest_id => $trest_id,
-                        } );
-                        unless ( $rep_test_id ) {
-                            carp "Can't create ttest for trun_id:$trun_id, rep_test_id:$rep_test_id, trest_id:$trest_id\n";
-                            next TAP_FILE;
-                        }
-                        print "    ttest_id: $ttest_id\n" if $ver >= 5;
-                    }
-
+                    $aggr{ $trest_id }++;
                     $prev_num = $actual_num;
                 }
             }
@@ -358,6 +383,15 @@ ARCHIVE: while ( my $row = $rs->next ) {
                 $aggr{ $trest_id }++;
                 # do not count not seen as parse errors
                 print "  " . $not_seen_num . " $trest{$trest_id}:\n" if $ver >= 3;
+                insert_ttest_and_msgs(
+                    $schema,
+                    $ver,
+                    $trun_id,
+                    $rep_file_id,
+                    $not_seen_num,  # $test_number,
+                    '',             # $test_description,
+                    $trest_id
+                ) || next TAP_FILE;;
             }
         }
 
