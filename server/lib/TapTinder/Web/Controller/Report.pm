@@ -44,8 +44,10 @@ sub get_trun_infos {
             trun_id => $ra_trun_ids,
         },
         {
-            prefetch => {
-                build_id => [ 'rev_id', { 'rep_path_id' => 'rep_id' } ]
+            join => {
+                'msjobp_cmd_id' => {
+                    'msjobp_id' => [ 'msjob_id', 'jobp_id', 'rev_id' ],
+                },
             },
             '+select' => [qw/ rev_id.rev_num /],
             '+as' => [qw/ rev_num /],
@@ -120,7 +122,7 @@ sub action_do_one {
 
     my $ra_selected_trun_ids = [ $trun_id ];
     my @trun_infos = $self->get_trun_infos( $c, $ra_selected_trun_ids ) ;
-    $c->stash->{trun_infos} = \@trun_infos;
+    #$c->stash->{trun_infos} = \@trun_infos;
 
     my $rs = $self->get_ttest_rs( $c, $ra_selected_trun_ids ) ;
     my @ress = ();
@@ -129,7 +131,8 @@ sub action_do_one {
 
         my $to_base_report = 0;
         my $trest_id = $row{trest_id};
-        $to_base_report = 1 if $trest_id <= 2 || $trest_id == 4;
+        # 1 not seen, 2 failed, 5 bonus
+        $to_base_report = 1 if $trest_id == 1 || $trest_id == 2 || $trest_id == 5;
         next unless $to_base_report;
 
         my %res = (
@@ -160,7 +163,10 @@ sub action_do_many {
 
     my @trun_infos = $self->get_trun_infos( $c, $ra_selected_trun_ids ) ;
     $c->stash->{trun_infos} = \@trun_infos;
+    #$self->dumper( $c, \@trun_infos );
 
+    # Get all ttest and related rep_test and rep_file info from database.
+    # Ok results aren't saved.
     my $rs = $self->get_ttest_rs( $c, $ra_selected_trun_ids ) ;
 
     my @ress = ();
@@ -174,19 +180,20 @@ sub action_do_many {
     # $rs is ordered by ttest.rep_test_id
 
 
-    # we need $prev_row, $row and info if next row will be defined
+    # We need $prev_row, $row and info if next row will be defined.
     my $res = undef;
     my $res_next = $rs->next;
     my $num = 1;
     TTEST_NEXT: while ( 1 ) {
-        # first run of while loop
+        # First run of while loop.
         unless ( defined $res ) {
-            # nothing found
+            # Nothing found.
             last TTEST_NEXT unless defined $res_next;
         }
 
-        # use previous rs to get row
+        # Use previous rs to get row.
         $res = $res_next;
+        $self->dumper( $c, $res );
         $res_next = $rs->next;
 
         if ( defined $res ) {
@@ -194,8 +201,7 @@ sub action_do_many {
             $same_rep_path_id = 0 if %prev_row && $row{rep_path_id} != $prev_row{rep_path_id};
         }
 
-        #
-        # find if results are same
+        # Find if results are same.
         if ( (not defined $res) || $prev_rt_id != $row{rep_test_id} ) {
             my $are_same = 1;
             if ( $prev_rt_id ) {
@@ -210,7 +216,7 @@ sub action_do_many {
                 }
             }
 
-            # remember not different results
+            # Remember not different results.
             unless ( $are_same ) {
                 #$self->dumper( $c, \%res_ids_sum );
                 #$self->dumper( $c, \@res_cache );
@@ -222,8 +228,8 @@ sub action_do_many {
                 foreach my $trun_info ( @trun_infos ) {
                     if ( exists $res_cache{ $trun_info->{trun_id} } ) {
                         my $trest_id = $res_cache{ $trun_info->{trun_id} };
-                        # 0 not seen, 1 failed, 2 unknown, 4 bonus
-                        $to_base_report = 1 if $trest_id <= 2 || $trest_id == 4;
+                        # 1 not seen, 2 failed, 5 bonus
+                        $to_base_report = 1 if ( $trest_id == 1 || $trest_id == 2 || $trest_id == 5 );
                         next;
                     }
                     if ( $trun_info->{rev_num} >= $prev_row{rev_num_from}
@@ -260,7 +266,8 @@ sub action_do_many {
         $res_ids_sum{ $row{trest_id} }++;
         $num++;
 
-    }
+    } # TTEST_NEXT: while ( 1 ) {
+
     $self->dumper( $c, \@ress );
     $c->stash->{same_rep_path_id} = $same_rep_path_id;
     $c->stash->{ress} = \@ress;

@@ -24,7 +24,7 @@
 [% FOREACH trun_info IN trun_infos %]
   <td>[%- t_trun_id = trun_info.trun_id; t_trest_id = res.results.$t_trun_id %]
   [% IF t_trest_id %]
-    <a href="/table/trest/id-[% t_trest_id %]">[% trest_infos.$t_trest_id.title -%]</a></td>
+    <a href="/table/trest/id-[% t_trest_id %]">[% trest_infos.$t_trest_id.name -%]</a></td>
   [% ELSE %]
     -
   [% END %]
