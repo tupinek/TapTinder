@@ -3,12 +3,12 @@ start transaction;
 SET FOREIGN_KEY_CHECKS=0;
 
 -- delete test results
-delete from trun;
-delete from rep_test;
-delete from tfile;
-delete from ttest;
-delete from tskipall_msg;
-delete from tdiag_msg;
+truncate table trun;
+truncate table rep_test;
+truncate table tfile;
+truncate table ttest;
+truncate table tskipall_msg;
+truncate table tdiag_msg;
 
 SET FOREIGN_KEY_CHECKS=1;
 
