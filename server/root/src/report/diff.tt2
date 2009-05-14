@@ -8,21 +8,31 @@
 [% FOREACH res IN ress %]
 [% IF loop.count() == 1 -%]
   <tr>
-  <th>Test file</th>
-  <th>Num</th>
-  <th>Name</th>
+  <th><br />Test file</th>
+  <th><br />Num</th>
+  <th><br />Name</th>
   [% FOREACH trun_info IN trun_infos %]
-    <th>[% trun_info.rev_num %]</th>
+    <th>
+      <a href="/table/machine/id-[% trun_info.machine_id %]" title="[% trun_info.machine_osname %], [% trun_info.machine_cpuarch %], [% trun_info.user_first_name %] [% trun_info.user_last_name %] ([% trun_info.user_login %])">
+        [% trun_info.machine_name %]
+      </a><br />
+      <a href="/table/rev/id-[% trun_info.rev_id %]" title="[% trun_info.rev_author_rep_login %], [% trun_info.rev_date %], [% trun_info.rev_msg %]">
+        [% trun_info.rev_num %]
+      </a><br />
+      <a href="/table/trun/id-[% trun_info.trun_id %]" title="[% trun_info.job_name %] - [% trun_info.jobp_name %] - [% trun_info.jobp_cmd_name %] - [% trun_info.mjpc_status %] ([% trun_info.mjpc_status_desc %])">
+        [% trun_info.trun_id %]
+      </a><br />
+    </th>
   [% END %]
   </tr>
 [% END -%]
 
 <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %]">
 <td><a href="/table/rep_file/id-[% res.file.rep_file_id %]">[% res.file.sub_path %]</a></td>
-<td><a href="/table/rep_test/id-[% res.file.rep_test_id %]">[% res.file.test_number %]</a></td>
+<td align=right><a href="/table/rep_test/id-[% res.file.rep_test_id %]">[% res.file.test_number %]</a></td>
 <td>[% res.file.test_name %]</td>
 [% FOREACH trun_info IN trun_infos %]
-  <td>[%- t_trun_id = trun_info.trun_id; t_trest_id = res.results.$t_trun_id %]
+  <td align=center>[%- t_trun_id = trun_info.trun_id; t_trest_id = res.results.$t_trun_id %]
   [% IF t_trest_id %]
     <a href="/table/trest/id-[% t_trest_id %]">[% trest_infos.$t_trest_id.name -%]</a></td>
   [% ELSE %]

@@ -45,12 +45,35 @@ sub get_trun_infos {
         },
         {
             join => {
-                'msjobp_cmd_id' => {
-                    'msjobp_id' => [ 'msjob_id', 'jobp_id', 'rev_id' ],
-                },
+                'msjobp_cmd_id' => [
+                    'status_id',
+                    { msjobp_id => [
+                        'jobp_id',
+                        { 'rev_id' => 'author_id' },
+                        { msjob_id => [
+                            { msession_id => { 'machine_id' => 'user_id', }, },
+                            'job_id',
+                        ], },
+                    ], },
+                    { 'jobp_cmd_id' => 'cmd_id' },
+                ],
             },
-            '+select' => [qw/ rev_id.rev_num /],
-            '+as' => [qw/ rev_num /],
+            '+select' => [qw/
+                rev_id.rev_num rev_id.date rev_id.msg
+                author_id.rep_login
+                status_id.name status_id.desc
+                cmd_id.name jobp_id.name job_id.name
+                machine_id.machine_id machine_id.name machine_id.osname machine_id.cpuarch
+                user_id.first_name user_id.last_name user_id.login
+            /],
+            '+as' => [qw/
+                rev_num rev_date rev_msg
+                rev_author_rep_login
+                mjpc_status mjpc_status_desc
+                jobp_cmd_name jobp_name job_name
+                machine_id machine_name machine_osname machine_cpuarch
+                user_first_name user_last_name user_login
+            /],
             order_by => 'rev_id.rev_num',
         }
     );
@@ -163,7 +186,7 @@ sub action_do_many {
 
     my @trun_infos = $self->get_trun_infos( $c, $ra_selected_trun_ids ) ;
     $c->stash->{trun_infos} = \@trun_infos;
-    #$self->dumper( $c, \@trun_infos );
+    $self->dumper( $c, \@trun_infos );
 
     # Get all ttest and related rep_test and rep_file info from database.
     # Ok results aren't saved.
@@ -455,7 +478,13 @@ sub index : Path  {
 
     my $build_search = {
         join => [
-            { msjobp_cmd_id => { msjobp_id => [ 'jobp_id', { msjob_id => { msession_id => 'machine_id', } } ] } },
+            { msjobp_cmd_id => [
+                { msjobp_id => [
+                    'jobp_id', { msjob_id => { msession_id => 'machine_id', } },
+                ] },
+                { output_id => 'fspath_id', },
+                { outdata_id => 'fspath_id', },
+            ], },
         ],
         'select' => [qw/
             machine_id.machine_id
@@ -473,6 +502,11 @@ sub index : Path  {
             me.skip
             me.bonus
             me.ok
+
+            output_id.name
+            fspath_id.web_path
+            outdata_id.name
+            fspath_id_2.web_path
         /],
         'as' => [qw/
             machine_id
@@ -490,6 +524,11 @@ sub index : Path  {
             skip
             bonus
             ok
+
+            output_fname
+            output_web_path
+            outdata_fname
+            outdata_web_path
         /],
         order_by => 'machine_id',
 

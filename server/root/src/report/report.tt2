@@ -26,20 +26,17 @@
     [% IF loop.count() == 1 %]
     <tr>
     <th>&nbsp;</th>
-    <th colspan=4>Machine</th>
-    <th colspan=1>Test</th>
-    <th colspan=7>Results</th>
+    <th colspan=3>Machine</th>
+    <th colspan=10>Test results</th>
     <th>&nbsp;</th>
     </tr>
 
     <tr>
     <th>&nbsp;</th>
 
-    <th>cc</th>
-    <th>devel</th>
-    <th>optimize</th>
-
-    <th>Harness</th>
+    <th>name</th>
+    <th>cpuarch</th>
+    <th>osname</th>
 
     <th>id</th>
     <th align=center>P.Err.</th>
@@ -49,6 +46,8 @@
     <th align=center>Bonus</th>
     <th align=center>Skip</th>
     <th align=center>Ok</th>
+
+    <th colspan=2>output</th>
 
     <th>&nbsp;</th>
     </tr>
@@ -60,7 +59,6 @@
     <td><a href="[% c.uri_for( '/table/machine/id-' _ build.machine_id ) %]">[% build.machine_name %]</a></td>
     <td>[% build.cpuarch %]</td>
     <td>[% build.osname %]</td>
-    <td>[% build.archname %]</td>
 
     <td><a href="[% c.uri_for( '/table/trun/id-' _ build.trun_id ) %]">[% build.trun_id %]</a></td>
     <td>[% build.parse_errors %]</td>
@@ -70,6 +68,9 @@
     <td>[% build.bonus %]</td>
     <td>[% build.skip %]</td>
     <td>[% build.ok %]</td>
+
+    <td><a href="[% c.uri_for( '/', build.output_web_path, '/', build.output_fname ) %]" title="Test run output">out</a></td>
+    <td><a href="[% c.uri_for( '/', build.outdata_web_path, '/', build.outdata_fname ) %]" title="Test::Harness::Archive tar.gz file">arch</a></td>
 
     <td><input type=checkbox name="[% 'trun-' _ build.trun_id  | html %]" /></td>
   </tr>
