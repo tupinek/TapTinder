@@ -59,7 +59,7 @@ sub get_trun_infos {
                 ],
             },
             '+select' => [qw/
-                rev_id.rev_num rev_id.date rev_id.msg
+                rev_id.rev_id rev_id.rev_num rev_id.date rev_id.msg
                 author_id.rep_login
                 status_id.name status_id.desc
                 cmd_id.name jobp_id.name job_id.name
@@ -67,7 +67,7 @@ sub get_trun_infos {
                 user_id.first_name user_id.last_name user_id.login
             /],
             '+as' => [qw/
-                rev_num rev_date rev_msg
+                rev_id rev_num rev_date rev_msg
                 rev_author_rep_login
                 mjpc_status mjpc_status_desc
                 jobp_cmd_name jobp_name job_name

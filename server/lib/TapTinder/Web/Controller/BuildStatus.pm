@@ -33,8 +33,14 @@ sub index : Path  {
     my $rs_revs = $c->model('WebDB::rev_rep_path')->search( {
         'rep_path_id' => $rep_path_id,
     }, {
-        select => [ 'rev_id.rev_id', 'rev_id.rev_num', 'rev_id.date', 'rev_id.msg', 'author_id.rep_login', ],
-        as => [ 'rev_id', 'rev_num', 'date', 'msg', 'rep_login', ],
+        select => [ qw/
+            rev_id.rev_id rev_id.rev_num rev_id.date rev_id.msg
+            author_id.rep_author_id author_id.rep_login
+        / ],
+        as => [ qw/
+            rev_id rev_num date msg
+            rep_author_id rep_login
+        / ],
         join => [ { 'rev_id' => 'author_id' } ],
         order_by => [ 'rev_id.rev_num DESC' ],
         page => 1,

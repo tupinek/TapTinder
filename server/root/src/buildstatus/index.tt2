@@ -19,7 +19,11 @@
 
 [% FOREACH rev IN revs -%]
   <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %]">
-    <td>[% rev.rev_num %]</td>
+    <td>
+      <a href="/table/rev/id-[% rev.rev_id %]" title="[% rev.msg | html %]">
+        [% rev.rev_num %]
+      </a>
+      </td>
     <td>[% rev.rep_login %]</td>
     <td>[% rev.date %]</td>
 

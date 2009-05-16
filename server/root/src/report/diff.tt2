@@ -16,7 +16,7 @@
       <a href="/table/machine/id-[% trun_info.machine_id %]" title="[% trun_info.machine_osname %], [% trun_info.machine_cpuarch %], [% trun_info.user_first_name %] [% trun_info.user_last_name %] ([% trun_info.user_login %])">
         [% trun_info.machine_name %]
       </a><br />
-      <a href="/table/rev/id-[% trun_info.rev_id %]" title="[% trun_info.rev_author_rep_login %], [% trun_info.rev_date %], [% trun_info.rev_msg %]">
+      <a href="/table/rev/id-[% trun_info.rev_id %]" title="[% trun_info.rev_author_rep_login %], [% trun_info.rev_date %], [% trun_info.rev_msg | html %]">
         [% trun_info.rev_num %]
       </a><br />
       <a href="/table/trun/id-[% trun_info.trun_id %]" title="[% trun_info.job_name %] - [% trun_info.jobp_name %] - [% trun_info.jobp_cmd_name %] - [% trun_info.mjpc_status %] ([% trun_info.mjpc_status_desc %])">
