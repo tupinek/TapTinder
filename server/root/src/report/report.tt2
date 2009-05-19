@@ -12,7 +12,7 @@
     [% END -%]
     <tr>
     <td align=left colspan=[% table_col_num %]>
-        <a href="[% c.uri_for( '/table/rev/id-' _ rev.rev_id ) %]">[% rev.rev_num %]</a>,
+        <a href="[% c.uri_for( '/table/rev/id-' _ rev.rev_id ) %]" title="[% rev.msg | html %]">[% rev.rev_num %]</a>,
         [% rev.date %],
         <a href="[% c.uri_for( '/table/rep_author/id-' _ rev.author_id ) %]">[% rev.rep_login %]</a>
     </td>

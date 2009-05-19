@@ -460,6 +460,7 @@ sub index : Path  {
                 me.date
                 me.author_id
                 author_id.rep_login
+                me.msg
              /],
             'as' => [qw/
                 rep_path_id
@@ -468,6 +469,7 @@ sub index : Path  {
                 date
                 author_id
                 rep_login
+                msg
             /],
             order_by => 'me.rev_num DESC',
             page => $pr->{page},
