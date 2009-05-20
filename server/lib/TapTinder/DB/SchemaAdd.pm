@@ -32,7 +32,7 @@ $new_source->name(\<<'SQLEND');
               from (
                     select distinct sa_jp.*
                       from (
-                            -- todo, empty mjc.rep_id
+                            -- ToDo, empty mjc.rep_id
                             ( select jp.jobp_id, mjc.priority as mjc_priority, jp.rep_path_id, jp.job_id, jp.max_age
                                 from machine_job_conf mjc,
                                      rep_path rp,
@@ -321,7 +321,7 @@ package TapTinder::DB::Schema::jobp_cmd;
 __PACKAGE__->cols_in_foreign_tables( [ qw/jobp_id order cmd_id/ ] );
 
 package TapTinder::DB::Schema::machine;
-__PACKAGE__->restricted_cols( { 'passwd' => 1, } );
+__PACKAGE__->restricted_cols( { 'passwd' => 1, 'ip' => 1, } );
 __PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
 
 package TapTinder::DB::Schema::msabort_reason;
