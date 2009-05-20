@@ -26,17 +26,24 @@ our $VERSION = '0.10';
 # configuration, with a external configuration file acting
 # as an override for local deployment.
 
-__PACKAGE__->config(
+ TapTinder::Web->config(
     'Plugin::Config::Multi' => {
-         dir => __PACKAGE__->path_to('./conf'),
+         dir =>  TapTinder::Web->path_to('./conf'),
          prefix => '',
          app_name => 'web',
          extension => 'yml',
-     }
+     },
+     'static' => {
+         #logging => 1,
+         #debug => 1,
+         mime_types => {
+             t => 'text/plain', # Show test files, as text plain. BY mime type it si 'application/x-troff'.
+         },
+     },
 );
 
 
-__PACKAGE__->setup;
+ TapTinder::Web->setup;
 
 
 =head1 NAME
