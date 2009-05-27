@@ -141,6 +141,7 @@ sub rep_file_find {
         ],
     } );
     my $row = $rs->next;
+    return undef unless $row;
     my $row_data = { $row->get_columns };
     my $rep_file_id = $row_data->{rep_file_id};
     return $rep_file_id;
@@ -283,6 +284,7 @@ ARCHIVE: while ( my $row = $rs->next ) {
 
         print "Test file: '$tap_file_path'\n" if $ver >= 3;
         my $rep_file_id = rep_file_find( $schema, $rep_path_id, $tap_file_path, $rev_num );
+        # ToDo - dynamically generated files?
         unless ( $rep_file_id ) {
             carp "Can't find rep_file_id for rep_path_id:$rep_path_id, sub_path:'$tap_file_path', rev_num:$rev_num\n";
             next TAP_FILE;
