@@ -45,7 +45,8 @@ VALUES (
     5, 'pc-jurosz2',        1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.124',  'x86_64', 'MSWin32', 'MSWin32-x86-multi-thread', 0, NULL, NULL   ), (
     6, 'tapir1',            1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.191.11', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, NULL, 2      ), (
     7, 'tapir2',            1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.191.12', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, NULL, 2      ), (
-    8, 'pc-strakos',        1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.170',  'x86_64', 'MSWin32', 'MSWin32-x86-multi-thread', 0, NULL, NULL
+    8, 'pc-strakos',        1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.170',  'x86_64', 'MSWin32', 'MSWin32-x86-multi-thread', 0, NULL, NULL   ), (
+    9, 'ttcl-rh5-32',       1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.73',   'i386',   'linux',   'i386-linux-thread-multi',  0, NULL, 2
 );
 
 
@@ -102,8 +103,12 @@ VALUES (
     6, 7, NULL, NULL, 2,    2  ), (
 
     7, 8, NULL, NULL, 1,    1  ), (
-    8, 8, NULL, NULL, 2,    2
+    8, 8, NULL, NULL, 2,    2  ), (
+
+    9, 9, NULL, NULL, 1,    1  ), (
+    10, 9, NULL, NULL, 2,   2
 );
+
 
 INSERT INTO fspath ( fspath_id, path, web_path, public, created, deleted, name, `desc` )
 VALUES (
