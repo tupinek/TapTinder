@@ -111,6 +111,14 @@ sub init_keypress {
     };
     $keypress->set_pause_begin_sub( $pause_begin_sub );
 
+    my $pause_refresh_sub = sub {
+        if ( $self->{msession_id} ) {
+            $self->{agent}->mevent( $self->{msession_id}, $self->{msjobp_cmd_id}, 'pause refresh' );
+        }
+    };
+    $keypress->set_pause_refresh_sub( $pause_refresh_sub );
+    $keypress->set_pause_refresh_rate( 60*60 );
+
     my $pause_end_sub = sub {
         if ( $self->{msession_id} ) {
             $self->{agent}->mevent( $self->{msession_id}, $self->{msjobp_cmd_id}, 'continue' );

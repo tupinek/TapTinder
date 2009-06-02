@@ -143,16 +143,10 @@ $new_source3->name(\<<'SQLEND');
                 and msjp.msjob_id = msj.msjob_id
                 and msjpc.msjobp_id = msjp.msjobp_id
            ) as last_cmd_finish_time,
-           ( select mss.name
-               from msstatus mss,
-                    mslog ml
-              where mss.msstatus_id = ml.msstatus_id
-                and ml.mslog_id = (
-                    select max(i_ml.mslog_id)
-                      from mslog i_ml
-                     where i_ml.msession_id = ms.msession_id
-                )
-           ) as msstatus_name
+           ( select max(i_ml.mslog_id)
+               from mslog i_ml
+              where i_ml.msession_id = ms.msession_id
+           ) as max_mslog_id
       from msession ms,
            machine ma
      where ma.machine_id = ms.machine_id

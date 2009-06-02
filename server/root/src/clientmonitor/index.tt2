@@ -4,7 +4,10 @@
 
 <table class=data>
 <tr>
-<th>&nbsp;</th><th colspan=3>MSession</th><th colspan=2>Machine</th><th colspan=2>Info</th>
+<th>&nbsp;</th>
+<th colspan=3>MSession</th>
+<th colspan=2>Machine</th>
+<th colspan=3>Info</th>
 </tr>
 <tr>
 <th>&nbsp;</th>
@@ -12,6 +15,7 @@
 <th>&nbsp</th><th>Name</th>
 <th>Last finished cmd</th>
 <th>Session status</th>
+<th>Session last info</th>
 </tr>
 
 [% FOREACH st IN states -%]
@@ -27,6 +31,7 @@
 
     <td>[% st.last_cmd_finish_time %]</td>
     <td>[% st.msstatus_name %]</td>
+    <td>[% st.mslog_change_time %]</td>
   </tr>
 [% END -%]
 </table>

@@ -25,6 +25,8 @@ sub new {
     my $hooks = {};
     $hooks->{before_exit} = sub {};
     $hooks->{pause_begin} = sub {};
+    $hooks->{pause_refresh} = sub {};
+    $hooks->{pause_refresh_rate} = 60*60;
     $hooks->{pause_end} = sub {};
     $self->{hooks} = $hooks;
 
@@ -41,6 +43,19 @@ sub set_before_exit_sub {
 sub set_pause_begin_sub {
     my ( $self, $sub_ref ) = @_;
     $self->{hooks}->{pause_begin} = $sub_ref;
+}
+
+
+sub set_pause_refresh_sub {
+    my ( $self, $sub_ref ) = @_;
+    $self->{hooks}->{pause_refresh} = $sub_ref;
+}
+
+
+sub set_pause_refresh_rate {
+    my ( $self, $refresh_time ) = @_;
+    $refresh_time = 1 if $refresh_time < 1;
+    $self->{hooks}->{pause_refresh_rate} = $refresh_time;
 }
 
 
@@ -71,8 +86,10 @@ sub last_pressed_key() {
 
 
 sub process_keypress() {
-    my ( $self ) = @_;
+    my ( $self, $start_time ) = @_;
+    $start_time = time() unless defined $start_time;
 
+    my $report_time = $start_time;
     my $paused = undef;
     while ( $paused || not defined $paused ) {
         my $char = $self->last_pressed_key();
@@ -99,6 +116,15 @@ sub process_keypress() {
             }
         }
         $paused = 0 unless defined $paused;
+        if ( $paused ) {
+            if ( defined $self->{hooks}->{pause_refresh} ) {
+                if ( time() - $report_time >= $self->{hooks}->{pause_refresh_rate} ) {
+                    $self->{hooks}->{pause_refresh}->();
+                    $report_time = time();
+                }
+            }
+            sleep 1; # ToDo Time::HiRes ?
+        }
     }
     return 1;
 }
@@ -110,7 +136,7 @@ sub sleep_and_process_keypress {
     my $start_time = time();
     my $num = 0;
     while ( time() - $start_time < $sleep_time ) {
-        $self->process_keypress();
+        $self->process_keypress( $start_time );
         sleep 1;
         if ( $ver > 9 ) {
             print ".";

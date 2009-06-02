@@ -99,15 +99,16 @@ VALUES (
 
 INSERT INTO msstatus ( msstatus_id, name, `desc` )
 VALUES (
-    1, 'unknown status',        NULL ), (
-    2, 'msession just created', NULL ), (
-    3, 'waiting for new job',   NULL ), (
-    4, 'command preparation',   NULL ), (
-    5, 'running command',       NULL ), (
-    6, 'paused by user',        NULL ), (
-    7, 'stop by user',          NULL ), (
-    8, 'stop by web server',    NULL ), (
-    9, 'stop by anything else', NULL
+    1, 'unknown status',            NULL ), (
+    2, 'msession just created',     NULL ), (
+    3, 'waiting for new job',       NULL ), (
+    4, 'command preparation',       NULL ), (
+    5, 'running command',           NULL ), (
+    6, 'paused by user',            NULL ), (
+    7, 'stop by user',              NULL ), (
+    8, 'stop by web server',        NULL ), (
+    9, 'stop by anything else',     NULL ), (
+   10, 'paused by user - refresh',  NULL
 );
 
 

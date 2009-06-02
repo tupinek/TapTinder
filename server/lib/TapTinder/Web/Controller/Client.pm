@@ -9,7 +9,7 @@ use DateTime;
 use File::Spec;
 use File::Copy;
 
-use constant SUPPORRTED_REVISION => 257;
+use constant SUPPORRTED_REVISION => 320; # ToDo
 
 
 =head1 NAME
@@ -1055,6 +1055,9 @@ sub cmd_mevent {
     if ( $event_name eq 'pause' ) {
         $new_msstatus_id = 6; # paused by user
         $new_cmd_status_id = 6; # paused by user
+
+    } elsif ( $event_name eq 'pause refresh' ) {
+        $new_msstatus_id = 10; # paused by user - refresh
 
     } elsif ( $event_name eq 'continue' ) {
         # TODO - try to restore msstatus_id from before pause

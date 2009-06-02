@@ -24,7 +24,7 @@ sub index : Path  {
 
     my $pr = $self->get_page_params( $params );
 
-    my $plus_rows = [ qw/ msession_id client_rev start_time machine_id machine_name cpuarch osname archname last_cmd_finish_time msstatus_name /];
+    my $plus_rows = [ qw/ msession_id client_rev start_time machine_id machine_name cpuarch osname archname last_cmd_finish_time max_mslog_id /];
     my $search_conf = {
         'select' => $plus_rows,
         'as'     => $plus_rows,
@@ -39,8 +39,21 @@ sub index : Path  {
     my @states = ();
     while (my $state = $rs->next) {
         my %state_rows = ( $state->get_columns() );
-        push @states, \%state_rows;
+
+        my %mslog = $c->model('WebDB::mslog')->find(
+            {
+                'mslog_id' => $state_rows{max_mslog_id},
+            }, {
+               join => 'msstatus_id',
+               select => [ qw/ me.mslog_id me.change_time msstatus_id.name / ],
+               as => [ qw/ mslog_id mslog_change_time msstatus_name / ],
+            }
+        )->get_columns;
+
+        push @states, { %state_rows, %mslog };
+        # $self->dumper( $c, \%mslog );
     }
+
     $c->stash->{states} = \@states;
 
     my $base_uri = '/' . $c->action->namespace . '/page-';
