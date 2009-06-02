@@ -36,11 +36,17 @@ sub index : Path  {
 
     my $rs = $c->model('WebDB')->schema->resultset( 'MSessionStatus' )->search( {}, $search_conf );
 
+    # ToDo - haven't time to find right solution
+    my $date_from = DateTime->now( time_zone => 'GMT' );
+    $date_from->add( hours => -1.5 );
+    my $date_from_str = $date_from->ymd . ' ' . $date_from->hms;
+    #$self->dumper( $c, $date_from_str );
+
     my @states = ();
     while (my $state = $rs->next) {
         my %state_rows = ( $state->get_columns() );
 
-        my %mslog = $c->model('WebDB::mslog')->find(
+        my $mslog_row = $c->model('WebDB::mslog')->find(
             {
                 'mslog_id' => $state_rows{max_mslog_id},
             }, {
@@ -48,10 +54,13 @@ sub index : Path  {
                select => [ qw/ me.mslog_id me.change_time msstatus_id.name / ],
                as => [ qw/ mslog_id mslog_change_time msstatus_name / ],
             }
-        )->get_columns;
+        );
 
-        push @states, { %state_rows, %mslog };
-        # $self->dumper( $c, \%mslog );
+        my %mslog = $mslog_row->get_columns;
+        if ( $mslog{mslog_change_time} gt $date_from_str ) {
+            push @states, { %state_rows, %mslog };
+        }
+        #$self->dumper( $c, \%mslog );
     }
 
     $c->stash->{states} = \@states;
