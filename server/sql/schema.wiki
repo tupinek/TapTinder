@@ -3,7 +3,7 @@
 <!-- perl utils\wiki_schema.pl sql\schema.wiki 1 > sql\schema.sql -->
 <!-- PARSE PART DBCREATE BEGIN -->
 <source lang=sql>
--- schema version: 0.09
+-- schema version: 0.11
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 </source>
@@ -680,7 +680,7 @@ Benchmark run.
 <source lang=sql>
 CREATE TABLE brun_conf (
     brun_conf_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    hash            VARCHAR(50) NOT NULL,
+    hash            CHAR(30) NOT NULL,
     args            VARCHAR(255) DEFAULT NULL,
     alias_conf_id   INT UNSIGNED DEFAULT NULL,
     INDEX i_hash (hash),
@@ -713,7 +713,7 @@ Reasons to skipp all tests.
 CREATE TABLE tskipall_msg (
     tskipall_msg_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msg                 TEXT,
-    hash                VARCHAR(50) NOT NULL,
+    hash                CHAR(30) NOT NULL,
     INDEX i_hash (hash)
 ) TYPE=InnoDB;
 </source>
@@ -793,7 +793,7 @@ CREATE TABLE tdiag_msg (
     tdiag_msg_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     ttest_id        INT UNSIGNED NOT NULL,
     msg             TEXT,
-    hash            VARCHAR(50) NOT NULL,
+    hash            CHAR(30) NOT NULL,
     INDEX i_ttest_id (ttest_id),
     INDEX i_hash (hash),
     CONSTRAINT fk_tdiag_msg_ttest_id FOREIGN KEY (ttest_id) REFERENCES ttest (ttest_id)
@@ -861,6 +861,24 @@ CREATE TABLE fsfile (
     deleted         DATETIME DEFAULT NULL,
     INDEX i_fspath_id (fspath_id),
     CONSTRAINT fk_fsfile_fspath_id FOREIGN KEY (fspath_id) REFERENCES fspath (fspath_id)
+) TYPE=InnoDB;
+</source>
+
+==== fsfile_ext ====
+Files extracted from another files (archives).
+* fsfile_ext_id
+* fsfile_id
+* archive_id
+* extracted
+<source lang=sql>
+CREATE TABLE fsfile_ext (
+    fsfile_ext_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    fsfile_id       INT UNSIGNED NOT NULL,
+    archive_id      INT UNSIGNED NOT NULL,
+    extracted       DATETIME NOT NULL,
+    INDEX i_archive_id_fsfile_id (archive_id, fsfile_id),
+    CONSTRAINT fk_fsfile_ext_fsfile_id FOREIGN KEY (fsfile_id) REFERENCES fsfile (fsfile_id),
+    CONSTRAINT fk_fsfile_ext_archive_id FOREIGN KEY (archive_id) REFERENCES fsfile (fsfile_id)
 ) TYPE=InnoDB;
 </source>
 

@@ -62,7 +62,7 @@ VALUES (
 
 INSERT INTO param ( param_id, param_type_id, value )
 VALUES (
-    1, 1, '0.09'
+    1, 1, '0.11' -- ToDo
 );
 
 INSERT INTO trun_status ( trun_status_id, name, `desc` )

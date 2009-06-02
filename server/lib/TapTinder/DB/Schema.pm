@@ -1,11 +1,8 @@
 
 
 package TapTinder::DB::Schema::rep_path;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_path');
 
 
@@ -60,11 +57,8 @@ __PACKAGE__->set_primary_key('rep_path_id');
 
 
 package TapTinder::DB::Schema::rev_rep_path;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rev_rep_path');
 
 
@@ -91,11 +85,8 @@ __PACKAGE__->add_columns(
 
 
 package TapTinder::DB::Schema::jobp_cmd;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('jobp_cmd');
 
 
@@ -150,11 +141,8 @@ __PACKAGE__->set_primary_key('jobp_cmd_id');
 
 
 package TapTinder::DB::Schema::rep_change_type;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_change_type');
 
 
@@ -191,11 +179,8 @@ __PACKAGE__->set_primary_key('rep_change_type_id');
 
 
 package TapTinder::DB::Schema::user;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('user');
 
 
@@ -277,11 +262,8 @@ __PACKAGE__->set_primary_key('user_id');
 
 
 package TapTinder::DB::Schema::param;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('param');
 
 
@@ -318,11 +300,8 @@ __PACKAGE__->set_primary_key('param_id');
 
 
 package TapTinder::DB::Schema::msession;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('msession');
 
 
@@ -395,11 +374,8 @@ __PACKAGE__->set_primary_key('msession_id');
 
 
 package TapTinder::DB::Schema::msabort_reason;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('msabort_reason');
 
 
@@ -436,11 +412,8 @@ __PACKAGE__->set_primary_key('msabort_reason_id');
 
 
 package TapTinder::DB::Schema::msjob;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('msjob');
 
 
@@ -504,11 +477,8 @@ __PACKAGE__->set_primary_key('msjob_id');
 
 
 package TapTinder::DB::Schema::fsfile_type;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('fsfile_type');
 
 
@@ -545,11 +515,8 @@ __PACKAGE__->set_primary_key('fsfile_type_id');
 
 
 package TapTinder::DB::Schema::cmd;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('cmd');
 
 
@@ -595,11 +562,8 @@ __PACKAGE__->set_primary_key('cmd_id');
 
 
 package TapTinder::DB::Schema::trun_status;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('trun_status');
 
 
@@ -635,12 +599,56 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('trun_status_id');
 
 
-package TapTinder::DB::Schema::bfile;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+package TapTinder::DB::Schema::fsfile_ext;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
+__PACKAGE__->table('fsfile_ext');
+
+
+__PACKAGE__->add_columns(
+    'fsfile_ext_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'fsfile_ext_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'fsfile_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'fsfile_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'archive_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'archive_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'extracted' => {
+      'data_type' => 'DATETIME',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'extracted',
+      'is_nullable' => 0,
+      'size' => 0
+    },
+);
+__PACKAGE__->set_primary_key('fsfile_ext_id');
+
+
+package TapTinder::DB::Schema::bfile;
+use base 'TapTinder::DB::DBIxClassBase';
+
 __PACKAGE__->table('bfile');
 
 
@@ -695,11 +703,8 @@ __PACKAGE__->set_primary_key('bfile_id');
 
 
 package TapTinder::DB::Schema::cmd_status;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('cmd_status');
 
 
@@ -736,11 +741,8 @@ __PACKAGE__->set_primary_key('cmd_status_id');
 
 
 package TapTinder::DB::Schema::farm;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('farm');
 
 
@@ -795,11 +797,8 @@ __PACKAGE__->set_primary_key('farm_id');
 
 
 package TapTinder::DB::Schema::trest;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('trest');
 
 
@@ -836,11 +835,8 @@ __PACKAGE__->set_primary_key('trest_id');
 
 
 package TapTinder::DB::Schema::jobp;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('jobp');
 
 
@@ -931,11 +927,8 @@ __PACKAGE__->set_primary_key('jobp_id');
 
 
 package TapTinder::DB::Schema::rev;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rev');
 
 
@@ -999,11 +992,8 @@ __PACKAGE__->set_primary_key('rev_id');
 
 
 package TapTinder::DB::Schema::fspath;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('fspath');
 
 
@@ -1085,11 +1075,8 @@ __PACKAGE__->set_primary_key('fspath_id');
 
 
 package TapTinder::DB::Schema::mslog;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('mslog');
 
 
@@ -1153,11 +1140,8 @@ __PACKAGE__->set_primary_key('mslog_id');
 
 
 package TapTinder::DB::Schema::patch;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('patch');
 
 
@@ -1248,11 +1232,8 @@ __PACKAGE__->set_primary_key('patch_id');
 
 
 package TapTinder::DB::Schema::rep_file;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_file');
 
 
@@ -1307,11 +1288,8 @@ __PACKAGE__->set_primary_key('rep_file_id');
 
 
 package TapTinder::DB::Schema::fsfile;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('fsfile');
 
 
@@ -1375,11 +1353,8 @@ __PACKAGE__->set_primary_key('fsfile_id');
 
 
 package TapTinder::DB::Schema::param_type;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('param_type');
 
 
@@ -1416,11 +1391,8 @@ __PACKAGE__->set_primary_key('param_type_id');
 
 
 package TapTinder::DB::Schema::project;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('project');
 
 
@@ -1466,11 +1438,8 @@ __PACKAGE__->set_primary_key('project_id');
 
 
 package TapTinder::DB::Schema::msjobp;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('msjobp');
 
 
@@ -1543,11 +1512,8 @@ __PACKAGE__->set_primary_key('msjobp_id');
 
 
 package TapTinder::DB::Schema::rep_file_change;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_file_change');
 
 
@@ -1592,11 +1558,8 @@ __PACKAGE__->add_columns(
 
 
 package TapTinder::DB::Schema::rep_test;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_test');
 
 
@@ -1651,11 +1614,8 @@ __PACKAGE__->set_primary_key('rep_test_id');
 
 
 package TapTinder::DB::Schema::msstatus;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('msstatus');
 
 
@@ -1692,11 +1652,8 @@ __PACKAGE__->set_primary_key('msstatus_id');
 
 
 package TapTinder::DB::Schema::tskipall_msg;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('tskipall_msg');
 
 
@@ -1720,24 +1677,21 @@ __PACKAGE__->add_columns(
       'size' => '65535'
     },
     'hash' => {
-      'data_type' => 'VARCHAR',
+      'data_type' => 'CHAR',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
       'name' => 'hash',
       'is_nullable' => 0,
-      'size' => '50'
+      'size' => '30'
     },
 );
 __PACKAGE__->set_primary_key('tskipall_msg_id');
 
 
 package TapTinder::DB::Schema::brun;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('brun');
 
 
@@ -1774,11 +1728,8 @@ __PACKAGE__->set_primary_key('brun_id');
 
 
 package TapTinder::DB::Schema::msjobp_cmd;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('msjobp_cmd');
 
 
@@ -1869,11 +1820,8 @@ __PACKAGE__->set_primary_key('msjobp_cmd_id');
 
 
 package TapTinder::DB::Schema::machine;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('machine');
 
 
@@ -2000,11 +1948,8 @@ __PACKAGE__->set_primary_key('machine_id');
 
 
 package TapTinder::DB::Schema::rep_file_change_from;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_file_change_from');
 
 
@@ -2049,11 +1994,8 @@ __PACKAGE__->add_columns(
 
 
 package TapTinder::DB::Schema::ttest;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('ttest');
 
 
@@ -2099,11 +2041,8 @@ __PACKAGE__->set_primary_key('ttest_id');
 
 
 package TapTinder::DB::Schema::tdiag_msg;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('tdiag_msg');
 
 
@@ -2136,24 +2075,21 @@ __PACKAGE__->add_columns(
       'size' => '65535'
     },
     'hash' => {
-      'data_type' => 'VARCHAR',
+      'data_type' => 'CHAR',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
       'name' => 'hash',
       'is_nullable' => 0,
-      'size' => '50'
+      'size' => '30'
     },
 );
 __PACKAGE__->set_primary_key('tdiag_msg_id');
 
 
 package TapTinder::DB::Schema::brun_conf;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('brun_conf');
 
 
@@ -2168,13 +2104,13 @@ __PACKAGE__->add_columns(
       'size' => '11'
     },
     'hash' => {
-      'data_type' => 'VARCHAR',
+      'data_type' => 'CHAR',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
       'name' => 'hash',
       'is_nullable' => 0,
-      'size' => '50'
+      'size' => '30'
     },
     'args' => {
       'data_type' => 'VARCHAR',
@@ -2199,11 +2135,8 @@ __PACKAGE__->set_primary_key('brun_conf_id');
 
 
 package TapTinder::DB::Schema::job;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('job');
 
 
@@ -2258,11 +2191,8 @@ __PACKAGE__->set_primary_key('job_id');
 
 
 package TapTinder::DB::Schema::machine_job_conf;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('machine_job_conf');
 
 
@@ -2335,11 +2265,8 @@ __PACKAGE__->set_primary_key('machine_job_conf_id');
 
 
 package TapTinder::DB::Schema::rep_author;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep_author');
 
 
@@ -2385,11 +2312,8 @@ __PACKAGE__->set_primary_key('rep_author_id');
 
 
 package TapTinder::DB::Schema::trun;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('trun');
 
 
@@ -2489,11 +2413,8 @@ __PACKAGE__->set_primary_key('trun_id');
 
 
 package TapTinder::DB::Schema::fspath_select;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('fspath_select');
 
 
@@ -2539,11 +2460,8 @@ __PACKAGE__->set_primary_key('fspath_select_id');
 
 
 package TapTinder::DB::Schema::tfile;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('tfile');
 
 
@@ -2607,11 +2525,8 @@ __PACKAGE__->set_primary_key('tfile_id');
 
 
 package TapTinder::DB::Schema::rep;
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/Core ViewMD/);
 __PACKAGE__->table('rep');
 
 
@@ -2755,6 +2670,13 @@ package TapTinder::DB::Schema::trun_status;
 
 __PACKAGE__->has_many('get_trun', 'TapTinder::DB::Schema::trun', 'trun_status_id');
 
+package TapTinder::DB::Schema::fsfile_ext;
+
+__PACKAGE__->belongs_to('fsfile_id','TapTinder::DB::Schema::fsfile','fsfile_id');
+
+__PACKAGE__->belongs_to('archive_id','TapTinder::DB::Schema::fsfile','archive_id');
+
+
 package TapTinder::DB::Schema::bfile;
 
 __PACKAGE__->belongs_to('brun_id','TapTinder::DB::Schema::brun','brun_id');
@@ -2841,6 +2763,8 @@ __PACKAGE__->has_many('get_msjobp_cmd', 'TapTinder::DB::Schema::msjobp_cmd', 'ou
 __PACKAGE__->has_many('get_msjobp_cmd', 'TapTinder::DB::Schema::msjobp_cmd', 'outdata_id');
 __PACKAGE__->belongs_to('fspath_id','TapTinder::DB::Schema::fspath','fspath_id');
 
+__PACKAGE__->has_many('get_fsfile_ext', 'TapTinder::DB::Schema::fsfile_ext', 'fsfile_id');
+__PACKAGE__->has_many('get_fsfile_ext', 'TapTinder::DB::Schema::fsfile_ext', 'archive_id');
 
 package TapTinder::DB::Schema::param_type;
 
@@ -3045,6 +2969,8 @@ __PACKAGE__->register_class('fsfile_type', 'TapTinder::DB::Schema::fsfile_type')
 __PACKAGE__->register_class('cmd', 'TapTinder::DB::Schema::cmd');
 
 __PACKAGE__->register_class('trun_status', 'TapTinder::DB::Schema::trun_status');
+
+__PACKAGE__->register_class('fsfile_ext', 'TapTinder::DB::Schema::fsfile_ext');
 
 __PACKAGE__->register_class('bfile', 'TapTinder::DB::Schema::bfile');
 

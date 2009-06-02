@@ -1,20 +1,21 @@
-package SQL::Translator::Producer::DBIx::Class::File;
+package SQL::Translator::Producer::DBIx::Class::TapTinderFile;
 
 =head1 NAME
 
-SQL::Translator::Producer::DBIx::Class::File - DBIx::Class file producer
+SQL::Translator::Producer::DBIx::Class::TapTinderFile - DBIx::Class file producer for TapTinder
 
 =head1 SYNOPSIS
 
   use SQL::Translator;
 
   my $t = SQL::Translator->new( parser => '...',
-                                producer => 'DBIx::Class::File' );
+                                producer => 'DBIx::Class::TapTinderFile' );
   print $translator->translate( $file );
 
 =head1 DESCRIPTION
 
-Creates a DBIx::Class::Schema for use with DBIx::Class
+Creates a DBIx::Class::Schema for use with DBIx::Class and TapTinder. Based on
+SQL::Translator::Producer::DBIx::Class::File.
 
 =cut
 
@@ -72,11 +73,8 @@ DATA
         my $output .= qq{
 
 package ${dbixschema}::${tname};
-use base 'DBIx::Class';
-use strict;
-use warnings;
+use base 'TapTinder::DB::DBIxClassBase';
 
-__PACKAGE__->load_components(qw/${pkclass} Core/);
 __PACKAGE__->table('${tname}');
 
 };
