@@ -151,10 +151,10 @@ VALUES (
     1, 'ttbot', 'TapTinder bot.', 'irc.freenode.org', 6667, 1
 );
 
-INSERT INTO ichannel ( ichannel_id, name, ibot_id )
+INSERT INTO ichannel ( ichannel_id, name )
 VALUES (
-    1, '#taptinder-bottest1',   1   ), (
-    2, '#taptinder-bottest2',   1
+    1, '#taptinder-bottest1'    ), (
+    2, '#taptinder-bottest2'
 );
 
 
@@ -166,9 +166,11 @@ VALUES (
 
 INSERT INTO ichannel_conf ( ichannel_conf_id, ibot_id, ichannel_id, ireport_type_id, jobp_cmd_id )
 VALUES (
-    1, 1, 1, 1,  4      ), (
-    2, 1, 1, 1,  9      ), (
-    3, 1, 1, 2, 10
+    1, 1, 1, 1,  4  ), (
+    2, 1, 1, 1,  9  ), (
+    3, 1, 1, 2, 10  ), (
+
+    4, 1, 2, 1,  9
 );
 
 commit;

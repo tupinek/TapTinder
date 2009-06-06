@@ -49,19 +49,26 @@ my $ibot_row = $schema->resultset('ibot')->find(
 croak "Bot with id = $ibot_id not found." unless $ibot_row;
 my %ibot = $ibot_row->get_columns;
 
-my $ichannel_rs = $schema->resultset('ichannel')->search(
-    { 'ibot_id.ibot_id' => $ibot_id, },
-    { join => 'ibot_id', }
+my $ichannel_rs = $schema->resultset('ichannel_conf')->search(
+    { 'me.ibot_id' => $ibot_id, },
+    {
+        join => [ qw/ ibot_id ichannel_id ireport_type_id / ],
+        'select' => [ qw/ me.ichannel_conf_id ichannel_id.name me.ireport_type_id me.jobp_cmd_id / ],
+        'as'     => [ qw/ ichannel_conf_id channel_name ireport_type_id jobp_cmd_id / ],
+    }
 );
-croak "Channel def for with bot_id = $ibot_id not found." unless $ichannel_rs;
-my $ra_ichannels = [];
+croak "Channel conf for bot_id = $ibot_id not found." unless $ichannel_rs;
+my $channel_confs = {};
+my $channel_names = {};
 while ( my $ichannel_row = $ichannel_rs->next ) {
-    my %ichannel = $ichannel_row->get_columns;
-    push @$ra_ichannels, $ichannel{name};
+    my %conf = $ichannel_row->get_columns;
+    my $channel_name = $conf{channel_name};
+    $channel_confs->{ $conf{ichannel_conf_id} } = { %conf };
+    $channel_names->{ $channel_name } = 1;
 }
 
-# with useful options. pass any option
-# that's valid for Bot::BasicBot.
+
+# Pass any option that's valid for Bot::BasicBot.
 my $bot = Bot::BasicBot::Pluggable->new(
     nick     => $ibot{nick},
     altnicks => [],
@@ -69,8 +76,7 @@ my $bot = Bot::BasicBot::Pluggable->new(
     server   => $ibot{server},
     port     => $ibot{port},
     username => $ibot{operator_irc_nick},
-
-    channels => $ra_ichannels,
+    channels => [ keys %{ $channel_names } ],
 );
 
 $bot->load("Auth");

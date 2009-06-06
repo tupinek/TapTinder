@@ -193,15 +193,15 @@ CREATE TABLE rep_path (
 
 ==== rev_rep_path ====
 Revision info to repository path map (M:N).
-* rev_id
 * rep_path_id
+* rev_id
 <source lang=sql>
 CREATE TABLE rev_rep_path (
-    rev_id              INT UNSIGNED NOT NULL,
     rep_path_id         INT UNSIGNED NOT NULL,
-    UNIQUE KEY unique_rep_id_path (rev_id, rep_path_id),
-    CONSTRAINT fk_rev_rep_path_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
-    CONSTRAINT fk_rev_rep_path_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id)
+    rev_id              INT UNSIGNED NOT NULL,
+    UNIQUE KEY unique_rep_id_path (rep_path_id, rev_id),
+    CONSTRAINT fk_rev_rep_path_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
+    CONSTRAINT fk_rev_rep_path_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -970,13 +970,10 @@ CREATE TABLE ibot (
 IRC channel.
 * ichannel_id
 * name
-* ibot_id
 <source lang=sql>
 CREATE TABLE ichannel (
     ichannel_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name            VARCHAR(50) NOT NULL,
-    ibot_id         INT UNSIGNED NOT NULL,
-    CONSTRAINT fk_ichannel_ibot_id FOREIGN KEY (ibot_id) REFERENCES ibot (ibot_id)
+    name            VARCHAR(50) NOT NULL
 ) TYPE=InnoDB;
 </source>
 
@@ -1012,6 +1009,28 @@ CREATE TABLE ichannel_conf (
     CONSTRAINT fk_ichannel_conf_jobp_cmd_id FOREIGN KEY (jobp_cmd_id) REFERENCES jobp_cmd (jobp_cmd_id)
 ) TYPE=InnoDB;
 </source>
+
+==== ibot_log ====
+IRC bot log.
+* ibot_log_id
+* ibot_id
+* ichannel_conf_id
+* rep_path_id
+* rev_id
+<source lang=sql>
+CREATE TABLE ibot_log (
+    ibot_log_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    ibot_id             INT UNSIGNED NOT NULL,
+    ichannel_conf_id    INT UNSIGNED NOT NULL,
+    rep_path_id         INT UNSIGNED NOT NULL,
+    rev_id              INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_ibot_log_ibot_id FOREIGN KEY (ibot_id) REFERENCES ibot (ibot_id),
+    CONSTRAINT fk_ibot_log_ichannel_conf_id FOREIGN KEY (ichannel_conf_id) REFERENCES ichannel_conf (ichannel_conf_id),
+    CONSTRAINT fk_ibot_log_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
+    CONSTRAINT fk_ibot_log_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id)
+) TYPE=InnoDB;
+</source>
+
 
 === Footer ===
 

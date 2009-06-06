@@ -63,21 +63,21 @@ __PACKAGE__->table('rev_rep_path');
 
 
 __PACKAGE__->add_columns(
-    'rev_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'rev_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
     'rep_path_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 1,
       'name' => 'rep_path_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'rev_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'rev_id',
       'is_nullable' => 0,
       'size' => '11'
     },
@@ -294,15 +294,6 @@ __PACKAGE__->add_columns(
       'name' => 'name',
       'is_nullable' => 0,
       'size' => '50'
-    },
-    'ibot_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'ibot_id',
-      'is_nullable' => 0,
-      'size' => '11'
     },
 );
 __PACKAGE__->set_primary_key('ichannel_id');
@@ -1812,6 +1803,62 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('brun_id');
 
 
+package TapTinder::DB::Schema::ibot_log;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('ibot_log');
+
+
+__PACKAGE__->add_columns(
+    'ibot_log_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'ibot_log_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'ibot_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'ibot_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'ichannel_conf_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'ichannel_conf_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'rep_path_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'rep_path_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'rev_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'rev_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+);
+__PACKAGE__->set_primary_key('ibot_log_id');
+
+
 package TapTinder::DB::Schema::msjobp_cmd;
 use base 'TapTinder::DB::DBIxClassBase';
 
@@ -2813,12 +2860,13 @@ __PACKAGE__->has_many('get_patch', 'TapTinder::DB::Schema::patch', 'rep_path_id'
 __PACKAGE__->has_many('get_jobp', 'TapTinder::DB::Schema::jobp', 'rep_path_id');
 __PACKAGE__->has_many('get_machine_job_conf', 'TapTinder::DB::Schema::machine_job_conf', 'rep_path_id');
 __PACKAGE__->has_many('get_fspath_select', 'TapTinder::DB::Schema::fspath_select', 'rep_path_id');
+__PACKAGE__->has_many('get_ibot_log', 'TapTinder::DB::Schema::ibot_log', 'rep_path_id');
 
 package TapTinder::DB::Schema::rev_rep_path;
 
-__PACKAGE__->belongs_to('rev_id','TapTinder::DB::Schema::rev','rev_id');
-
 __PACKAGE__->belongs_to('rep_path_id','TapTinder::DB::Schema::rep_path','rep_path_id');
+
+__PACKAGE__->belongs_to('rev_id','TapTinder::DB::Schema::rev','rev_id');
 
 
 package TapTinder::DB::Schema::jobp_cmd;
@@ -2841,8 +2889,6 @@ __PACKAGE__->has_many('get_rep_author', 'TapTinder::DB::Schema::rep_author', 'us
 __PACKAGE__->has_many('get_ibot', 'TapTinder::DB::Schema::ibot', 'operator_id');
 
 package TapTinder::DB::Schema::ichannel;
-
-__PACKAGE__->belongs_to('ibot_id','TapTinder::DB::Schema::ibot','ibot_id');
 
 __PACKAGE__->has_many('get_ichannel_conf', 'TapTinder::DB::Schema::ichannel_conf', 'ichannel_id');
 
@@ -2937,6 +2983,7 @@ __PACKAGE__->has_many('get_rep_file_change', 'TapTinder::DB::Schema::rep_file_ch
 __PACKAGE__->has_many('get_rep_file_change_from', 'TapTinder::DB::Schema::rep_file_change_from', 'rev_id');
 __PACKAGE__->has_many('get_rep_file_change_from', 'TapTinder::DB::Schema::rep_file_change_from', 'from_rev_id');
 __PACKAGE__->has_many('get_msjobp', 'TapTinder::DB::Schema::msjobp', 'rev_id');
+__PACKAGE__->has_many('get_ibot_log', 'TapTinder::DB::Schema::ibot_log', 'rev_id');
 
 package TapTinder::DB::Schema::fspath;
 
@@ -3034,6 +3081,17 @@ __PACKAGE__->belongs_to('msjobp_cmd_id','TapTinder::DB::Schema::msjobp_cmd','msj
 __PACKAGE__->belongs_to('conf_id','TapTinder::DB::Schema::brun_conf','conf_id');
 
 __PACKAGE__->has_many('get_bfile', 'TapTinder::DB::Schema::bfile', 'brun_id');
+
+package TapTinder::DB::Schema::ibot_log;
+
+__PACKAGE__->belongs_to('ibot_id','TapTinder::DB::Schema::ibot','ibot_id');
+
+__PACKAGE__->belongs_to('ichannel_conf_id','TapTinder::DB::Schema::ichannel_conf','ichannel_conf_id');
+
+__PACKAGE__->belongs_to('rep_path_id','TapTinder::DB::Schema::rep_path','rep_path_id');
+
+__PACKAGE__->belongs_to('rev_id','TapTinder::DB::Schema::rev','rev_id');
+
 
 package TapTinder::DB::Schema::msjobp_cmd;
 
@@ -3140,6 +3198,7 @@ __PACKAGE__->belongs_to('ireport_type_id','TapTinder::DB::Schema::ireport_type',
 
 __PACKAGE__->belongs_to('jobp_cmd_id','TapTinder::DB::Schema::jobp_cmd','jobp_cmd_id',{join_type => 'left'});
 
+__PACKAGE__->has_many('get_ibot_log', 'TapTinder::DB::Schema::ibot_log', 'ichannel_conf_id');
 
 package TapTinder::DB::Schema::fspath_select;
 
@@ -3154,8 +3213,8 @@ package TapTinder::DB::Schema::ibot;
 
 __PACKAGE__->belongs_to('operator_id','TapTinder::DB::Schema::user','operator_id');
 
-__PACKAGE__->has_many('get_ichannel', 'TapTinder::DB::Schema::ichannel', 'ibot_id');
 __PACKAGE__->has_many('get_ichannel_conf', 'TapTinder::DB::Schema::ichannel_conf', 'ibot_id');
+__PACKAGE__->has_many('get_ibot_log', 'TapTinder::DB::Schema::ibot_log', 'ibot_id');
 
 package TapTinder::DB::Schema::tfile;
 
@@ -3249,6 +3308,8 @@ __PACKAGE__->register_class('msstatus', 'TapTinder::DB::Schema::msstatus');
 __PACKAGE__->register_class('tskipall_msg', 'TapTinder::DB::Schema::tskipall_msg');
 
 __PACKAGE__->register_class('brun', 'TapTinder::DB::Schema::brun');
+
+__PACKAGE__->register_class('ibot_log', 'TapTinder::DB::Schema::ibot_log');
 
 __PACKAGE__->register_class('msjobp_cmd', 'TapTinder::DB::Schema::msjobp_cmd');
 
