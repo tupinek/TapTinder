@@ -21,19 +21,15 @@ use TapTinder::Utils::DB qw(get_connected_schema);
 
 my $help = 0;
 my $ver = 2;
-my $irc_server_name = 'irc.freenode.org';
-my $irc_channel_name = '#taptinder';
-my $irc_port = 6667;
+my $ibot_id = undef;
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
     'ver|v=i' => \$ver,
-    'server=s' => \$irc_server_name,
-    'channel=s' => \$irc_channel_name,
-    'port=i' => \$irc_port,
+    'ibot_id=i' => \$ibot_id,
 );
 pod2usage(1) if $help || !$options_ok;
-if ( 0 ) {
-    print "No machine_id, msession_id, msjob_id or trun_id selected.\n";
+unless ( defined $ibot_id ) {
+    print "No ibot_id given.\n";
     pod2usage(1);
 }
 
@@ -42,24 +38,42 @@ croak "Configuration for database is empty.\n" unless $conf->{db};
 
 my $schema = get_connected_schema( $conf->{db} );
 
+my $ibot_row = $schema->resultset('ibot')->find(
+    $ibot_id,
+    {
+        join => 'operator_id',
+        '+select' => 'operator_id.irc_nick',
+        '+as' => 'operator_irc_nick',
+    }
+);
+croak "Bot with id = $ibot_id not found." unless $ibot_row;
+my %ibot = $ibot_row->get_columns;
+
+my $ichannel_rs = $schema->resultset('ichannel')->search(
+    { 'ibot_id.ibot_id' => $ibot_id, },
+    { join => 'ibot_id', }
+);
+croak "Channel def for with bot_id = $ibot_id not found." unless $ichannel_rs;
+my $ra_ichannels = [];
+while ( my $ichannel_row = $ichannel_rs->next ) {
+    my %ichannel = $ichannel_row->get_columns;
+    push @$ra_ichannels, $ichannel{name};
+}
 
 # with useful options. pass any option
 # that's valid for Bot::BasicBot.
 my $bot = Bot::BasicBot::Pluggable->new(
-    channels => [ $irc_channel_name ],
-    server   => $irc_server_name,
-    port     => $irc_port,
+    nick     => $ibot{nick},
+    altnicks => [],
+    name     => $ibot{full_name},
+    server   => $ibot{server},
+    port     => $ibot{port},
+    username => $ibot{operator_irc_nick},
 
-    nick     => "ttbot",
-    altnicks => ["taptinder-bot2", "taptinder-bot3", "taptinder-bot4", "taptinder-bot5" ],
-    username => "mj41",
-    name     => "TapTinder bot.",
-
-    #ignore_list => [qw(hitherto blech muttley)],
+    channels => $ra_ichannels,
 );
 
 $bot->load("Auth");
-$bot->load("Loader");
 $bot->load("TapTinderBot");
 
 my $TapTinderBot_handler = $bot->handler("TapTinderBot");
@@ -83,9 +97,7 @@ Example:
  Options:
    --help
    --ver .. Verbosity level.
-   --server
-   --channel
-   --port
+   --ibot_id .. ID to ibot table.
 
 =head1 DESCRIPTION
 

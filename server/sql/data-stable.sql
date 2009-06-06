@@ -23,9 +23,9 @@ delete from fspath_select;
 
 -- insert new data
 
-INSERT INTO user ( user_id, login, passwd, first_name, last_name, active, created, last_login )
+INSERT INTO user ( user_id, login, passwd, first_name, last_name, irc_nick, active, created, last_login )
 VALUES (
-    1, 'mj41', substring(MD5(RAND()), -8), 'Michal', 'Jurosz', 1, NOW(), NULL
+    1, 'mj41', substring(MD5(RAND()), -8), 'Michal', 'Jurosz', 'mj41', 1, NOW(), NULL
 );
 
 

@@ -20,9 +20,9 @@ delete from jobp_cmd;
 
 -- insert new data
 
-INSERT INTO user ( user_id, login, passwd, first_name, last_name, active, created, last_login )
+INSERT INTO user ( user_id, login, passwd, first_name, last_name, irc_nick, active, created, last_login )
 VALUES (
-    1, 'mj41', substring(MD5(RAND()), -8), 'Michal', 'Jurosz', 1, NOW(), NULL
+    1, 'mj41', substring(MD5(RAND()), -8), 'Michal', 'Jurosz', 'mj41', 1, NOW(), NULL
 );
 
 
@@ -34,9 +34,9 @@ VALUES (
 
 INSERT INTO machine ( machine_id, name, user_id, passwd, `desc` , created, ip, cpuarch, osname, archname, disabled, prev_machine_id, farm_id )
 VALUES (
-    1, 'pc-jurosz2',    1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.124',  'i386',   'MSWin32', 'MSWin32-x86-multi-thread', 0, NULL, NULL   ), (
-    2, 'tapir1',        1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.191.11', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, NULL, 1      ), (
-    3, 'tapir2',        1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.191.12', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, NULL, 1
+    5, 'pc-jurosz2',    1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.124',  'i386',   'MSWin32', 'MSWin32-x86-multi-thread', 0, NULL, NULL   ), (
+    6, 'tapir1',        1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.191.11', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, NULL, 1      ), (
+    7, 'tapir2',        1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.191.12', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, NULL, 1
 );
 
 
@@ -144,6 +144,31 @@ VALUES (
     7, 3, 1, 2  ), (
     8, 3, 2, 2  ), (
     9, 3, 3, 2
+);
+
+INSERT INTO ibot ( ibot_id, nick, full_name, server, port, operator_id )
+VALUES (
+    1, 'ttbot', 'TapTinder bot.', 'irc.freenode.org', 6667, 1
+);
+
+INSERT INTO ichannel ( ichannel_id, name, ibot_id )
+VALUES (
+    1, '#taptinder-bottest1',   1   ), (
+    2, '#taptinder-bottest2',   1
+);
+
+
+INSERT INTO ireport_type ( ireport_type_id, name, `desc` )
+VALUES (
+    1, 'build report', '' ), (
+    2, 'ttest report', ''
+);
+
+INSERT INTO ichannel_conf ( ichannel_conf_id, ibot_id, ichannel_id, ireport_type_id, jobp_cmd_id )
+VALUES (
+    1, 1, 1, 1,  4      ), (
+    2, 1, 1, 1,  9      ), (
+    3, 1, 1, 2, 10
 );
 
 commit;

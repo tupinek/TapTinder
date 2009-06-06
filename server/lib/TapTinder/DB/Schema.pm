@@ -230,6 +230,15 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '255'
     },
+    'irc_nick' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'irc_nick',
+      'is_nullable' => 1,
+      'size' => '25'
+    },
     'active' => {
       'data_type' => 'BOOLEAN',
       'is_auto_increment' => 0,
@@ -259,6 +268,44 @@ __PACKAGE__->add_columns(
     },
 );
 __PACKAGE__->set_primary_key('user_id');
+
+
+package TapTinder::DB::Schema::ichannel;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('ichannel');
+
+
+__PACKAGE__->add_columns(
+    'ichannel_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'ichannel_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'name' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'name',
+      'is_nullable' => 0,
+      'size' => '50'
+    },
+    'ibot_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'ibot_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+);
+__PACKAGE__->set_primary_key('ichannel_id');
 
 
 package TapTinder::DB::Schema::param;
@@ -794,6 +841,44 @@ __PACKAGE__->add_columns(
     },
 );
 __PACKAGE__->set_primary_key('farm_id');
+
+
+package TapTinder::DB::Schema::ireport_type;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('ireport_type');
+
+
+__PACKAGE__->add_columns(
+    'ireport_type_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'ireport_type_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'name' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'name',
+      'is_nullable' => 0,
+      'size' => '15'
+    },
+    'desc' => {
+      'data_type' => 'TEXT',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'desc',
+      'is_nullable' => 1,
+      'size' => '65535'
+    },
+);
+__PACKAGE__->set_primary_key('ireport_type_id');
 
 
 package TapTinder::DB::Schema::trest;
@@ -2412,6 +2497,62 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('trun_id');
 
 
+package TapTinder::DB::Schema::ichannel_conf;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('ichannel_conf');
+
+
+__PACKAGE__->add_columns(
+    'ichannel_conf_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'ichannel_conf_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'ibot_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'ibot_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'ichannel_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'ichannel_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'ireport_type_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'ireport_type_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'jobp_cmd_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 1,
+      'name' => 'jobp_cmd_id',
+      'is_nullable' => 1,
+      'size' => '11'
+    },
+);
+__PACKAGE__->set_primary_key('ichannel_conf_id');
+
+
 package TapTinder::DB::Schema::fspath_select;
 use base 'TapTinder::DB::DBIxClassBase';
 
@@ -2457,6 +2598,71 @@ __PACKAGE__->add_columns(
     },
 );
 __PACKAGE__->set_primary_key('fspath_select_id');
+
+
+package TapTinder::DB::Schema::ibot;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('ibot');
+
+
+__PACKAGE__->add_columns(
+    'ibot_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'ibot_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'nick' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'nick',
+      'is_nullable' => 0,
+      'size' => '50'
+    },
+    'full_name' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'full_name',
+      'is_nullable' => 0,
+      'size' => '255'
+    },
+    'server' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'server',
+      'is_nullable' => 0,
+      'size' => '50'
+    },
+    'port' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'port',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'operator_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'operator_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+);
+__PACKAGE__->set_primary_key('ibot_id');
 
 
 package TapTinder::DB::Schema::tfile;
@@ -2622,6 +2828,7 @@ __PACKAGE__->belongs_to('jobp_id','TapTinder::DB::Schema::jobp','jobp_id');
 __PACKAGE__->belongs_to('cmd_id','TapTinder::DB::Schema::cmd','cmd_id');
 
 __PACKAGE__->has_many('get_msjobp_cmd', 'TapTinder::DB::Schema::msjobp_cmd', 'jobp_cmd_id');
+__PACKAGE__->has_many('get_ichannel_conf', 'TapTinder::DB::Schema::ichannel_conf', 'jobp_cmd_id');
 
 package TapTinder::DB::Schema::rep_change_type;
 
@@ -2631,6 +2838,13 @@ package TapTinder::DB::Schema::user;
 
 __PACKAGE__->has_many('get_machine', 'TapTinder::DB::Schema::machine', 'user_id');
 __PACKAGE__->has_many('get_rep_author', 'TapTinder::DB::Schema::rep_author', 'user_id');
+__PACKAGE__->has_many('get_ibot', 'TapTinder::DB::Schema::ibot', 'operator_id');
+
+package TapTinder::DB::Schema::ichannel;
+
+__PACKAGE__->belongs_to('ibot_id','TapTinder::DB::Schema::ibot','ibot_id');
+
+__PACKAGE__->has_many('get_ichannel_conf', 'TapTinder::DB::Schema::ichannel_conf', 'ichannel_id');
 
 package TapTinder::DB::Schema::param;
 
@@ -2691,6 +2905,10 @@ __PACKAGE__->has_many('get_msjobp_cmd', 'TapTinder::DB::Schema::msjobp_cmd', 'st
 package TapTinder::DB::Schema::farm;
 
 __PACKAGE__->has_many('get_machine', 'TapTinder::DB::Schema::machine', 'farm_id');
+
+package TapTinder::DB::Schema::ireport_type;
+
+__PACKAGE__->has_many('get_ichannel_conf', 'TapTinder::DB::Schema::ichannel_conf', 'ireport_type_id');
 
 package TapTinder::DB::Schema::trest;
 
@@ -2912,6 +3130,17 @@ __PACKAGE__->belongs_to('msjobp_cmd_id','TapTinder::DB::Schema::msjobp_cmd','msj
 __PACKAGE__->has_many('get_tfile', 'TapTinder::DB::Schema::tfile', 'trun_id');
 __PACKAGE__->has_many('get_ttest', 'TapTinder::DB::Schema::ttest', 'trun_id');
 
+package TapTinder::DB::Schema::ichannel_conf;
+
+__PACKAGE__->belongs_to('ibot_id','TapTinder::DB::Schema::ibot','ibot_id');
+
+__PACKAGE__->belongs_to('ichannel_id','TapTinder::DB::Schema::ichannel','ichannel_id');
+
+__PACKAGE__->belongs_to('ireport_type_id','TapTinder::DB::Schema::ireport_type','ireport_type_id');
+
+__PACKAGE__->belongs_to('jobp_cmd_id','TapTinder::DB::Schema::jobp_cmd','jobp_cmd_id',{join_type => 'left'});
+
+
 package TapTinder::DB::Schema::fspath_select;
 
 __PACKAGE__->belongs_to('fsfile_type_id','TapTinder::DB::Schema::fsfile_type','fsfile_type_id');
@@ -2920,6 +3149,13 @@ __PACKAGE__->belongs_to('rep_path_id','TapTinder::DB::Schema::rep_path','rep_pat
 
 __PACKAGE__->belongs_to('fspath_id','TapTinder::DB::Schema::fspath','fspath_id');
 
+
+package TapTinder::DB::Schema::ibot;
+
+__PACKAGE__->belongs_to('operator_id','TapTinder::DB::Schema::user','operator_id');
+
+__PACKAGE__->has_many('get_ichannel', 'TapTinder::DB::Schema::ichannel', 'ibot_id');
+__PACKAGE__->has_many('get_ichannel_conf', 'TapTinder::DB::Schema::ichannel_conf', 'ibot_id');
 
 package TapTinder::DB::Schema::tfile;
 
@@ -2956,6 +3192,8 @@ __PACKAGE__->register_class('rep_change_type', 'TapTinder::DB::Schema::rep_chang
 
 __PACKAGE__->register_class('user', 'TapTinder::DB::Schema::user');
 
+__PACKAGE__->register_class('ichannel', 'TapTinder::DB::Schema::ichannel');
+
 __PACKAGE__->register_class('param', 'TapTinder::DB::Schema::param');
 
 __PACKAGE__->register_class('msession', 'TapTinder::DB::Schema::msession');
@@ -2977,6 +3215,8 @@ __PACKAGE__->register_class('bfile', 'TapTinder::DB::Schema::bfile');
 __PACKAGE__->register_class('cmd_status', 'TapTinder::DB::Schema::cmd_status');
 
 __PACKAGE__->register_class('farm', 'TapTinder::DB::Schema::farm');
+
+__PACKAGE__->register_class('ireport_type', 'TapTinder::DB::Schema::ireport_type');
 
 __PACKAGE__->register_class('trest', 'TapTinder::DB::Schema::trest');
 
@@ -3030,7 +3270,11 @@ __PACKAGE__->register_class('rep_author', 'TapTinder::DB::Schema::rep_author');
 
 __PACKAGE__->register_class('trun', 'TapTinder::DB::Schema::trun');
 
+__PACKAGE__->register_class('ichannel_conf', 'TapTinder::DB::Schema::ichannel_conf');
+
 __PACKAGE__->register_class('fspath_select', 'TapTinder::DB::Schema::fspath_select');
+
+__PACKAGE__->register_class('ibot', 'TapTinder::DB::Schema::ibot');
 
 __PACKAGE__->register_class('tfile', 'TapTinder::DB::Schema::tfile');
 

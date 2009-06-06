@@ -17,6 +17,7 @@ User info.
 * passwd
 * first_name
 * last_name
+* irc_nick
 * active - 0 means historical data
 * created - account creation date
 * last_login - date
@@ -27,6 +28,7 @@ CREATE TABLE user (
     passwd      VARCHAR(20) NOT NULL,
     first_name  VARCHAR(255) NOT NULL DEFAULT '',
     last_name   VARCHAR(255) NOT NULL DEFAULT '',
+    irc_nick    VARCHAR(25) DEFAULT NULL,
     active      BOOLEAN NOT NULL DEFAULT 1,
     created     DATETIME NOT NULL,
     last_login  DATETIME DEFAULT NULL,
@@ -941,6 +943,73 @@ CREATE TABLE param (
     value           VARCHAR(255) DEFAULT NULL,
     INDEX i_name (param_type_id),
     CONSTRAINT fk_param_param_type_id FOREIGN KEY (param_type_id) REFERENCES param_type (param_type_id)
+) TYPE=InnoDB;
+</source>
+
+==== ibot ====
+IRC bots.
+* ibot_id
+* nick
+* full_name
+* server
+* port
+* operator_id -- User_id who operate robot.
+<source lang=sql>
+CREATE TABLE ibot (
+    ibot_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nick            VARCHAR(50) NOT NULL,
+    full_name       VARCHAR(255) NOT NULL,
+    server          VARCHAR(50) NOT NULL,
+    port            INT UNSIGNED NOT NULL,
+    operator_id     INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_ibot_operator_id FOREIGN KEY (operator_id) REFERENCES user (user_id)
+) TYPE=InnoDB;
+</source>
+
+==== ichannel ====
+IRC channel.
+* ichannel_id
+* name
+* ibot_id
+<source lang=sql>
+CREATE TABLE ichannel (
+    ichannel_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(50) NOT NULL,
+    ibot_id         INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_ichannel_ibot_id FOREIGN KEY (ibot_id) REFERENCES ibot (ibot_id)
+) TYPE=InnoDB;
+</source>
+
+==== ireport_type_id ====
+* ireport_type_id
+* name
+* desc
+<source lang=sql>
+CREATE TABLE ireport_type (
+    ireport_type_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(15) NOT NULL,
+    `desc`              TEXT DEFAULT NULL
+) TYPE=InnoDB;
+</source>
+
+==== ichannel_conf ====
+Parameters values.
+* ichannel_conf_id
+* ibot_id
+* ichannel_id
+* ireport_type_id
+* jobp_cmd_id
+<source lang=sql>
+CREATE TABLE ichannel_conf (
+    ichannel_conf_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    ibot_id             INT UNSIGNED NOT NULL,
+    ichannel_id         INT UNSIGNED NOT NULL,
+    ireport_type_id     INT UNSIGNED NOT NULL,
+    jobp_cmd_id         INT UNSIGNED DEFAULT NULL,
+    CONSTRAINT fk_ichannel_conf_ibot_id FOREIGN KEY (ibot_id) REFERENCES ibot (ibot_id),
+    CONSTRAINT fk_ichannel_conf_ichannel_id FOREIGN KEY (ichannel_id) REFERENCES ichannel (ichannel_id),
+    CONSTRAINT fk_ichannel_conf_ireport_type_id FOREIGN KEY (ireport_type_id) REFERENCES ireport_type (ireport_type_id),
+    CONSTRAINT fk_ichannel_conf_jobp_cmd_id FOREIGN KEY (jobp_cmd_id) REFERENCES jobp_cmd (jobp_cmd_id)
 ) TYPE=InnoDB;
 </source>
 
