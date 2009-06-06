@@ -367,5 +367,13 @@ package TapTinder::DB::Schema::user;
 __PACKAGE__->restricted_cols( { 'passwd' => 1, } );
 __PACKAGE__->cols_in_foreign_tables( [ qw/login/ ] );
 
+package TapTinder::DB::Schema::ibot;
+__PACKAGE__->cols_in_foreign_tables( [ qw/nick/ ] );
+
+package TapTinder::DB::Schema::ichannel;
+__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
+
+package TapTinder::DB::Schema::ireport_type;
+__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
 
 1;
