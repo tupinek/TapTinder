@@ -994,6 +994,7 @@ Parameters values.
 * ichannel_conf_id
 * ibot_id
 * ichannel_id
+* errors_only
 * ireport_type_id
 * jobp_cmd_id
 <source lang=sql>
@@ -1002,6 +1003,7 @@ CREATE TABLE ichannel_conf (
     ibot_id             INT UNSIGNED NOT NULL,
     ichannel_id         INT UNSIGNED NOT NULL,
     ireport_type_id     INT UNSIGNED NOT NULL,
+    errors_only         BOOLEAN NOT NULL DEFAULT 1,
     jobp_cmd_id         INT UNSIGNED DEFAULT NULL,
     CONSTRAINT fk_ichannel_conf_ibot_id FOREIGN KEY (ibot_id) REFERENCES ibot (ibot_id),
     CONSTRAINT fk_ichannel_conf_ichannel_id FOREIGN KEY (ichannel_id) REFERENCES ichannel (ichannel_id),

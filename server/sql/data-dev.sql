@@ -148,7 +148,7 @@ VALUES (
 
 INSERT INTO ibot ( ibot_id, nick, full_name, server, port, operator_id )
 VALUES (
-    1, 'ttbot', 'TapTinder bot.', 'irc.freenode.org', 6667, 1
+    1, 'ttbot-dc', 'TapTinder bot.', 'irc.freenode.org', 6667, 1
 );
 
 INSERT INTO ichannel ( ichannel_id, name )
@@ -157,20 +157,13 @@ VALUES (
     2, '#taptinder-bottest2'
 );
 
-
-INSERT INTO ireport_type ( ireport_type_id, name, `desc` )
+INSERT INTO ichannel_conf ( ichannel_conf_id, ibot_id, ichannel_id, errors_only, ireport_type_id, jobp_cmd_id )
 VALUES (
-    1, 'build report', '' ), (
-    2, 'ttest report', ''
-);
+    1, 1, 1, 1, 1,  4  ), (
+    2, 1, 1, 0, 1,  9  ), (
+    3, 1, 1, 1, 2, 10  ), (
 
-INSERT INTO ichannel_conf ( ichannel_conf_id, ibot_id, ichannel_id, ireport_type_id, jobp_cmd_id )
-VALUES (
-    1, 1, 1, 1,  4  ), (
-    2, 1, 1, 1,  9  ), (
-    3, 1, 1, 2, 10  ), (
-
-    4, 1, 2, 1,  9
+    4, 1, 2, 1, 1,  9
 );
 
 commit;

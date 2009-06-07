@@ -184,4 +184,12 @@ VALUES (
     6, 'error',     'finished with error'
 );
 
+
+INSERT INTO ireport_type ( ireport_type_id, name, `desc` )
+VALUES (
+    1, 'build report', '' ), (
+    2, 'ttest report', ''
+);
+
+
 commit;

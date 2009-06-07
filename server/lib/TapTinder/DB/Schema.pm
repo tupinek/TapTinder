@@ -2587,6 +2587,15 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
+    'errors_only' => {
+      'data_type' => 'BOOLEAN',
+      'is_auto_increment' => 0,
+      'default_value' => '1',
+      'is_foreign_key' => 0,
+      'name' => 'errors_only',
+      'is_nullable' => 0,
+      'size' => 0
+    },
     'jobp_cmd_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,

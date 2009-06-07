@@ -21,11 +21,15 @@ use TapTinder::Utils::DB qw(get_connected_schema);
 
 my $help = 0;
 my $ver = 2;
+my $debug = undef;
+my $db_type = 'stable';
 my $ibot_id = undef;
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
-    'ver|v=i' => \$ver,
     'ibot_id=i' => \$ibot_id,
+    'db_type=s' => \$db_type,
+    'ver|v=i' => \$ver,
+    '+debug' => \$debug,
 );
 pod2usage(1) if $help || !$options_ok;
 unless ( defined $ibot_id ) {
@@ -49,21 +53,20 @@ my $ibot_row = $schema->resultset('ibot')->find(
 croak "Bot with id = $ibot_id not found." unless $ibot_row;
 my %ibot = $ibot_row->get_columns;
 
+# ToDo - use distinct
 my $ichannel_rs = $schema->resultset('ichannel_conf')->search(
     { 'me.ibot_id' => $ibot_id, },
     {
-        join => [ qw/ ibot_id ichannel_id ireport_type_id / ],
-        'select' => [ qw/ me.ichannel_conf_id ichannel_id.name me.ireport_type_id me.jobp_cmd_id / ],
-        'as'     => [ qw/ ichannel_conf_id channel_name ireport_type_id jobp_cmd_id / ],
+        join     => [ qw/ ichannel_id / ],
+        'select' => [ qw/ ichannel_id.name / ],
+        'as'     => [ qw/ channel_name / ],
     }
 );
 croak "Channel conf for bot_id = $ibot_id not found." unless $ichannel_rs;
-my $channel_confs = {};
 my $channel_names = {};
 while ( my $ichannel_row = $ichannel_rs->next ) {
     my %conf = $ichannel_row->get_columns;
     my $channel_name = $conf{channel_name};
-    $channel_confs->{ $conf{ichannel_conf_id} } = { %conf };
     $channel_names->{ $channel_name } = 1;
 }
 
@@ -82,8 +85,14 @@ my $bot = Bot::BasicBot::Pluggable->new(
 $bot->load("Auth");
 $bot->load("TapTinderBot");
 
+my $server_base_url = 'http://tt.ro.vutbr.cz/';
+$server_base_url = 'http://ttdev.ro.vutbr.cz:3000/' if $db_type eq 'dev';
+$server_base_url = 'http://ttcopy.ro.vutbr.cz:4000/' if $db_type eq 'copy';
+
 my $TapTinderBot_handler = $bot->handler("TapTinderBot");
-$TapTinderBot_handler->_db_connect($schema);
+$TapTinderBot_handler->_my_init(
+    $ibot_id, $schema, $server_base_url, $ver, $debug
+);
 
 $bot->run();
 
@@ -102,8 +111,10 @@ Example:
 
  Options:
    --help
-   --ver .. Verbosity level.
+   --db_type .. Possibilities: 'stable', 'dev', 'copy'.
    --ibot_id .. ID to ibot table.
+   --ver .. Verbosity level.
+   --debug .. Debug.
 
 =head1 DESCRIPTION
 
