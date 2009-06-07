@@ -21,4 +21,28 @@ VALUES (
     3, 3, 1, 4
 );
 
+
+delete from ibot_log;
+delete from ichannel_conf;
+delete from ichannel;
+delete from ibot;
+
+INSERT INTO ibot ( ibot_id, nick, full_name, server, port, operator_id )
+VALUES (
+    1, 'ttbot-copy', 'TapTinder bot (copy).', 'irc.freenode.org', 6667, 1
+);
+
+INSERT INTO ichannel ( ichannel_id, name )
+VALUES (
+    1, '#taptinder-bottest1'    ), (
+    2, '#taptinder-bottest2'
+);
+
+INSERT INTO ichannel_conf ( ichannel_conf_id, ibot_id, ichannel_id, errors_only, ireport_type_id, jobp_cmd_id )
+VALUES (
+    1, 1, 1, 1, 1, 4    ), (
+    2, 1, 2, 1, 1, 4
+);
+
+
 commit;

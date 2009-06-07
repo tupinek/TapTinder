@@ -37,6 +37,20 @@ if [ "$1" = "1" ]; then
     perl ./utils/set_client_passwd.pl --client_passwd_list
     echo ""
 
+    if [ "$2" = "1" -o "$2" = "2" ]; then
+        echo "Updating temp/ttcopy-online-schema.sql:"
+        perl ./utils/db-schema-get.pl
+        echo ""
+
+        echo "Creating temp/schema-diff.sql:"
+        sqlt-diff ./temp/ttcopy-online-schema.sql=MySQL temp/schema-raw-create.sql=MySQL > ./temp/schema-diff.sql
+        echo ""
+
+        echo "Executing temp/schema-diff.sql (perl utils/db-run-sqlscript.pl ...):"
+        perl ./utils/db-run-sqlscript.pl ./temp/schema-diff.sql 1
+        echo ""
+    fi
+
     echo "Executing sql/data-after-copied.sql (perl utils/db-run-sqlscript.pl):"
     perl ./utils/db-run-sqlscript.pl ./sql/data-after-copied.sql 1
     echo ""
@@ -45,15 +59,6 @@ if [ "$1" = "1" ]; then
     perl ./utils/rm_uploaded_files.pl --remove --fspath_ids=3,4
     echo ""
 
-    if [ "$2" = "1" -o "$2" = "2" ]; then
-        echo "Creating temp/schema-diff.sql:"
-        sqlt-diff ../../tt/server/temp/schema-raw-create.sql=MySQL temp/schema-raw-create.sql=MySQL > ./temp/schema-diff.sql
-        echo ""
-
-        echo "Executing temp/schema-diff.sql (perl utils/db-run-sqlscript.pl ...):"
-        perl ./utils/db-run-sqlscript.pl ./temp/schema-diff.sql 1
-        echo ""
-    fi
 fi
 
 

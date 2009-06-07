@@ -26,11 +26,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
     ) or die SQL::Translator->error;
 
     my $out_fn = './lib/TapTinder/DB/Schema.pm';
-
     my $content = $translator->translate;
-    if ( $content ) {
-        $content =~ s{load_components\(qw/\s*Core/\)}{load_components\(qw/Core ViewMD/\)}gs;
-    }
     my $fh;
     open ( $fh, '>', $out_fn ) || die $!;
     print $fh $content;

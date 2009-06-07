@@ -148,7 +148,7 @@ VALUES (
 
 INSERT INTO ibot ( ibot_id, nick, full_name, server, port, operator_id )
 VALUES (
-    1, 'ttbot-dc', 'TapTinder bot.', 'irc.freenode.org', 6667, 1
+    1, 'ttbot-dev', 'TapTinder bot (dev).', 'irc.freenode.org', 6667, 1
 );
 
 INSERT INTO ichannel ( ichannel_id, name )

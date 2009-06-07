@@ -334,7 +334,7 @@ CREATE TABLE rep_test (
 Job. Job table can contain one part or more related parts.
 * job_id
 * client_min_rev - minimal clietn revision number to run this job
-*
+* priority
 * name
 * desc
 <source lang=sql>
