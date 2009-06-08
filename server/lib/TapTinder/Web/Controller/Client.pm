@@ -9,7 +9,7 @@ use DateTime;
 use File::Spec;
 use File::Copy;
 
-use constant SUPPORRTED_REVISION => 320; # ToDo
+use constant SUPPORRTED_REVISION => 331; # ToDo
 
 
 =head1 NAME
@@ -75,6 +75,35 @@ sub txn_end {
     return 0;
 }
 
+
+=head2 get_lock_for_machine_action
+
+Try to obtain lock for $machine_id and $action_name.
+
+=cut
+
+sub get_lock_for_machine_action {
+    my ( $self, $c, $machine_id, $action_name ) = @_;
+    my $dbh = $c->model('WebDB')->schema->storage->dbh;
+    my $lock_name = 'ma-'.$machine_id.'-'.$action_name;
+    my $ra_row = $dbh->selectrow_arrayref("SELECT GET_LOCK(?,5) as ret_code;", undef, $lock_name );
+    return $ra_row->[0];
+}
+
+
+=head2 release_lock_for_machine_action
+
+Try to release lock for $machine_id and $action_name.
+
+=cut
+
+sub release_lock_for_machine_action {
+    my ( $self, $c, $machine_id, $action_name ) = @_;
+    my $dbh = $c->model('WebDB')->schema->storage->dbh;
+    my $lock_name = 'ma-'.$machine_id.'-'.$action_name;
+    my $ra_row = $dbh->selectrow_arrayref("SELECT RELEASE_LOCK(?) as ret_code;", undef, $lock_name );
+    return $ra_row->[0];
+}
 
 =head2 login_ok
 
@@ -217,8 +246,8 @@ sub check_client_rev {
     my ( $self, $c, $data, $client_rev ) = @_;
 
     if ( $client_rev < SUPPORRTED_REVISION ) {
-        $data->{err} = 1;
-        $data->{err_msg} = "Error: Your client (revision $client_rev) is not supported. Revision >= " . SUPPORRTED_REVISION . " required.";
+        $data->{ag_err} = 102; # special ag_err def
+        $data->{ag_err_msg} = "Error: Your client (revision $client_rev) is not supported. Revision >= " . SUPPORRTED_REVISION . " required.";
         return 0;
     }
     return 1;
@@ -683,9 +712,16 @@ sub cmd_cget {
     }
 
     if ( $start_new_job ) {
+        my $locked = $self->get_lock_for_machine_action( $c, $machine_id, 'get_new_job' );
+        unless ( $locked ) {
+            $data->{err} = 1001; # special err def
+            $data->{err_msg} = "Error: cmd_get Can't obtain 'get_new_job' lock.";
+            return 0;
+        }
         $self->txn_begin( $c );
         my $ret_val = $self->start_new_job( $c, $data, $machine_id, $msession_id );
         $self->txn_end( $c, $data, 1 ); # without return
+        $self->release_lock_for_machine_action( $c, $machine_id, 'get_new_job' );
         unless ( defined $ret_val ) {
             # create mslog
             my $ret_code = $self->create_mslog(

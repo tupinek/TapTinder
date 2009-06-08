@@ -55,16 +55,35 @@ my $client_conf = load_client_conf( $conf_fpath, $project_name );
 print "Starting Client.\n" if $ver >= 3;
 
 my $base_dir = catdir( $RealBin, '..' );
-my $client = TapTinder::Client->new(
-    $client_conf,
-    $base_dir,
-    {
-        ver => $ver,
-        debug => $debug,
-        end_after_no_new_job => $end_after_no_new_job,
+
+my $client = undef;
+do {
+    $client = TapTinder::Client->new(
+        $client_conf,
+        $base_dir,
+        {
+            ver => $ver,
+            debug => $debug,
+            end_after_no_new_job => $end_after_no_new_job,
+        }
+    );
+    $client->run();
+    if ( $client->do_client_restart() && $ver >= 1 ) {
+        print "Doing client restart.\n\n";
     }
-);
-$client->run();
+} while ( $client->do_client_restart() );
+
+
+my $do_upgrade_sign_fpath = catfile( $RealBin, '.do_ttclient_upgrade' );
+if ( $client->do_client_upgrade() ) {
+    my $fh;
+    open( $fh, '>', $do_upgrade_sign_fpath ) or croak $!;
+    print $fh $$ . ' - ' . time() . "\n";
+    close $fh;
+
+} elsif ( -f $do_upgrade_sign_fpath ) {
+    unlink( $do_upgrade_sign_fpath ) or croak $!;
+}
 
 exit;
 

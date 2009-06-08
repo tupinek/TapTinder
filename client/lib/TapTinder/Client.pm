@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Carp qw(carp croak verbose);
 
-our $VERSION = '0.10';
+our $VERSION = '0.21';
 
 use Data::Dumper;
 use File::Spec::Functions;
@@ -65,6 +65,10 @@ sub new {
     $self->{msjobp_cmd_id} = undef;
 
     $self->{params} = $params;
+
+    $self->{do_stop} = 0;
+    $self->{do_client_restart} = 0;
+    $self->{do_client_upgrade} = 0;
 
     # current work directory on start
     $self->{orginal_cwd} = Cwd::getcwd;
@@ -157,25 +161,51 @@ sub init_agent {
 
 =head2 process_agent_errors_get_err_num
 
-Process data from server response for errors. Croak if error is fatal.
-Return error number if not fatal error found. Return 0 unless error found.
+Process data from server response for errors.
+
+Croak if error is fatal or unknown.
+Return ag_err number if found and set $self->{do_stop} to 1 if run loop should exit.
+Return error number if not fatal error found.
+Return 0 unless error found.
+
+101..999 are ag_err errors.
+1001..9999 are normal errors.
 
 =cut
 
 sub process_agent_errors_get_err_num {
-    my ( $self, $data ) = @_;
+    my ( $self, $cmd_name, $data ) = @_;
 
     $self->my_croak( "Unknown error (no data found)." ) unless $data;
-    if ( $data->{ag_err} ) {
+    if ( exists $data->{ag_err} && $data->{ag_err} ) {
 
         # No fatal errors:
         # * 101 msession_id not found, need to create new msession
-        if ( $data->{ag_err} >= 101 ) {
+        my $found_no_fatal = 0;
+        if ( $data->{ag_err} == 101 ) {
+            $self->{do_client_restart} = 1;
+            $self->{do_stop} = 1;
+            $found_no_fatal = 1;
+        }
+        # * 102 server demands client upgrade
+        if ( $data->{ag_err} == 102 ) {
+            $self->{do_client_upgrade} = 1;
+            $self->{do_stop} = 1;
+            $found_no_fatal = 1;
+        }
+        if ( $found_no_fatal ) {
+            print $data->{ag_err_msg}."\n" if $ver >= 1;
             return $data->{ag_err};
         }
 
         $self->my_croak( $data->{ag_err_msg} );
     }
+
+    if ( exists $data->{err} && $data->{err} ) {
+        print $data->{err_msg}."\n" if $ver >= 1;
+        return $data->{err} if $data->{err} == 1001; # cget, can't obtain lock
+    }
+
     $self->my_croak( $data->{err_msg} ) if $data->{err};
     return 0; # error num = 0 -> no error found
 }
@@ -229,7 +259,7 @@ sub ccmd_get_src {
     $data = $self->{agent}->rriget(
         $self->{msession_id}, $cmd_env->{rep_path_id}, $cmd_env->{rev_id}
     );
-    return 0 if $self->process_agent_errors_get_err_num( $data );
+    return 0 if $self->process_agent_errors_get_err_num( 'rriget', $data );
 
     my $rep_rev_info = { %$data };
     $cmd_env->{project_name} = $data->{project_name};
@@ -242,18 +272,18 @@ sub ccmd_get_src {
     print "Getting revision $data->{rev_num} from $rep_full_path.\n" if $ver >= 2;
 
     $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 2 ); # running, $cmd_status_id
-    return 0 if $self->process_agent_errors_get_err_num( $data );
+    return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
 
     my $dirs = $self->{repman}->prepare_temp_copy( $rep_rev_info );
     unless ( $dirs ) {
         $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 6 ); # error, $cmd_status_id
-        return 0 if $self->process_agent_errors_get_err_num( $data );
+        return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
     }
     $cmd_env->{temp_dir} = $dirs->{temp_dir};
     $cmd_env->{results_dir} = $dirs->{results_dir};
 
     $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 4 ); # ok, $cmd_status_id
-    return 0 if $self->process_agent_errors_get_err_num( $data );
+    return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
 
     return 1;
 }
@@ -269,13 +299,13 @@ sub ccmd_prepare {
     my ( $self, $cmd_name, $cmd_env ) = @_;
 
     my $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 2 ); # running, $cmd_status_id
-    return 0 if $self->process_agent_errors_get_err_num( $data );
+    return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
 
     my $src_add_project_dir = catdir( $self->{src_add_dir}, $cmd_env->{project_name} );
     $self->{repman}->add_merge_copy( $src_add_project_dir, $cmd_env->{temp_dir} );
 
     $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 4 ); # ok, $cmd_status_id
-    return 0 if $self->process_agent_errors_get_err_num( $data );
+    return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
 
     return 1;
 }
@@ -325,7 +355,7 @@ sub run_cmd {
         undef, # $end_time
         undef  # $file_path
     );
-    return 0 if $self->process_agent_errors_get_err_num( $data );
+    return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
 
 
     my ( $cmd_rc, $out ) = sys_for_watchdog(
@@ -363,7 +393,7 @@ sub run_cmd {
         $cmd_log_fp,
         $outdata_file_full_path
     );
-    return 0 if $self->process_agent_errors_get_err_num( $data );
+    return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
 
     return 1;
 }
@@ -485,6 +515,43 @@ sub ccmd_clean {
 }
 
 
+=head2 do_client_upgrade
+
+Return 1 if server demands client upgrade.
+
+=cut
+
+sub do_client_upgrade {
+    my ( $self ) = @_;
+    return $self->{do_client_upgrade};
+}
+
+
+=head2 do_client_restart
+
+Return 1 if client demands restart.
+
+=cut
+
+sub do_client_restart {
+    my ( $self ) = @_;
+    return $self->{do_client_restart};
+}
+
+
+=head2 cleanup_and_return_zero
+
+Do client run cleanup and return 0;
+
+=cut
+
+sub cleanup_and_return_zero {
+    my ( $self ) = @_;
+    $self->{keypress}->cleanup_before_exit();
+    return 0;
+}
+
+
 =head2 run
 
 Main run loop.
@@ -495,9 +562,13 @@ sub run {
     my ( $self ) = @_;
 
     print "Creating new machine session.\n" if $ver >= 3;
-    my ( $login_rc, $msession_id ) = $self->{agent}->mscreate();
-    $self->my_croak("Login failed.") unless $login_rc;
-    $self->{msession_id} = $msession_id;
+    my $data;
+    do {
+        return $self->return_0_and_do_stop() if $self->{do_stop};
+        $data = $self->{agent}->mscreate();
+    } while ( $self->process_agent_errors_get_err_num( 'mscreate', $data ) );
+    $self->{msession_id} = $data->{msid};
+
     $self->{keypress}->process_keypress();
 
     # current (or last successful) ids
@@ -524,6 +595,10 @@ sub run {
     my $ret_code; # last command return code
 
     while ( 1 ) {
+        # to simplify code
+        return $self->cleanup_and_return_zero() if $self->{do_stop};
+        $self->{keypress}->process_keypress();
+
         # try to get command from server
         my $data = $self->{agent}->cget(
             $self->{msession_id},
@@ -531,7 +606,7 @@ sub run {
             $estimated_finish_time,
             $self->{msjobp_cmd_id} # use actual id to get new one
         );
-        return 0 if $self->process_agent_errors_get_err_num( $data );
+        next if $self->process_agent_errors_get_err_num( 'cget', $data );
 
         # new cmd not found
         if ( ! $data->{msjobp_cmd_id} ) {
@@ -583,36 +658,46 @@ sub run {
                 $cmd_env->{rev_id} = $data->{rev_id};
                 # will set another keys to $cmd_env
                 $ret_code = $self->ccmd_get_src( $cmd_name, $cmd_env );
+                return $self->cleanup_and_return_zero() unless $ret_code;
 
                 # change current working directory (cwd, pwd)
                 chdir( $cmd_env->{temp_dir} );
 
             } elsif ( $cmd_name eq 'prepare' ) {
                 $ret_code = $self->ccmd_prepare( $cmd_name, $cmd_env );
+                return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'patch' ) {
                 $ret_code = $self->ccmd_patch( $cmd_name, $cmd_env );
+                return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'perl_configure' ) {
                 $ret_code = $self->ccmd_perl_configure( $cmd_name, $cmd_env );
+                return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'make' ) {
                 $ret_code = $self->ccmd_make( $cmd_name, $cmd_env );
+                return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'trun' ) {
                 $ret_code = $self->ccmd_trun( $cmd_name, $cmd_env );
+                return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'test' ) {
                 $ret_code = $self->ccmd_test( $cmd_name, $cmd_env );
+                return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'bench' ) {
                 $ret_code = $self->ccmd_bench( $cmd_name, $cmd_env );
+                return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'install' ) {
                 $ret_code = $self->ccmd_install( $cmd_name, $cmd_env );
+                return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'clean' ) {
                 $ret_code = $self->ccmd_clean( $cmd_name, $cmd_env );
+                return $self->cleanup_and_return_zero() unless $ret_code;
             }
 
             # debug sleep
@@ -622,8 +707,7 @@ sub run {
                 $self->{keypress}->sleep_and_process_keypress( $sleep_time );
             }
         }
-        $self->{keypress}->process_keypress(); # after each command
-    }
+    } # while
 
     $self->{keypress}->cleanup_before_exit();
     return 1;

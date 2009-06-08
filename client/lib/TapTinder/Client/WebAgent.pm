@@ -9,8 +9,8 @@ use YAML;
 use LWP::UserAgent;
 use JSON;
 
-our $VERSION = '0.10';
-use constant REVISION => 320; # ToDo
+our $VERSION = '0.21';
+use constant REVISION => 331; # ToDo
 
 
 =head1 NAME
@@ -106,17 +106,6 @@ sub run_action {
     }
 
     my $data = $json->{data};
-    if ( $data->{ag_err} ) {
-        # TODO ag_err_msesion_abort_reason_id
-        carp $data->{ag_err_msg} . "\n";
-        return undef;
-    }
-
-    if ( $data->{err} ) {
-        carp $data->{err_msg} . "\n";
-        return undef;
-    }
-
     return $data;
 }
 
@@ -133,9 +122,7 @@ sub mscreate {
         pid => $$,
     };
     my $data = $self->run_action( $action, $request );
-    return 0 unless defined $data;
-
-    return ( 1, $data->{msid} );
+    return $data;
 }
 
 
