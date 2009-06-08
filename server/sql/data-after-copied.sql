@@ -38,10 +38,10 @@ VALUES (
     2, '#taptinder-bottest2'
 );
 
-INSERT INTO ichannel_conf ( ichannel_conf_id, ibot_id, ichannel_id, errors_only, ireport_type_id, jobp_cmd_id )
+INSERT INTO ichannel_conf ( ichannel_conf_id, ibot_id, ichannel_id, errors_only, ireport_type_id, jobp_cmd_id, max_age )
 VALUES (
-    1, 1, 1, 1, 1, 4    ), (
-    2, 1, 2, 1, 1, 4
+    1, 1, 1, 1, 1, 4,   7*24    ), (
+    2, 1, 2, 1, 1, 4,   7*24
 );
 
 

@@ -318,6 +318,7 @@ select ichc.ibot_id,
             and ibl.ichannel_conf_id = ichc.ichannel_conf_id
             and ibl.rep_path_id = rp.rep_path_id
             and ibl.rev_id = r.rev_id
+          limit 1
        ) as reported
   from ichannel_conf ichc,
        ichannel ich,
@@ -327,11 +328,11 @@ select ichc.ibot_id,
        job j,
        msjobp_cmd mjpc,
        msjobp mjp,
+       rev r,
+       rep_author ra,
        msjob mj,
        msession ms,
        machine m,
-       rev r,
-       rep_author ra,
        rep_path rp,
        rep rep,
        project p,
@@ -349,14 +350,15 @@ select ichc.ibot_id,
    and ( ichc.errors_only = 0 or mjpc.status_id = 6 )
    and mjp.msjobp_id = mjpc.msjobp_id
    and mjp.jobp_id = jp.jobp_id
+   and r.rev_id = mjp.rev_id
+   and ( ichc.max_age is null or DATE_SUB(CURDATE(), INTERVAL ichc.max_age HOUR) <= r.date )
+   and ra.rep_author_id = r.author_id
    and mj.msjob_id = mjp.msjob_id
    and mj.job_id = j.job_id
    and ms.msession_id = mj.msession_id
    and m.machine_id = ms.machine_id
    and rp.rep_path_id = jp.rep_path_id
    and rep.rep_id = rp.rep_id
-   and r.rev_id = mjp.rev_id
-   and ra.rep_author_id = r.author_id
    and p.project_id = rep.project_id
    and cs.cmd_status_id = mjpc.status_id
    and fsf.fsfile_id = mjpc.output_id

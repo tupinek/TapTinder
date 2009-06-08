@@ -997,6 +997,7 @@ Parameters values.
 * errors_only
 * ireport_type_id
 * jobp_cmd_id
+* max_age - Maximal commit age in hours.
 <source lang=sql>
 CREATE TABLE ichannel_conf (
     ichannel_conf_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -1005,6 +1006,7 @@ CREATE TABLE ichannel_conf (
     ireport_type_id     INT UNSIGNED NOT NULL,
     errors_only         BOOLEAN NOT NULL DEFAULT 1,
     jobp_cmd_id         INT UNSIGNED DEFAULT NULL,
+    max_age             INT UNSIGNED DEFAULT NULL,
     CONSTRAINT fk_ichannel_conf_ibot_id FOREIGN KEY (ibot_id) REFERENCES ibot (ibot_id),
     CONSTRAINT fk_ichannel_conf_ichannel_id FOREIGN KEY (ichannel_id) REFERENCES ichannel (ichannel_id),
     CONSTRAINT fk_ichannel_conf_ireport_type_id FOREIGN KEY (ireport_type_id) REFERENCES ireport_type (ireport_type_id),

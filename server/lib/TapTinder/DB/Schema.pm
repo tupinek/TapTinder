@@ -2605,6 +2605,15 @@ __PACKAGE__->add_columns(
       'is_nullable' => 1,
       'size' => '11'
     },
+    'max_age' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'max_age',
+      'is_nullable' => 1,
+      'size' => '11'
+    },
 );
 __PACKAGE__->set_primary_key('ichannel_conf_id');
 
