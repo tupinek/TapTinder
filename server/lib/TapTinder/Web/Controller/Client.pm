@@ -85,7 +85,8 @@ Try to obtain lock for $machine_id and $action_name.
 sub get_lock_for_machine_action {
     my ( $self, $c, $machine_id, $action_name ) = @_;
     my $dbh = $c->model('WebDB')->schema->storage->dbh;
-    my $lock_name = 'ma-'.$machine_id.'-'.$action_name;
+    my $db_name = $c->config->{db}->{name};
+    my $lock_name = $db_name.'-m'.$machine_id.'-'.$action_name;
     my $ra_row = $dbh->selectrow_arrayref("SELECT GET_LOCK(?,5) as ret_code;", undef, $lock_name );
     return $ra_row->[0];
 }
@@ -100,7 +101,8 @@ Try to release lock for $machine_id and $action_name.
 sub release_lock_for_machine_action {
     my ( $self, $c, $machine_id, $action_name ) = @_;
     my $dbh = $c->model('WebDB')->schema->storage->dbh;
-    my $lock_name = 'ma-'.$machine_id.'-'.$action_name;
+    my $db_name = $c->config->{db}->{name};
+    my $lock_name = $db_name.'-m'.$machine_id.'-'.$action_name;
     my $ra_row = $dbh->selectrow_arrayref("SELECT RELEASE_LOCK(?) as ret_code;", undef, $lock_name );
     return $ra_row->[0];
 }
