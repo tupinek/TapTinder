@@ -56,7 +56,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
             #show_datatypes => 1,
             #show_sizes => 1,
             #join_pk_only => 1,
-            skip_fields => [ 'trun' ],
+            #skip_fields => [ 'trun' ],
         },
     ) or die SQL::Translator->error;
     $translator->translate;
