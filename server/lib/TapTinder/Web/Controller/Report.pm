@@ -65,6 +65,7 @@ sub get_trun_infos {
                 cmd_id.name jobp_id.name job_id.name
                 machine_id.machine_id machine_id.name machine_id.osname machine_id.cpuarch
                 user_id.first_name user_id.last_name user_id.login
+                msjobp_cmd_id.outdata_id msjobp_cmd_id.output_id
             /],
             '+as' => [qw/
                 rev_id rev_num rev_date rev_msg
@@ -73,6 +74,7 @@ sub get_trun_infos {
                 jobp_cmd_name jobp_name job_name
                 machine_id machine_name machine_osname machine_cpuarch
                 user_first_name user_last_name user_login
+                outdata_id output_id
             /],
             order_by => 'rev_id.rev_num',
         }
@@ -92,11 +94,11 @@ sub get_ttest_rs {
 
     my $rs = $c->model('WebDB::ttest')->search(
         {
-            trun_id => $ra_trun_ids,
+            'me.trun_id' => $ra_trun_ids,
         },
         {
             join => [
-                { rep_test_id => 'rep_file_id' },
+                { rep_test_id => 'rep_file_id', },
             ],
             '+select' => [qw/
                 rep_test_id.rep_file_id
@@ -186,7 +188,6 @@ sub action_do_many {
 
     my @trun_infos = $self->get_trun_infos( $c, $ra_selected_trun_ids ) ;
     $c->stash->{trun_infos} = \@trun_infos;
-    $self->dumper( $c, \@trun_infos );
 
     # Get all ttest and related rep_test and rep_file info from database.
     # Ok results aren't saved.
@@ -216,7 +217,7 @@ sub action_do_many {
 
         # Use previous rs to get row.
         $res = $res_next;
-        $self->dumper( $c, $res );
+        #$self->dumper( $c, $res );
         $res_next = $rs->next;
 
         if ( defined $res ) {
@@ -224,7 +225,8 @@ sub action_do_many {
             $same_rep_path_id = 0 if %prev_row && $row{rep_path_id} != $prev_row{rep_path_id};
         }
 
-        # Find if results are same.
+
+        # Another one rep_test. Find if results for truns are same.
         if ( (not defined $res) || $prev_rt_id != $row{rep_test_id} ) {
             my $are_same = 1;
             if ( $prev_rt_id ) {
@@ -242,10 +244,11 @@ sub action_do_many {
             # Remember not different results.
             unless ( $are_same ) {
                 #$self->dumper( $c, \%res_ids_sum );
-                #$self->dumper( $c, \@res_cache );
+                #$self->dumper( $c, \%res_cache );
                 delete $prev_row{trest_id};
                 delete $prev_row{trun_id};
                 #$self->dumper( $c, \%prev_row );
+                #$self->dumper( $c, \@trun_infos );
 
                 my $to_base_report = 0;
                 foreach my $trun_info ( @trun_infos ) {
@@ -259,13 +262,14 @@ sub action_do_many {
                          && ( !$prev_row{rev_num_to} || $trun_info->{rev_num} <= $prev_row{rev_num_to} )
                        )
                     {
-                        $res_cache{ $trun_info->{trun_id} } = 6;
+                        $res_cache{ $trun_info->{trun_id} } = 6; # ok
 
                     } else {
                         $to_base_report = 1;
                     }
                     #my $trun_
                 }
+
                 if ( $to_base_report ) {
                     #$self->dumper( $c, \%res_cache );
                     push @ress, {
@@ -291,6 +295,7 @@ sub action_do_many {
 
     } # TTEST_NEXT: while ( 1 ) {
 
+    $self->dumper( $c, \@trun_infos );
     $self->dumper( $c, \@ress );
     $c->stash->{same_rep_path_id} = $same_rep_path_id;
     $c->stash->{ress} = \@ress;
@@ -478,7 +483,7 @@ sub index : Path  {
         }
     );
 
-    my $build_search = {
+    my $trun_search = {
         join => [
             { msjobp_cmd_id => [
                 { msjobp_id => [
@@ -547,7 +552,7 @@ sub index : Path  {
                 'jobp_id.rep_path_id' => $rev_rows{rep_path_id},
                 'msjobp_id.rev_id' => $rev_rows{rev_id},
             },
-            $build_search
+            $trun_search
         );
         push @revs, \%rev_rows;
 

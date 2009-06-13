@@ -124,9 +124,10 @@ VALUES (
 
 INSERT INTO fsfile_type ( fsfile_type_id, name, `desc` )
 VALUES (
-    1, 'command output', NULL ), (
-    2, 'command data', NULL ), (
-    3, 'patch', NULL
+    1, 'command output',    NULL    ), (
+    2, 'command data',      NULL    ), (
+    3, 'patch',             NULL    ), (
+    4, 'extracted files',   NULL
 );
 
 

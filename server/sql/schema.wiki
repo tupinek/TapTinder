@@ -869,18 +869,18 @@ CREATE TABLE fsfile (
 ==== fsfile_ext ====
 Files extracted from another files (archives).
 * fsfile_ext_id
-* fsfile_id
 * archive_id
-* extracted
+* org_name - Orginal file name inside archive.
+* fsfile_id
 <source lang=sql>
 CREATE TABLE fsfile_ext (
     fsfile_ext_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    fsfile_id       INT UNSIGNED NOT NULL,
     archive_id      INT UNSIGNED NOT NULL,
-    extracted       DATETIME NOT NULL,
+    org_name        VARCHAR(255),
+    fsfile_id       INT UNSIGNED NOT NULL,
     INDEX i_archive_id_fsfile_id (archive_id, fsfile_id),
-    CONSTRAINT fk_fsfile_ext_fsfile_id FOREIGN KEY (fsfile_id) REFERENCES fsfile (fsfile_id),
-    CONSTRAINT fk_fsfile_ext_archive_id FOREIGN KEY (archive_id) REFERENCES fsfile (fsfile_id)
+    CONSTRAINT fk_fsfile_ext_archive_id FOREIGN KEY (archive_id) REFERENCES fsfile (fsfile_id),
+    CONSTRAINT fk_fsfile_ext_fsfile_id FOREIGN KEY (fsfile_id) REFERENCES fsfile (fsfile_id)
 ) TYPE=InnoDB;
 </source>
 
@@ -908,7 +908,7 @@ Default fsfile_path to save files for each rep_path and file_type.
 CREATE TABLE fspath_select (
     fspath_select_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     fsfile_type_id      INT UNSIGNED NOT NULL,
-    rep_path_id         INT UNSIGNED NOT NULL,
+    rep_path_id         INT UNSIGNED DEFAULT NULL,
     fspath_id           INT UNSIGNED NOT NULL,
     INDEX i_fsfile_type_id_rep_path_id (fsfile_type_id,rep_path_id),
     CONSTRAINT fk_fspath_select_fsfile_type_id FOREIGN KEY (fsfile_type_id) REFERENCES fsfile_type (fsfile_type_id),

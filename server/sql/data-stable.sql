@@ -95,40 +95,36 @@ VALUES (
 
 INSERT INTO machine_job_conf ( machine_job_conf_id, machine_id, rep_id, rep_path_id, job_id, priority )
 VALUES (
-     1,  5, NULL, NULL, 1,  1  ), (
-     2,  5, NULL, NULL, 2,  2  ), (
+     1, 5, NULL, NULL, 1,   1  ), (
+     2, 5, NULL, NULL, 2,   2  ), (
 
-     3,  6, NULL, NULL, 1,  1  ), (
-     4,  6, NULL, NULL, 2,  2  ), (
+     3, 6, NULL, NULL, 1,   1  ), (
+     4, 6, NULL, NULL, 2,   2  ), (
 
-     5,  7, NULL, NULL, 1,  1  ), (
-     6,  7, NULL, NULL, 2,  2  ), (
+     5, 7, NULL, NULL, 1,   1  ), (
+     6, 7, NULL, NULL, 2,   2  ), (
 
-     7,  8, NULL, NULL, 1,  1  ), (
-     8,  8, NULL, NULL, 2,  2  ), (
+     7, 8, NULL, NULL, 1,   1  ), (
+     8, 8, NULL, NULL, 2,   2  ), (
 
-     9,  9, NULL, NULL, 1,  1  ), (
-    10,  9, NULL, NULL, 2,  2  ), (
-
-    11, 10, NULL, NULL, 1,  1  ), (
-    12, 10, NULL, NULL, 2,  2  ), (
-
-    13, 11, NULL, NULL, 1,  1  ), (
-    14, 11, NULL, NULL, 2,  2
+     9, 9, NULL, NULL, 1,   1  ), (
+    10, 9, NULL, NULL, 2,   2
 );
 
 
 INSERT INTO fspath ( fspath_id, path, web_path, public, created, deleted, name, `desc` )
 VALUES (
-    1, '/home/jurosz/tt/server-data/cmdout', 'file/cmdout', 1, NOW(), null, 'dir-cmdout', 'dir for command outputs'  ), (
-    2, '/home/jurosz/tt/server-data/patch',  'file/patch',  1, NOW(), null, 'dir-patch',  'dir for patches'
+    1, '/home/jurosz/tt/server-data/cmdout',    'file/cmdout',  1, NOW(), null, 'dir-cmdout',   'dir for command outputs'               ), (
+    2, '/home/jurosz/tt/server-data/patch',     'file/patch',   1, NOW(), null, 'dir-patch',    'dir for patches'                       ), (
+    3, '/home/jurosz/tt/server-data/archive',   'file/archive', 1, NOW(), null, 'dir-archive',  'dir for files extracted from archives'
 );
 
 INSERT INTO fspath_select ( fspath_select_id, fsfile_type_id, rep_path_id, fspath_id )
 VALUES (
-    1, 1, 1, 1  ), (
-    2, 2, 1, 1  ), (
-    3, 3, 1, 2
+    1, 1, 1,    1  ), (
+    2, 2, 1,    1  ), (
+    3, 3, NULL, 2  ), (
+    4, 4, NULL, 3
 );
 
 

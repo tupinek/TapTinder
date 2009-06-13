@@ -792,24 +792,16 @@ Select fspath info for fsfile_type_id and rep_path_id.
 
 =cut
 
+
 sub get_fspath_info {
     my ( $self, $c, $data, $fsfile_type_id, $rep_path_id ) = @_;
 
-    my $rs = $c->model('WebDB::fspath_select')->search( {
-        'me.fsfile_type_id' => $fsfile_type_id,
-        'me.rep_path_id'    => $rep_path_id,
-    }, {
-        select => [ 'fspath_id.fspath_id', 'fspath_id.path', 'fspath_id.name',  ],
-        as => [ 'fspath_id', 'path', 'name',  ],
-        join => [ 'fspath_id' ],
-    } );
-    my $row = $rs->next;
-    if ( !$row ) {
+    my $row_data = $self->get_fspath_select_row( $c, $fsfile_type_id, $rep_path_id );
+    if ( !$row_data ) {
         $data->{err} = 1;
         $data->{err_msg} = "Error: Fspath id (fsfile_type_id=$fsfile_type_id, rep_path_id=$rep_path_id) not found.";
         return 0;
     }
-    my $row_data = { $row->get_columns() };
     return $row_data;
 }
 
