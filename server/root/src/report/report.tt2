@@ -61,9 +61,9 @@
     <td>[% build.osname %]</td>
 
     <td><a href="[% c.uri_for( '/table/trun/id-' _ build.trun_id ) %]">[% build.trun_id %]</a></td>
-    <td>[% build.parse_errors %]</td>
-    <td>[% build.not_seen %]</td>
-    <td>[% build.failed %]</td>
+    <td[% IF build.parse_errors  %] class="err"[% END %]>[% build.parse_errors %]</td>
+    <td[% IF build.not_seen  %] class=err[% END %]>[% build.not_seen %]</td>
+    <td[% IF build.failed  %] class=err[% END %]>[% build.failed %]</td>
     <td>[% build.todo %]</td>
     <td>[% build.bonus %]</td>
     <td>[% build.skip %]</td>
