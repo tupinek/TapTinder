@@ -1138,12 +1138,12 @@ sub process_action {
     my ( $self, $c, $action ) = @_;
 
     my $params = $c->request->params;
-    my $data : Stashed = {};
+    my $data = {};
+    $c->stash->{data} = $data;
 
     $data->{is_debug} = 1 if $c->log->is_debug;
 
     if ( $params->{ot} eq 'html' && $c->log->is_debug ) {
-        my $ot : Stashed = '';
         $self->dumper( $c, $params );
 
         # [% dumper(data) | html %]

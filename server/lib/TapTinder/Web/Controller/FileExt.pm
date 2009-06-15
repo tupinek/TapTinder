@@ -23,7 +23,6 @@ Catalyst controller for TapTinder file extracting.
 
 sub index : Path  {
     my ( $self, $c, @arg ) = @_;
-    my $ot : Stashed = '';
 
     my $params = $c->request->params;
     #$self->dumper( $c, $params );

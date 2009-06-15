@@ -20,7 +20,6 @@ Catalyst controller for TapTinder. Shows build status.
 
 sub index : Path  {
     my ( $self, $c, $params, @args ) = @_;
-    my $ot : Stashed = '';
 
     my $pr = $self->get_page_params( $params );
 

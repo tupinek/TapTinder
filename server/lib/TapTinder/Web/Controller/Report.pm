@@ -313,7 +313,6 @@ sub action_do_many {
 
 sub index : Path  {
     my ( $self, $c, $p_project, $par1, $par2, @args ) = @_;
-    my $ot : Stashed = '';
 
     my ( $is_index, $project_name, $params ) = $self->get_projname_params( $c, $p_project, $par1, $par2 );
     my $pr = $self->get_page_params( $params );

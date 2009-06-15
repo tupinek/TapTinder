@@ -20,7 +20,6 @@ Catalyst controller for TapTinder client state monitoring.
 
 sub index : Path  {
     my ( $self, $c, $params, @args ) = @_;
-    my $ot : Stashed = '';
 
     my $pr = $self->get_page_params( $params );
 
