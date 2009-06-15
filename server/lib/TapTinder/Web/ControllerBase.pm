@@ -2,7 +2,8 @@ package TapTinder::Web::ControllerBase;
 
 use strict;
 use warnings;
-use base 'Catalyst::Controller::BindLex';
+#use base 'Catalyst::Controller::BindLex';
+use base 'Catalyst::Controller';
 
 use Data::Page::HTML qw();
 use DBIx::Dumper qw();
