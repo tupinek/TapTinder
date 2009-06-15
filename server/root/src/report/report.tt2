@@ -69,8 +69,8 @@
     <td align=center>[% build.skip %]</td>
     <td align=center>[% build.ok %]</td>
 
-    <td align=center><a href="[% c.uri_for( '/', build.output_web_path, '/', build.output_fname ) %]" title="Test run output">out</a></td>
-    <td align=center><a href="[% c.uri_for( '/', build.outdata_web_path, '/', build.outdata_fname ) %]" title="Test::Harness::Archive tar.gz file">arch</a></td>
+    <td align=center><a href="[% c.uri_for( '/' _ build.output_web_path, build.output_fname ) %]" title="Test run output">out</a></td>
+    <td align=center><a href="[% c.uri_for( '/' _ build.outdata_web_path, build.outdata_fname ) %]" title="Test::Harness::Archive tar.gz file">arch</a></td>
 
     <td><input type=checkbox name="[% 'trun-' _ build.trun_id  | html %]" /></td>
   </tr>
