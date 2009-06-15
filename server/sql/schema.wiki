@@ -1043,9 +1043,6 @@ commit;
 </source>
 <!-- PARSE PART DBCREATE END -->
 
-=== ToDo ===
-* tests_num - plan, total tests which should have been run, null -> this isn't test file
-
 === Repository changes ===
 * rev_num_from = 100, rev_num_to = 100 -> file inserted in rev 100 and deleted in 101
 * rev_num_to = null - file exists in "max(rev_num) for rep_id"
