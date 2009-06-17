@@ -76,10 +76,17 @@ do {
 
 my $do_upgrade_sign_fpath = catfile( $RealBin, '.do_ttclient_upgrade' );
 if ( $client->do_client_upgrade() ) {
-    my $fh;
-    open( $fh, '>', $do_upgrade_sign_fpath ) or croak $!;
-    print $fh $$ . ' - ' . time() . "\n";
-    close $fh;
+    # Create new file with new timestamp.
+    if ( -f $do_upgrade_sign_fpath ) {
+        print "Previous upgrade attempt probably failed. Waiting 120 seconds ... ";
+        sleep 120;
+
+    } else {
+        my $fh;
+        open( $fh, '>', $do_upgrade_sign_fpath ) or croak $!;
+        print $fh $$ . ' - ' . time() . "\n";
+        close $fh;
+    }
 
 } elsif ( -f $do_upgrade_sign_fpath ) {
     unlink( $do_upgrade_sign_fpath ) or croak $!;
