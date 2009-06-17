@@ -6,5 +6,4 @@ for ((i=1;1;i++)); do
     fi
     echo "Trying to do client upgrade with 'svn up ..'."
     svn up .. || exit
-    unlink './.do_ttclient_upgrade'
 done
