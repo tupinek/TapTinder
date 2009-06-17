@@ -44,7 +44,7 @@ sub index : Path  {
         order_by => [ 'rev_id.rev_num DESC' ],
         page => 1,
         rows => 100,
-        offset => 0,
+        #offset => 0,
     } );
 
     my @revs = ();
@@ -68,6 +68,8 @@ sub index : Path  {
 
     my $rs = $c->model('WebDB')->schema->resultset( 'BuildStatus' )->search( {}, $search_conf );
 
+    #use Time::HiRes qw(time); my $time_start = time();
+
     my %ress = ();
     my %machines = ();
     while (my $row_obj = $rs->next) {
@@ -76,6 +78,8 @@ sub index : Path  {
         $ress{ $row{rev_id} }->{ $machine_id } = \%row;
         $machines{ $machine_id }++;
     }
+    #$c->stash->{times}->{1} = time() - $time_start; $self->dumper( $c, $c->stash->{times} );
+
     $c->stash->{ress} = \%ress;
     $c->stash->{machines} = \%machines;
 

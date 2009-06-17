@@ -317,7 +317,7 @@ sub index : Path  {
     my ( $is_index, $project_name, $params ) = $self->get_projname_params( $c, $p_project, $par1, $par2 );
     my $pr = $self->get_page_params( $params );
 
-    $c->model('WebDB')->storage->debug(1);
+    #$c->model('WebDB')->storage->debug(1);
 
     if ( $is_index ) {
         my $search = { active => 1, };
@@ -448,39 +448,41 @@ sub index : Path  {
     }
 
     #$self->dadd( $c, "rep_path_id: $rep_path_id\n\n" );
-    $rs = $c->model('WebDB::rev')->search(
-        {
-            'get_rev_rep_path.rep_path_id' => $rep_path_id,
-        },
-        {
-            join => [
-                'get_rev_rep_path',
-                'author_id',
-            ],
-            'select' => [qw/
-                get_rev_rep_path.rep_path_id
-                me.rev_id
-                me.rev_num
-                me.date
-                me.author_id
-                author_id.rep_login
-                me.msg
-             /],
-            'as' => [qw/
-                rep_path_id
-                rev_id
-                rev_num
-                date
-                author_id
-                rep_login
-                msg
-            /],
-            order_by => 'me.rev_num DESC',
-            page => $pr->{page},
-            rows => $pr->{rows} || 5,
-            offset => $pr->{offset} || 0,
-        }
-    );
+    my $rev_search_conf = {
+        'get_rev_rep_path.rep_path_id' => $rep_path_id,
+    };
+    my $rev_search_attrs = {
+        join => [
+            'get_rev_rep_path',
+            'author_id',
+        ],
+        'select' => [qw/
+            get_rev_rep_path.rep_path_id
+            me.rev_id
+            me.rev_num
+            me.date
+            me.author_id
+            author_id.rep_login
+            me.msg
+         /],
+        'as' => [qw/
+            rep_path_id
+            rev_id
+            rev_num
+            date
+            author_id
+            rep_login
+            msg
+        /],
+        order_by => 'me.rev_num DESC',
+        page => $pr->{page},
+        rows => $pr->{rows} || 5,
+        #offset => $pr->{offset} || 0,
+    };
+    #$self->dumper( $c, $rev_search_conf );
+    #$self->dumper( $c, $rev_search_attrs );
+
+    $rs = $c->model('WebDB::rev')->search( $rev_search_conf, $rev_search_attrs );
 
     my $trun_search = {
         join => [
