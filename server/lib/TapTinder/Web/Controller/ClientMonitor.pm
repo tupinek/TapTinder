@@ -29,8 +29,8 @@ sub index : Path  {
         'as'     => $plus_rows,
         bind   => [],
         page => $pr->{page},
-        rows => $pr->{rows} || 20,
-        #offset => $pr->{offset} || 0,
+        rows => $pr->{rows} || 50,
+        offset => $pr->{offset} || 0,
     };
 
     my $rs = $c->model('WebDB')->schema->resultset( 'MSessionStatus' )->search( {}, $search_conf );
