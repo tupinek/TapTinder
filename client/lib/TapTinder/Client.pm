@@ -564,7 +564,7 @@ sub run {
     print "Creating new machine session.\n" if $ver >= 3;
     my $data;
     do {
-        return $self->return_0_and_do_stop() if $self->{do_stop};
+        return $self->cleanup_and_return_zero() if $self->{do_stop};
         $data = $self->{agent}->mscreate();
     } while ( $self->process_agent_errors_get_err_num( 'mscreate', $data ) );
     $self->{msession_id} = $data->{msid};
@@ -636,6 +636,12 @@ sub run {
                 $cmd_env->{msjob_id} = $msjob_id;
 
                 last if $debug && ($job_num > 1); # debug - end forced by debug
+                if ( $ver >= 2 ) {
+                    print "\n";
+                    my @lt = localtime(time);
+                    my $datetime_str = $lt[2].':'.$lt[1].':'.$lt[0].' '.$lt[3].'.'.($lt[4] + 1).'.'.($lt[5] + 1900);
+                    print "Starting job number $job_num (id $data->{msjob_id}) at $datetime_str.\n";
+                }
             }
             # new job part
             if ( !defined($msjobp_id) || ( exists($data->{msjobp_id}) && $msjobp_id != $data->{msjobp_id} ) ) {
