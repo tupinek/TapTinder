@@ -32,7 +32,7 @@
 
     [% res = ress.${rev.rev_id}.$machine_id %]
     [% IF res.status_name %]
-    <span class="cst_[% res.status_name %]"><a href="[% c.uri_for( '/', res.web_fpath ) %]">[% res.status_name %]</a></span>
+    <span class="cst_[% res.status_name %]"><a href="[% c.uri_for( '/' _ res.web_fpath ) %]">[% res.status_name %]</a></span>
     [% ELSE %]
     -
     [% END %]
