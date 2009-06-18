@@ -31,7 +31,9 @@ sub dadd {
 sub dumper {
     my $self = shift;
     my $c = shift;
-    #return unless $c->log->is_debug;
+
+    return unless $c->log->is_debug;
+
     foreach my $val ( @_ ) {
         my $var_type = ref($val);
         if ( $var_type =~ /^TapTinder\:\:Web\:\:Model/ ) {
