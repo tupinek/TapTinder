@@ -53,7 +53,7 @@
     </tr>
     [% END -%]
 
-  <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %][% IF build.parse_errors or build.not_seen or build.failed %] err[% END %]">
+  <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %][% IF build.parse_errors or build.not_seen or build.failed %]_err[% END %]">
     <td align=right>[% loop.count() %]</td>
 
     <td><a href="[% c.uri_for( '/table/machine/id-' _ build.machine_id ) %]">[% build.machine_name %]</a></td>

@@ -114,14 +114,14 @@ table tr.odd {
     text-align:         left;
 }
 
-table tr.even+tr.err th,
-table tr.even+tr.err {
+table tr.even_err th,
+table tr.even_err {
     background-color:   #ffcaba;
     text-align:         left;
 }
 
-table tr.odd+tr.err th,
-table tr.odd+tr.err {
+table tr.odd_err th,
+table tr.odd_err {
     background-color:   #ffddd3;
     text-align:         left;
 }
