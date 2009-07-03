@@ -48,7 +48,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         tables => [
           qw/ project rep rep_path rep_author rev rev_rep_path rep_file /,
         ],
-        colors => [ qw/ lemonchiffon lightgoldenrod4 / ],
+        colors => [ qw/ Moccasin lightgoldenrod4 / ],
     };
 
     push @$all_clusters, {
@@ -57,35 +57,35 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         tables => [
           qw/ machine farm /,
         ],
-        colors => [ qw/ lemonchiffon lightgoldenrod4 / ],
+        colors => [ qw/ BurlyWood SaddleBrown / ],
     };
 
     push @$all_clusters, {
         name => 'User',
         filename_infix => 'u',
         tables => [ qw/ user /, ],
-        colors => [ qw/ lemonchiffon lightgoldenrod4 / ],
+        colors => [ qw/ YellowGreen darkgoldenrod4 / ],
     };
 
     push @$all_clusters, {
         name => 'Patch',
         filename_infix => 'p',
         tables => [ qw/ patch /, ],
-        colors => [ qw/ lemonchiffon lightgoldenrod4 / ],
+        colors => [ qw/ cadetblue cadetblue4 / ],
     };
 
     push @$all_clusters, {
         name => 'MJConf',
         filename_infix => 'mjc',
         tables => [ qw/ machine_job_conf /, ],
-        colors => [ qw/ lemonchiffon lightgoldenrod4 / ],
+        colors => [ qw/ LightCoral FireBrick / ],
     };
 
     push @$all_clusters, {
         name => 'FsPSelect',
         filename_infix => 'fss',
         tables => [ qw/ fspath_select fsfile_type /, ],
-        colors => [ qw/ lemonchiffon lightgoldenrod4 / ],
+        colors => [ qw/ LightSalmon Crimson / ],
     };
 
     push @$all_clusters, {
@@ -94,7 +94,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         tables => [
           qw/ rep_file_change rep_file_change_from rep_change_type /,
         ],
-        colors => [ qw/ lemonchiffon lightgoldenrod4 / ],
+        colors => [ qw/ Pink DeepPink / ],
     };
 
 
@@ -102,42 +102,42 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         name => 'Jobs',
         filename_infix => 'job',
         tables => [ qw/ job jobp jobp_cmd cmd /, ],
-        colors => [ qw/ lemonchiffon lightgoldenrod4 / ],
+        colors => [ qw/ Coral OrangeRed / ],
     };
 
     push @$all_clusters, {
         name => 'Machine_sessions',
         filename_infix => 'ms',
         tables => [ qw/ msession msabort_reason mslog msstatus msjob msjobp msjobp_cmd cmd_status / ],
-        colors => [ qw/ blanchedalmond red / ],
+        colors => [ qw/ Khaki DarkKhaki / ],
     };
 
     push @$all_clusters, {
         name => 'Test_runs',
         filename_infix => 'trun',
         tables => [ qw/ trun trun_status ttest trest tdiag_msg rep_test tfile tskipall_msg / ],
-        colors => [ qw/ blanchedalmond red / ],
+        colors => [ qw/ RoyalBlue MidnightBlue / ],
     };
 
     push @$all_clusters, {
         name => 'Benchmark_runs',
         filename_infix => 'brun',
         tables => [ qw/ brun brun_conf bfile / ],
-        colors => [ qw/ blanchedalmond red / ],
+        colors => [ qw/ Plum deeppink4 / ],
     };
 
     push @$all_clusters, {
         name => 'Files_paths',
         filename_infix => 'file',
         tables => [ qw/ fspath fsfile fsfile_ext /, ],
-        colors => [ qw/ lightskyblue1 mediumblue / ],
+        colors => [ qw/ PaleGreen LimeGreen / ],
     };
 
     push @$all_clusters, {
         name => 'IRC_robot',
         filename_infix => 'ibot',
         tables => [ qw/ ibot ichannel ichannel_conf ireport_type ibot_log / ],
-        colors => [ qw/ blanchedalmond red / ],
+        colors => [ qw/ PaleTurquoise Turquoise / ],
     };
 
 
@@ -145,92 +145,38 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         name => 'Config',
         filename_infix => 'conf',
         tables => [ qw/ param param_type /, ],
-        colors => [ qw/ darkseagreen1 darkseagreen4 / ],
+        colors => [ qw/ Grey DimGray / ],
     };
 
     my $cluster = [];
-    foreach my $my_conf ( @$all_clusters ) {
-        # print Dumper( $my_conf ); # debug
-        my $conf = {
-            full_tables => {},
-            link_tables => {},
-        };
-        foreach my $table_name ( @{$my_conf->{tables}} ) {
-            $conf->{tables}->{$table_name} = 1;
-        }
-        foreach my $table_name ( @{$my_conf->{link_tables}} ) {
-            $conf->{link_tables}->{$table_name} = 1;
-        }
-        $conf->{colors} = $my_conf->{colors};
+    foreach my $cluster_num ( 0..$#$all_clusters ) {
 
-         my $my_cluster = {
-            name => $my_conf->{name},
-            tables => $my_conf->{tables},
-        };
-        push @$cluster, $my_cluster;
+        my $cluster = $all_clusters->[ $cluster_num ];
 
-        my $out_file_infix = $my_conf->{filename_infix};
+        my $out_file_infix = $cluster->{filename_infix};
         my $out_file = './temp/schema-' . $out_file_infix .  '.' . $output_type;
 
-        print "Running for $my_conf->{name} ($my_conf->{filename_infix}):\n";
+        print "Running for $cluster->{name} ($cluster->{filename_infix}):\n";
         my $translator = SQL::Translator->new(
             filename  => $input_file,
             parser => 'MySQL',
             producer => 'TTGraphViz',
             debug => $debug,
-            filters => [
-                sub {
-                    my $schema = shift;
-                    #print Dumper( $schema );
 
-                    my $simply_tables = {};
-                    foreach my $table_name ( keys %{$conf->{tables}} ) {
-                        my $table = $schema->get_table( $table_name ) or next;
-                        my $constraints = $table->get_constraints;
-                        foreach my $cons ( @$constraints ) {
-                            if ( $cons->type eq 'FOREIGN KEY' ) {
-                                $simply_tables->{ $cons->reference_table } = 1;
-                            }
-                        }
-                    }
-
-
-                    foreach my $table ( $schema->get_tables ) {
-                        my $table_name = $table->name;
-                        unless ( $conf->{tables}->{$table_name} ) {
-                            if  ( $simply_tables->{$table_name} ) {
-                                foreach my $field ( $table->get_fields ) {
-                                    unless ( $field->is_primary_key ) {
-                                        $table->drop_field( $field->name );
-                                    }
-                                }
-                            } else {
-                                $schema->drop_table($table->name);
-                            }
-                        }
-                    }
-                }
-            ],
             producer_args => {
                 out_file => $out_file,
                 output_type => $output_type,
-                layout => 'neato',
+                #layout => 'neato',
+                layout => 'dot',
                 add_color => 0,
                 show_constraints => 1,
 
-                #width => 20,
-                #height => 16,
+                width => 26,
+                height => 18,
                 fontsize => 18,
 
-                node => {
-                    shape => 'record',
-                    style => 'filled',
-                    fillcolor => $my_conf->{colors}->[0],
-                    #fontcolor => 'white',
-                    color => $my_conf->{colors}->[1],
-                },
-
-                clusters => [ $my_cluster ],
+                all_clusters => $all_clusters,
+                #only_cluster => $cluster->{name},
 
                 #fontname => '',
                 #show_datatypes => 1,
@@ -238,10 +184,11 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
                 #join_pk_only => 1,
                 #skip_fields => [ 'trun' ],
             },
+
         ) or die SQL::Translator->error;
         $translator->translate;
+        exit;
     }
-
 
     print "Running for full schema:\n";
     my $out_file = './temp/schema.' . $output_type;

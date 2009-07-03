@@ -316,6 +316,7 @@ sub produce {
         skip_fields  => $args->{skip_fields},
     ) if $args->{natural_join};
 
+
     my %cluster;
     if ( defined $args->{'cluster'} ) {
         my @clusters;
@@ -343,7 +344,64 @@ sub produce {
             }
         }
     }
-    # use Data::Dumper; print Dumper( \%cluster ); # debug
+
+    my $all_clusters_by_name = {};
+    my $table_to_cluster_name = {};
+    my $cluster_objs = {};
+
+    if ( defined $args->{'all_clusters'} ) {
+        my $cluster_num = undef;
+
+        foreach my $t_cluster_num ( 0..$#{$args->{'all_clusters'}} ) {
+            my $cluster_name = $args->{'all_clusters'}->[ $t_cluster_num ]->{'name'};
+            $all_clusters_by_name->{ $cluster_name } = $args->{'all_clusters'}->[ $t_cluster_num ];
+            my $cluster_tables = $args->{'all_clusters'}->[ $t_cluster_num ]->{'tables'};
+            foreach my $table_name ( @$cluster_tables ) {
+                $table_to_cluster_name->{$table_name} = $cluster_name;
+            }
+        }
+
+        if ( defined $args->{'only_cluster'} ) {
+            foreach my $t_cluster_num ( 0..$#{$args->{'all_clusters'}} ) {
+                if ( $args->{'all_clusters'}->[ $t_cluster_num ]->{'name'} eq $args->{'only_cluster'} ) {
+                    $cluster_num = $t_cluster_num;
+                    last;
+                }
+            }
+            die "Can't find cluster name $args->{'only_cluster'}." unless defined $cluster_num;
+
+            my $cluster_name = $args->{'all_clusters'}->[ $cluster_num ]->{'name'};
+            my $cluster_tables = $args->{'all_clusters'}->[ $cluster_num ]->{'tables'};
+            for my $table ( @$cluster_tables ) {
+                $cluster{ $table } = $cluster_name;
+            }
+        } else {
+            foreach my $cluster_name ( keys %$all_clusters_by_name ) {
+                my $cluster_conf = $all_clusters_by_name->{$cluster_name};
+                for my $table ( @{$cluster_conf->{tables}} ) {
+                    $cluster{ $table } = $cluster_conf->{name};
+                }
+            }
+
+        }
+
+        foreach my $cluster_name ( keys %$all_clusters_by_name ) {
+            my $cluster_conf = $all_clusters_by_name->{$cluster_name};
+            my $cluster_obj = {
+                name      => $all_clusters_by_name->{$cluster_name}->{name},
+                pencolor => $all_clusters_by_name->{$cluster_name}->{colors}->[1],
+                fontcolor => $all_clusters_by_name->{$cluster_name}->{colors}->[1],
+                fontsize => int($args->{fontsize}*1.5),
+                #style     =>'filled',
+                #fontname  => 'arial',
+                #fontsize  => '12',
+            };
+            $cluster_objs->{$cluster_name} = $cluster_obj;
+        }
+
+    }
+
+    #use Data::Dumper; print Dumper( $cluster_objs ); # debug
 
     #
     # Create a blank GraphViz object and see if we can produce the output type.
@@ -517,7 +575,15 @@ sub produce {
         }
 
         if (my $cluster_name = $cluster{$table_name} ) {
-          $node_args->{cluster} = $cluster_name;
+            if ( exists $cluster_objs->{$cluster_name} ) {
+                $node_args->{cluster} = $cluster_objs->{$cluster_name};
+            } else {
+                $node_args->{cluster} = $cluster_name;
+            }
+        }
+        if ( exists $table_to_cluster_name->{$table_name} ) {
+            my $cluster_name = $table_to_cluster_name->{$table_name};
+            $node_args->{fillcolor} = $all_clusters_by_name->{$cluster_name}->{'colors'}->[0];
         }
 
         $gv->add_node ($table_name, %$node_args);
@@ -608,6 +674,8 @@ sub produce {
     #
     # Print the image
     #
+    print $gv->as_debug . "\n\n";
+
     if ( my $out = $args->{out_file} ) {
         if (openhandle ($out)) {
             print $out $gv->$output_method;
