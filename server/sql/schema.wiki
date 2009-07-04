@@ -3,14 +3,14 @@
 <!-- perl utils\wiki_schema.pl sql\schema.wiki 1 > sql\schema.sql -->
 <!-- PARSE PART DBCREATE BEGIN -->
 <source lang=sql>
--- schema version: 0.11
+-- schema reversion: $LastChangedRevision$
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 </source>
 
 === Tables ===
 
-==== user ====
+==== Table user ====
 User info.
 * user_id
 * login
@@ -36,7 +36,7 @@ CREATE TABLE user (
 ) TYPE=InnoDB;
 </source>
 
-==== machine (m) ====
+==== Table machine (m) ====
 machine (computer) info.
 * machine_id
 * user_id
@@ -71,7 +71,7 @@ CREATE TABLE machine (
 ) TYPE=InnoDB;
 </source>
 
-==== farm ====
+==== Table farm ====
 Group of machines with same HW, SW or both configurations working in farm.
 * farm_id
 * name
@@ -88,7 +88,7 @@ CREATE TABLE farm (
 ) TYPE=InnoDB;
 </source>
 
-==== project ====
+==== Table project ====
 Project.
 * project_id
 * name
@@ -103,7 +103,7 @@ CREATE TABLE project (
 ) TYPE=InnoDB;
 </source>
 
-==== rep ====
+==== Table rep ====
 Project repository. Each project can has only one active repository.
 * rep_id
 * project_id
@@ -126,7 +126,7 @@ CREATE TABLE rep (
 ) TYPE=InnoDB;
 </source>
 
-==== rep_author ====
+==== Table rep_author ====
 Repository and patch authors. Some authors are also users.
 * rep_author_id
 * rep_id
@@ -146,7 +146,7 @@ CREATE TABLE rep_author (
 ) TYPE=InnoDB;
 </source>
 
-==== rev ====
+==== Table rev ====
 Revision info.
 * rev_id
 * rep_id - cache for rev_rep_path.rep_path_id -> rep_path.rep_id
@@ -169,7 +169,7 @@ CREATE TABLE rev (
 ) TYPE=InnoDB;
 </source>
 
-==== rep_path ====
+==== Table rep_path ====
 Repository path (trunk/, branch/pdd17pmc/, ...).
 * rep_path_id
 * rep_id
@@ -191,7 +191,7 @@ CREATE TABLE rep_path (
 ) TYPE=InnoDB;
 </source>
 
-==== rev_rep_path ====
+==== Table rev_rep_path ====
 Revision info to repository path map (M:N).
 * rep_path_id
 * rev_id
@@ -205,7 +205,7 @@ CREATE TABLE rev_rep_path (
 ) TYPE=InnoDB;
 </source>
 
-==== rep_file ====
+==== Table rep_file ====
 Files in repository path.
 * rep_file_id
 * rep_path_id
@@ -226,7 +226,7 @@ CREATE TABLE rep_file (
 ) TYPE=InnoDB;
 </source>
 
-==== rep_change_type ====
+==== Table rep_change_type ====
 Change types and info.
 * rep_change_type_id
 * abbr
@@ -240,7 +240,7 @@ CREATE TABLE rep_change_type (
 ) TYPE=InnoDB;
 </source>
 
-==== rep_file_change ====
+==== Table rep_file_change ====
 * rev_id
 * rev_num - cache for rev.rev_num
 * rep_file_id
@@ -260,7 +260,7 @@ CREATE TABLE rep_file_change (
 ) TYPE=InnoDB;
 </source>
 
-==== rep_file_change_from ====
+==== Table rep_file_change_from ====
 * rev_id
 * rep_file_id
 * from_rev_id
@@ -279,7 +279,7 @@ CREATE TABLE rep_file_change_from (
 ) TYPE=InnoDB;
 </source>
 
-==== patch ====
+==== Table patch ====
 Only one file for each patch.
 * patch_id
 * rep_path_id
@@ -310,7 +310,7 @@ CREATE TABLE patch (
 ) TYPE=InnoDB;
 </source>
 
-==== rep_test ====
+==== Table rep_test ====
 Number and name of the test. Each rep_file can contains many tests. Rep file gets new id after each file change.
 * rep_test_id
 * rep_file_id
@@ -330,7 +330,7 @@ CREATE TABLE rep_test (
 ) TYPE=InnoDB;
 </source>
 
-==== job ====
+==== Table job ====
 Job. Job table can contain one part or more related parts.
 * job_id
 * client_min_rev - minimal clietn revision number to run this job
@@ -347,7 +347,7 @@ CREATE TABLE job (
 ) TYPE=InnoDB;
 </source>
 
-==== jobp ====
+==== Table jobp ====
 Job part.
 * jobp_id
 * job_id
@@ -377,7 +377,7 @@ CREATE TABLE jobp (
 ) TYPE=InnoDB;
 </source>
 
-==== cmd ====
+==== Table cmd ====
 Command.
 * cmd_id
 * name
@@ -393,7 +393,7 @@ CREATE TABLE cmd (
 ) TYPE=InnoDB;
 </source>
 
-==== jobp_cmd ====
+==== Table jobp_cmd ====
 Job part command.
 * jobp_cmd_id
 * jobp_id
@@ -413,7 +413,7 @@ CREATE TABLE jobp_cmd (
 ) TYPE=InnoDB;
 </source>
 
-==== cmd_status ====
+==== Table cmd_status ====
 Command status.
 * cmd_status_id
 * name
@@ -432,7 +432,7 @@ CREATE TABLE cmd_status (
 ) TYPE=InnoDB;
 </source>
 
-==== machine_job_conf ====
+==== Table machine_job_conf ====
 Machine job configuration.
 Defined rep_id is the most general config. Defined job_id the most specific config.
 * machine_job_conf_id
@@ -459,7 +459,7 @@ CREATE TABLE machine_job_conf (
 ) TYPE=InnoDB;
 </source>
 
-==== msession (ms) ====
+==== Table msession (ms) ====
 Machine session. Each machine can run more than one processes at a time.
 * msession_id
 * machine_id
@@ -483,7 +483,7 @@ CREATE TABLE msession (
 ) TYPE=InnoDB;
 </source>
 
-==== msjob ====
+==== Table msjob ====
 Machine session job part.
 * msjob_id
 * msession_id
@@ -507,7 +507,7 @@ CREATE TABLE msjob (
 ) TYPE=InnoDB;
 </source>
 
-==== msjobp ====
+==== Table msjobp ====
 Machine session job part.
 * msjobp_id
 * msjob_id
@@ -535,7 +535,7 @@ CREATE TABLE msjobp (
 ) TYPE=InnoDB;
 </source>
 
-==== msjobp_cmd ====
+==== Table msjobp_cmd ====
 Machine session job part command.
 * msjobp_cmd_id
 * msjobp_id
@@ -567,7 +567,7 @@ CREATE TABLE msjobp_cmd (
 ) TYPE=InnoDB;
 </source>
 
-==== mslog ====
+==== Table mslog ====
 Machine session log. Could be part of msession table, but separate table is better for logging (and log cleaning).
 * mslog_id
 * msession_id
@@ -590,7 +590,7 @@ CREATE TABLE mslog (
 ) TYPE=InnoDB;
 </source>
 
-==== msstatus ====
+==== Table msstatus ====
 Machine session status messages.
 * msstatus_id
 * name - short status description
@@ -612,7 +612,7 @@ CREATE TABLE msstatus (
 ) TYPE=InnoDB;
 </source>
 
-==== msabort_reason ====
+==== Table msabort_reason ====
 Machine session status messages.
 * msabort_reason_id
 * name - short abort reason description
@@ -630,7 +630,7 @@ CREATE TABLE msabort_reason (
 ) TYPE=InnoDB;
 </source>
 
-=== trun_status ===
+==== Table trun_status ====
 Test run loading status.
 * trun_status_id
 * name
@@ -643,7 +643,7 @@ CREATE TABLE trun_status (
 ) TYPE=InnoDB;
 </source>
 
-==== trun ====
+==== Table trun ====
 Test run info and test run statistics (cache).
 * trun_id
 * msjobp_cmd_id
@@ -673,7 +673,7 @@ CREATE TABLE trun (
 ) TYPE=InnoDB;
 </source>
 
-==== brun_conf ====
+==== Table brun_conf ====
 Benchmark run.
 * brun_conf_id
 * hash
@@ -690,7 +690,7 @@ CREATE TABLE brun_conf (
 ) TYPE=InnoDB;
 </source>
 
-==== brun ====
+==== Table brun ====
 * brun_id
 * msjobp_cmd_id
 * conf_id
@@ -706,7 +706,7 @@ CREATE TABLE brun (
 ) TYPE=InnoDB;
 </source>
 
-==== tskipall_msg ====
+==== Table tskipall_msg ====
 Reasons to skipp all tests.
 * tskippall_msg_id
 * msg
@@ -720,7 +720,7 @@ CREATE TABLE tskipall_msg (
 ) TYPE=InnoDB;
 </source>
 
-==== tfile ====
+==== Table tfile ====
 Test file summary results - summary result for all tests in file. All_passed is shortcup to data test.
 * tfile_id
 * trun_id
@@ -743,7 +743,7 @@ CREATE TABLE tfile (
 ) TYPE=InnoDB;
 </source>
 
-==== trest ====
+==== Table trest ====
 Test result info.
 * tresult_id
 * name
@@ -763,7 +763,7 @@ CREATE TABLE trest (
 ) TYPE=InnoDB;
 </source>
 
-==== ttest ====
+==== Table ttest ====
 Test results for each test (test case, subtest) submitted in trun.
 * ttest_id
 * trun_id
@@ -784,7 +784,7 @@ CREATE TABLE ttest (
 ) TYPE=InnoDB;
 </source>
 
-==== tdiag_msg ====
+==== Table tdiag_msg ====
 Diagnostic messages.
 * tdiag_msg_id
 * ttest_id
@@ -802,7 +802,7 @@ CREATE TABLE tdiag_msg (
 ) TYPE=InnoDB;
 </source>
 
-==== bfile ====
+==== Table bfile ====
 Bench file results.
 * bfile_id
 * brun_id
@@ -822,7 +822,7 @@ CREATE TABLE bfile (
 ) TYPE=InnoDB;
 </source>
 
-==== fspath ====
+==== Table fspath ====
 List of directories with files.
 * fspath_id
 * path - full path from root, e.g. /tmp/taptinder/patches/parrot-01/
@@ -845,7 +845,7 @@ CREATE TABLE fspath (
 ) TYPE=InnoDB;
 </source>
 
-==== fsfile ====
+==== Table fsfile ====
 List of saved files.
 * fsfile_id
 * fspath_id
@@ -866,7 +866,7 @@ CREATE TABLE fsfile (
 ) TYPE=InnoDB;
 </source>
 
-==== fsfile_ext ====
+==== Table fsfile_ext ====
 Files extracted from another files (archives).
 * fsfile_ext_id
 * archive_id
@@ -884,7 +884,7 @@ CREATE TABLE fsfile_ext (
 ) TYPE=InnoDB;
 </source>
 
-==== fsfile_type ====
+==== Table fsfile_type ====
 * fsfile_type_id
 * name
 ** command output
@@ -898,7 +898,7 @@ CREATE TABLE fsfile_type (
 ) TYPE=InnoDB;
 </source>
 
-==== fspath_select ====
+==== Table fspath_select ====
 Default fsfile_path to save files for each rep_path and file_type.
 * fspath_select_id
 * fsfile_type_id
@@ -917,7 +917,7 @@ CREATE TABLE fspath_select (
 ) TYPE=InnoDB;
 </source>
 
-==== param_type ====
+==== Table param_type ====
 Types of parameters.
 * param_type_id
 * name
@@ -931,7 +931,7 @@ CREATE TABLE param_type (
 ) TYPE=InnoDB;
 </source>
 
-==== param ====
+==== Table param ====
 Parameters values.
 * param_id
 * param_type_id
@@ -946,7 +946,7 @@ CREATE TABLE param (
 ) TYPE=InnoDB;
 </source>
 
-==== ibot ====
+==== Table ibot ====
 IRC bots.
 * ibot_id
 * nick
@@ -966,7 +966,7 @@ CREATE TABLE ibot (
 ) TYPE=InnoDB;
 </source>
 
-==== ichannel ====
+==== Table ichannel ====
 IRC channel.
 * ichannel_id
 * name
@@ -977,7 +977,7 @@ CREATE TABLE ichannel (
 ) TYPE=InnoDB;
 </source>
 
-==== ireport_type_id ====
+==== Table ireport_type_id ====
 * ireport_type_id
 * name
 * desc
@@ -989,7 +989,7 @@ CREATE TABLE ireport_type (
 ) TYPE=InnoDB;
 </source>
 
-==== ichannel_conf ====
+==== Table ichannel_conf ====
 Parameters values.
 * ichannel_conf_id
 * ibot_id
@@ -1014,7 +1014,7 @@ CREATE TABLE ichannel_conf (
 ) TYPE=InnoDB;
 </source>
 
-==== ibot_log ====
+==== Table ibot_log ====
 IRC bot log.
 * ibot_log_id
 * ibot_id
