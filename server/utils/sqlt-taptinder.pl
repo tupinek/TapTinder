@@ -39,6 +39,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
 # graph - GraphViz - .png
 } elsif ( $to eq 'graph' || $to eq 'ALL' ) {
     my $output_type = 'png';
+    $output_type = 'svg';
 
     my $all_clusters = [];
 
@@ -148,16 +149,19 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         colors => [ qw/ Grey DimGray / ],
     };
 
+    my $out_dir = './temp/schema';
+    $out_dir .= '-svg' if $output_type eq 'svg';
 
     if ( 1 ) {
         foreach my $cluster_num ( 0..$#$all_clusters ) {
 
             my $cluster = $all_clusters->[ $cluster_num ];
+            my $cluster_name = $cluster->{name};
 
             my $out_file_infix = $cluster->{filename_infix};
-            my $out_file = './temp/schema-' . $out_file_infix .  '.' . $output_type;
+            my $out_file = $out_dir . '/' . $out_file_infix .  '.' . $output_type;
 
-            print "Running for $cluster->{name} ($cluster->{filename_infix}):\n";
+            print "Running for $cluster->{name} ($cluster->{filename_infix}) -> $out_file.\n";
             my $translator = SQL::Translator->new(
                 filename  => $input_file,
                 parser => 'MySQL',
@@ -167,6 +171,8 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
                 producer_args => {
                     out_file => $out_file,
                     output_type => $output_type,
+                    name => $cluster_name,
+
                     #layout => 'neato',
                     layout => 'dot',
                     add_color => 0,
@@ -182,6 +188,8 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
                     filter_in_related_tables => 1,
                     filter_no_cluster_fields_in => 1,
 
+                    table_name_url_prefix => 'http://dev.taptinder.org/wiki/DB_Schema#',
+
                     #fontname => '',
                     #show_datatypes => 1,
                     #show_sizes => 1,
@@ -191,11 +199,12 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
 
             ) or die SQL::Translator->error;
             $translator->translate;
+            #exit;
         }
     }
 
-    print "Running for full schema:\n";
-    my $out_file = './temp/schema.' . $output_type;
+    my $out_file = $out_dir . '/all.' . $output_type;
+    print "Running for full schema -> $out_file.\n";
     my $translator = SQL::Translator->new(
         filename  => $input_file,
         parser => 'MySQL',
@@ -204,6 +213,8 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         producer_args => {
             out_file => $out_file,
             output_type => $output_type,
+            name => 'schema',
+
             layout => 'dot',
             #layout => 'neato',
             add_color => 0,
@@ -222,6 +233,8 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
             },
 
             all_clusters => $all_clusters,
+
+            table_name_url_prefix => 'http://dev.taptinder.org/wiki/DB_Schema#',
 
             #fontname => '',
             #show_datatypes => 1,

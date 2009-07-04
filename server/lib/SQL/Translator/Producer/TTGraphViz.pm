@@ -652,6 +652,13 @@ sub produce {
             my $cluster_name = $cluster{$table_name};
             $node_args->{cluster} = $cluster_name;
         }
+        if ( $args->{table_name_url_prefix} ) {
+            $node_args->{URL} = $args->{table_name_url_prefix} . $table_name;
+            my $comment = join( '', $table->comments );
+            $comment =~ s{Tag\:\s*[a-zA-Z0-9_]+?(\s*\,\s*[a-zA-Z0-9_]+?)*?(\.|$)}{}g;
+            $comment =~ s{\s+$}{};
+            $node_args->{tooltip} = $comment;
+        }
 
         $gv->add_node ($table_name, %$node_args);
 
@@ -740,6 +747,12 @@ sub produce {
                     my $cluster = $all_clusters_by_name->{$cluster_name};
                     $edge_attrs->{color} = $cluster->{colors}->[1];
                 }
+
+                if ( $args->{table_name_url_prefix} ) {
+                    $edge_attrs->{URL} = $args->{table_name_url_prefix} . $table1;
+                    $edge_attrs->{tooltip} = "$table1 -> $table2";
+                }
+
                 $gv->add_edge( $table1, $table2, %$edge_attrs );
 
                 $done{ $table1 }{ $table2 } = 1;
@@ -760,6 +773,14 @@ sub produce {
             binmode $fh;
             print $fh $gv->$output_method;
             close $fh;
+
+            if ( $output_method eq 'as_png' ) {
+                my $cl_out = $out . '.cm';
+                open my $cl_fh, '>', $cl_out or die "Can't write '$cl_out': $!\n";
+                binmode $cl_fh;
+                print $cl_fh $gv->as_cmapx;
+                close $cl_fh;
+            }
         }
     }
     else {
