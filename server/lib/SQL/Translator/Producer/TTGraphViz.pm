@@ -232,6 +232,7 @@ use SQL::Translator::Schema::Constants;
 use SQL::Translator::Utils qw(debug);
 use Scalar::Util qw/openhandle/;
 
+
 use vars qw[ $VERSION $DEBUG ];
 $VERSION = '1.59';
 $DEBUG   = 0 unless defined $DEBUG;
@@ -361,21 +362,22 @@ sub produce {
             }
         }
 
+        my @used_cluster_names = ( keys %$all_clusters_by_name );
         if ( defined $args->{'only_cluster'} ) {
-            foreach my $t_cluster_num ( 0..$#{$args->{'all_clusters'}} ) {
-                if ( $args->{'all_clusters'}->[ $t_cluster_num ]->{'name'} eq $args->{'only_cluster'} ) {
-                    $cluster_num = $t_cluster_num;
-                    last;
-                }
-            }
-            die "Can't find cluster name $args->{'only_cluster'}." unless defined $cluster_num;
+            my $only_cluster_name = $args->{'only_cluster'};
+            die "Can't find cluster name $args->{'only_cluster'}." unless exists $all_clusters_by_name->{$only_cluster_name};
 
-            my $cluster_name = $args->{'all_clusters'}->[ $cluster_num ]->{'name'};
-            my $cluster_tables = $args->{'all_clusters'}->[ $cluster_num ]->{'tables'};
+            @used_cluster_names = ( $only_cluster_name );
+
+            my $cluster_name = $all_clusters_by_name->{$only_cluster_name}->{'name'};
+            my $cluster_tables = $all_clusters_by_name->{$only_cluster_name}->{'tables'};
             for my $table ( @$cluster_tables ) {
                 $cluster{ $table } = $cluster_name;
             }
+
         } else {
+            @used_cluster_names = ( keys %$all_clusters_by_name );
+
             foreach my $cluster_name ( keys %$all_clusters_by_name ) {
                 my $cluster_conf = $all_clusters_by_name->{$cluster_name};
                 for my $table ( @{$cluster_conf->{tables}} ) {
@@ -385,23 +387,19 @@ sub produce {
 
         }
 
-        foreach my $cluster_name ( keys %$all_clusters_by_name ) {
+        foreach my $cluster_name ( @used_cluster_names ) {
             my $cluster_conf = $all_clusters_by_name->{$cluster_name};
             my $cluster_obj = {
-                name      => $all_clusters_by_name->{$cluster_name}->{name},
+                name => $all_clusters_by_name->{$cluster_name}->{name},
                 pencolor => $all_clusters_by_name->{$cluster_name}->{colors}->[1],
                 fontcolor => $all_clusters_by_name->{$cluster_name}->{colors}->[1],
                 fontsize => int($args->{fontsize}*1.5),
-                #style     =>'filled',
-                #fontname  => 'arial',
-                #fontsize  => '12',
             };
             $cluster_objs->{$cluster_name} = $cluster_obj;
         }
-
     }
 
-    #use Data::Dumper; print Dumper( $cluster_objs ); # debug
+    #use Data::Dumper; print Dumper( \%cluster ); # debug
 
     #
     # Create a blank GraphViz object and see if we can produce the output type.
@@ -423,6 +421,62 @@ sub produce {
     my %nj_registry; # for locations of fields for natural joins
     my @fk_registry; # for locations of fields for foreign keys
 
+    my %show_pk_only_tables = ();
+    if ( defined $args->{'only_cluster'} ) {
+        my %out_related = ();
+        for my $table ( $schema->get_tables ) {
+            my $table_name = $table->name;
+            my $only_cluster_name = $args->{'only_cluster'};
+            my $in_only_cluster = ( exists $table_to_cluster_name->{$table_name} && $table_to_cluster_name->{$table_name} eq $only_cluster_name );
+
+            if ( $in_only_cluster ) {
+                for my $c ( $table->get_constraints ) {
+                    next unless $c->type eq FOREIGN_KEY;
+                    my $fk_table_name = $c->reference_table or next;
+                    next if $fk_table_name eq $table_name;
+
+                    $out_related{ $fk_table_name } = 1;
+                    $show_pk_only_tables{ $fk_table_name } = 1 if $args->{filter_no_cluster_fields_out};
+                }
+            }
+        }
+
+        for my $table ( $schema->get_tables ) {
+            my $table_name = $table->name;
+            next if exists $out_related{$table_name};
+
+            my $only_cluster_name = $args->{'only_cluster'};
+            my $in_only_cluster = ( exists $table_to_cluster_name->{$table_name} && $table_to_cluster_name->{$table_name} eq $only_cluster_name );
+
+            unless ( $in_only_cluster ) {
+                if ( $args->{filter_in_related_tables} ) {
+                    $skip_tables{ $table_name } = 1;
+
+                } else {
+                    # check if contains any FK to one of tables in only_cluster
+                    my $fk_table_is_inside_only_cluster = 0;
+                    for my $c ( $table->get_constraints ) {
+                        next unless $c->type eq FOREIGN_KEY;
+                        my $fk_table_name = $c->reference_table or next;
+                        next if $fk_table_name eq $table_name;
+
+                        my $fk_in_only_cluster = ( exists $table_to_cluster_name->{$fk_table_name} && $table_to_cluster_name->{$fk_table_name} eq $only_cluster_name );
+                        if ( $fk_in_only_cluster ) {
+                            $fk_table_is_inside_only_cluster = 1;
+                            last;
+                        }
+                    }
+                    if ( $fk_table_is_inside_only_cluster ) {
+                        $show_pk_only_tables{ $table_name } = 1 if $args->{filter_no_cluster_fields_in};
+                    } else {
+                        $skip_tables{ $table_name } = 1;
+                    }
+                }
+            }
+        }
+    }
+
+
     TABLE:
     for my $table ( $schema->get_tables ) {
 
@@ -434,7 +488,7 @@ sub produce {
           }
         }
 
-        my @fields     = $table->get_fields;
+        my @fields = $table->get_fields;
         if ( $args->{show_fk_only} ) {
             @fields = grep { $_->is_foreign_key } @fields;
         }
@@ -442,7 +496,16 @@ sub produce {
         my $field_str = '';
         if ($args->{show_fields}) {
             my @fmt_fields;
+            FIELD:
             for my $field (@fields) {
+
+              if (    exists $show_pk_only_tables{$table_name}
+                   && !$field->is_primary_key
+                   && ( (not defined $args->{'only_cluster'}) || $table_to_cluster_name->{$table_name} ne $args->{'only_cluster'} )
+                 )
+              {
+                  next FIELD;
+              }
 
               my $field_info;
               if ($args->{show_datatypes}) {
@@ -574,16 +637,13 @@ sub produce {
             };
         }
 
-        if (my $cluster_name = $cluster{$table_name} ) {
-            if ( exists $cluster_objs->{$cluster_name} ) {
-                $node_args->{cluster} = $cluster_objs->{$cluster_name};
-            } else {
-                $node_args->{cluster} = $cluster_name;
-            }
-        }
         if ( exists $table_to_cluster_name->{$table_name} ) {
             my $cluster_name = $table_to_cluster_name->{$table_name};
+            $node_args->{cluster} = $cluster_objs->{$cluster_name};
             $node_args->{fillcolor} = $all_clusters_by_name->{$cluster_name}->{'colors'}->[0];
+        } elsif ( exists $cluster{$table_name} ) {
+            my $cluster_name = $cluster{$table_name};
+            $node_args->{cluster} = $cluster_name;
         }
 
         $gv->add_node ($table_name, %$node_args);
@@ -620,12 +680,14 @@ sub produce {
                     for my $fk_field ( $c->reference_fields ) {
                         next unless defined $schema->get_table( $fk_table );
 
-                        # a condition is optional if at least one fk is nullable
-                        push @fk_registry, [
-                            $table_name,
-                            $fk_table,
-                            scalar (grep { $_->is_nullable } ($c->fields))
-                        ];
+                        unless ( exists $skip_tables{$fk_table} ) {
+                            # a condition is optional if at least one fk is nullable
+                            push @fk_registry, [
+                                $table_name,
+                                $fk_table,
+                                scalar (grep { $_->is_nullable } ($c->fields))
+                            ];
+                        }
                     }
                 }
             }
@@ -661,11 +723,18 @@ sub produce {
                 next if $i == $j;
                 my $table2 = $tables[ $j ];
                 next if $done{ $table1 }{ $table2 };
-                $gv->add_edge(
-                    $table2,
-                    $table1,
+                my $edge_attrs = {
                     arrowhead => $optional_constraints{$bi} ? 'empty' : 'normal',
-                );
+                    style => $optional_constraints{$bi} ? 'dashed' : 'solid',
+                };
+
+                if ( exists $table_to_cluster_name->{ $table1 } ) {
+                    my $cluster_name = $table_to_cluster_name->{ $table1 };
+                    my $cluster = $all_clusters_by_name->{$cluster_name};
+                    $edge_attrs->{color} = $cluster->{colors}->[1];
+                }
+                $gv->add_edge( $table1, $table2, %$edge_attrs );
+
                 $done{ $table1 }{ $table2 } = 1;
             }
         }
@@ -674,7 +743,6 @@ sub produce {
     #
     # Print the image
     #
-    print $gv->as_debug . "\n\n";
 
     if ( my $out = $args->{out_file} ) {
         if (openhandle ($out)) {

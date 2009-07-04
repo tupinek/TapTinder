@@ -48,7 +48,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         tables => [
           qw/ project rep rep_path rep_author rev rev_rep_path rep_file /,
         ],
-        colors => [ qw/ Moccasin lightgoldenrod4 / ],
+        colors => [ qw/ Moccasin burlywood4 / ],
     };
 
     push @$all_clusters, {
@@ -109,7 +109,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         name => 'Machine_sessions',
         filename_infix => 'ms',
         tables => [ qw/ msession msabort_reason mslog msstatus msjob msjobp msjobp_cmd cmd_status / ],
-        colors => [ qw/ Khaki DarkKhaki / ],
+        colors => [ qw/ Khaki brown4 / ],
     };
 
     push @$all_clusters, {
@@ -137,7 +137,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         name => 'IRC_robot',
         filename_infix => 'ibot',
         tables => [ qw/ ibot ichannel ichannel_conf ireport_type ibot_log / ],
-        colors => [ qw/ PaleTurquoise Turquoise / ],
+        colors => [ qw/ PaleTurquoise dodgerblue3 / ],
     };
 
 
@@ -148,46 +148,50 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         colors => [ qw/ Grey DimGray / ],
     };
 
-    my $cluster = [];
-    foreach my $cluster_num ( 0..$#$all_clusters ) {
 
-        my $cluster = $all_clusters->[ $cluster_num ];
+    if ( 1 ) {
+        foreach my $cluster_num ( 0..$#$all_clusters ) {
 
-        my $out_file_infix = $cluster->{filename_infix};
-        my $out_file = './temp/schema-' . $out_file_infix .  '.' . $output_type;
+            my $cluster = $all_clusters->[ $cluster_num ];
 
-        print "Running for $cluster->{name} ($cluster->{filename_infix}):\n";
-        my $translator = SQL::Translator->new(
-            filename  => $input_file,
-            parser => 'MySQL',
-            producer => 'TTGraphViz',
-            debug => $debug,
+            my $out_file_infix = $cluster->{filename_infix};
+            my $out_file = './temp/schema-' . $out_file_infix .  '.' . $output_type;
 
-            producer_args => {
-                out_file => $out_file,
-                output_type => $output_type,
-                #layout => 'neato',
-                layout => 'dot',
-                add_color => 0,
-                show_constraints => 1,
+            print "Running for $cluster->{name} ($cluster->{filename_infix}):\n";
+            my $translator = SQL::Translator->new(
+                filename  => $input_file,
+                parser => 'MySQL',
+                producer => 'TTGraphViz',
+                debug => $debug,
 
-                width => 26,
-                height => 18,
-                fontsize => 18,
+                producer_args => {
+                    out_file => $out_file,
+                    output_type => $output_type,
+                    #layout => 'neato',
+                    layout => 'dot',
+                    add_color => 0,
+                    show_constraints => 1,
 
-                all_clusters => $all_clusters,
-                #only_cluster => $cluster->{name},
+                    #width => 22,
+                    #height => 18,
+                    fontsize => 18,
 
-                #fontname => '',
-                #show_datatypes => 1,
-                #show_sizes => 1,
-                #join_pk_only => 1,
-                #skip_fields => [ 'trun' ],
-            },
+                    all_clusters => $all_clusters,
+                    only_cluster => $cluster->{name},
+                    #filter_no_cluster_fields_out => 1,
+                    filter_in_related_tables => 1,
+                    filter_no_cluster_fields_in => 1,
 
-        ) or die SQL::Translator->error;
-        $translator->translate;
-        exit;
+                    #fontname => '',
+                    #show_datatypes => 1,
+                    #show_sizes => 1,
+                    #join_pk_only => 1,
+                    #skip_fields => [ 'trun' ],
+                },
+
+            ) or die SQL::Translator->error;
+            $translator->translate;
+        }
     }
 
     print "Running for full schema:\n";
@@ -200,12 +204,13 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         producer_args => {
             out_file => $out_file,
             output_type => $output_type,
-            layout => 'neato',
+            layout => 'dot',
+            #layout => 'neato',
             add_color => 0,
             show_constraints => 1,
 
-            width => 20,
-            height => 16,
+            width => 30,
+            height => 20,
             fontsize => 18,
 
             node => {
@@ -216,8 +221,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
                 color => 'red',
             },
 
-            #cluster => $cluster,
-
+            all_clusters => $all_clusters,
 
             #fontname => '',
             #show_datatypes => 1,
