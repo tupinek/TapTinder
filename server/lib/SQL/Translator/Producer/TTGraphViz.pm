@@ -352,6 +352,7 @@ sub produce {
     my $all_clusters_by_name = {};
     my $table_to_cluster_name = {};
     my $cluster_objs = {};
+    my $cluster_num_of_tables = {};
 
     if ( defined $args->{'all_clusters'} ) {
         my $cluster_num = undef;
@@ -362,6 +363,7 @@ sub produce {
             my $cluster_tables = $args->{'all_clusters'}->[ $t_cluster_num ]->{'tables'};
             foreach my $table_name ( @$cluster_tables ) {
                 $table_to_cluster_name->{$table_name} = $cluster_name;
+                $cluster_num_of_tables->{ $cluster_name }++;
             }
         }
 
@@ -642,7 +644,9 @@ sub produce {
 
         if ( exists $table_to_cluster_name->{$table_name} ) {
             my $cluster_name = $table_to_cluster_name->{$table_name};
-            $node_args->{cluster} = $cluster_objs->{$cluster_name};
+            if ( $cluster_num_of_tables->{ $cluster_name } > 1 ) {
+                $node_args->{cluster} = $cluster_objs->{$cluster_name};
+            }
             $node_args->{fillcolor} = $all_clusters_by_name->{$cluster_name}->{'colors'}->[0];
         } elsif ( exists $cluster{$table_name} ) {
             my $cluster_name = $cluster{$table_name};
