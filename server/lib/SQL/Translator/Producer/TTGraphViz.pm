@@ -1,5 +1,8 @@
 package SQL::Translator::Producer::TTGraphViz;
 
+# Based on SQL::Translator::Producer::GraphViz 0.09007
+# Changed by mj41.
+
 # -------------------------------------------------------------------
 # Copyright (C) 2002-2009 SQLFairy Authors
 #
@@ -22,7 +25,7 @@ package SQL::Translator::Producer::TTGraphViz;
 
 =head1 NAME
 
-SQL::Translator::Producer::GraphViz - GraphViz producer for SQL::Translator
+SQL::Translator::Producer::TTGraphViz - GraphViz producer for SQL::Translator
 
 =head1 SYNOPSIS
 
