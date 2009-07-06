@@ -320,6 +320,11 @@ sub produce {
         skip_fields  => $args->{skip_fields},
     ) if $args->{natural_join};
 
+    # Change a string to array ref with the string.
+    if ( defined $args->{'only_clusters'} && (not ref $args->{'only_clusters'}) ) {
+        $args->{'only_clusters'} = [ $args->{'only_clusters'} ];
+    }
+
 
     my %cluster;
     if ( defined $args->{'cluster'} ) {
@@ -368,16 +373,17 @@ sub produce {
         }
 
         my @used_cluster_names = ( keys %$all_clusters_by_name );
-        if ( defined $args->{'only_cluster'} ) {
-            my $only_cluster_name = $args->{'only_cluster'};
-            die "Can't find cluster name $args->{'only_cluster'}." unless exists $all_clusters_by_name->{$only_cluster_name};
+        if ( $args->{'only_clusters'} ) {
+            @used_cluster_names = ();
+            foreach my $only_cluster_name ( @{$args->{'only_clusters'}} ) {
+                die "Can't find cluster name '$only_cluster_name'." unless exists $all_clusters_by_name->{$only_cluster_name};
+                push @used_cluster_names, $only_cluster_name;
 
-            @used_cluster_names = ( $only_cluster_name );
-
-            my $cluster_name = $all_clusters_by_name->{$only_cluster_name}->{'name'};
-            my $cluster_tables = $all_clusters_by_name->{$only_cluster_name}->{'tables'};
-            for my $table ( @$cluster_tables ) {
-                $cluster{ $table } = $cluster_name;
+                my $cluster_name = $all_clusters_by_name->{$only_cluster_name}->{'name'};
+                my $cluster_tables = $all_clusters_by_name->{$only_cluster_name}->{'tables'};
+                for my $table ( @$cluster_tables ) {
+                    $cluster{ $table } = $cluster_name;
+                }
             }
 
         } else {
@@ -427,12 +433,18 @@ sub produce {
     my @fk_registry; # for locations of fields for foreign keys
 
     my %show_pk_only_tables = ();
-    if ( defined $args->{'only_cluster'} ) {
+    if ( defined $args->{'only_clusters'} ) {
         my %out_related = ();
         for my $table ( $schema->get_tables ) {
             my $table_name = $table->name;
-            my $only_cluster_name = $args->{'only_cluster'};
-            my $in_only_cluster = ( exists $table_to_cluster_name->{$table_name} && $table_to_cluster_name->{$table_name} eq $only_cluster_name );
+
+            my $in_only_cluster = 0;
+            foreach my $only_cluster_name ( @{$args->{'only_clusters'}} ) {
+                if ( exists $table_to_cluster_name->{$table_name} && $table_to_cluster_name->{$table_name} eq $only_cluster_name ) {
+                    $in_only_cluster = 1;
+                    last;
+                }
+            }
 
             if ( $in_only_cluster ) {
                 for my $c ( $table->get_constraints ) {
@@ -450,8 +462,13 @@ sub produce {
             my $table_name = $table->name;
             next if exists $out_related{$table_name};
 
-            my $only_cluster_name = $args->{'only_cluster'};
-            my $in_only_cluster = ( exists $table_to_cluster_name->{$table_name} && $table_to_cluster_name->{$table_name} eq $only_cluster_name );
+            my $in_only_cluster = 0;
+            foreach my $only_cluster_name ( @{$args->{'only_clusters'}} ) {
+                if ( exists $table_to_cluster_name->{$table_name} && $table_to_cluster_name->{$table_name} eq $only_cluster_name ) {
+                    $in_only_cluster = 1;
+                    last;
+                }
+            }
 
             unless ( $in_only_cluster ) {
                 if ( $args->{filter_in_related_tables} ) {
@@ -465,7 +482,13 @@ sub produce {
                         my $fk_table_name = $c->reference_table or next;
                         next if $fk_table_name eq $table_name;
 
-                        my $fk_in_only_cluster = ( exists $table_to_cluster_name->{$fk_table_name} && $table_to_cluster_name->{$fk_table_name} eq $only_cluster_name );
+                        my $fk_in_only_cluster = 0;
+                        foreach my $only_cluster_name ( @{$args->{'only_clusters'}} ) {
+                            if ( exists $table_to_cluster_name->{$fk_table_name} && $table_to_cluster_name->{$fk_table_name} eq $only_cluster_name ) {
+                                $fk_in_only_cluster = 1;
+                                last;
+                            }
+                        }
                         if ( $fk_in_only_cluster ) {
                             $fk_table_is_inside_only_cluster = 1;
                             last;
@@ -504,9 +527,20 @@ sub produce {
             FIELD:
             for my $field (@fields) {
 
+              my $restricted_by_only_clusters = 0;
+              if ( defined $args->{'only_clusters'} ) {
+                    $restricted_by_only_clusters = 1;
+                    foreach my $only_cluster_name ( @{$args->{'only_clusters'}} ) {
+                        if ( $table_to_cluster_name->{$table_name} eq $only_cluster_name ) {
+                            $restricted_by_only_clusters = 0;
+                            last;
+                        }
+                    }
+              }
+
               if (    exists $show_pk_only_tables{$table_name}
                    && !$field->is_primary_key
-                   && ( (not defined $args->{'only_cluster'}) || $table_to_cluster_name->{$table_name} ne $args->{'only_cluster'} )
+                   && $restricted_by_only_clusters
                  )
               {
                   next FIELD;
@@ -648,6 +682,7 @@ sub produce {
                 $node_args->{cluster} = $cluster_objs->{$cluster_name};
             }
             $node_args->{fillcolor} = $all_clusters_by_name->{$cluster_name}->{'colors'}->[0];
+
         } elsif ( exists $cluster{$table_name} ) {
             my $cluster_name = $cluster{$table_name};
             $node_args->{cluster} = $cluster_name;
@@ -764,7 +799,16 @@ sub produce {
     # Print the image
     #
 
-    if ( my $out = $args->{out_file} ) {
+    if ( $args->{out_files} ) {
+        foreach my $output_method ( keys %{$args->{out_files}} ) {
+            my $out_fname = $args->{out_files}->{$output_method};
+            open my $fh, '>', $out_fname or die "Can't write '$out_fname' (output_method '$output_method'): $!\n";
+            binmode $fh;
+            print $fh $gv->$output_method;
+            close $fh;
+        }
+
+    } elsif ( my $out = $args->{out_file} ) {
         if (openhandle ($out)) {
             print $out $gv->$output_method;
         }
@@ -773,14 +817,6 @@ sub produce {
             binmode $fh;
             print $fh $gv->$output_method;
             close $fh;
-
-            if ( $output_method eq 'as_png' ) {
-                my $cl_out = $out . '.cm';
-                open my $cl_fh, '>', $cl_out or die "Can't write '$cl_out': $!\n";
-                binmode $cl_fh;
-                print $cl_fh $gv->as_cmapx;
-                close $cl_fh;
-            }
         }
     }
     else {

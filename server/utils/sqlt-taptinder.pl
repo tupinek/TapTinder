@@ -150,18 +150,31 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
     };
 
     my $out_dir = './temp/schema';
-    $out_dir .= '-svg' if $output_type eq 'svg';
 
+    my %out_files_map = (
+        'as_png' => 'png',
+        'as_cmapx' => 'cmap',
+        'as_svg' => 'svg',
+    );
     if ( 1 ) {
         foreach my $cluster_num ( 0..$#$all_clusters ) {
 
             my $cluster = $all_clusters->[ $cluster_num ];
             my $cluster_name = $cluster->{name};
 
-            my $out_file_infix = $cluster->{filename_infix};
-            my $out_file = $out_dir . '/' . $out_file_infix .  '.' . $output_type;
+            my $out_files = {};
+            foreach my $method_name ( keys %out_files_map ) {
+                my $out_file_infix = $cluster->{filename_infix};
+                my $file_type = $out_files_map{$method_name};
+                my $t_out_dir = $out_dir . '/' . 'cluster-' . $file_type;
+                unless ( -d $t_out_dir ) {
+                    mkdir( $t_out_dir ) or croak "Can't create directory '$t_out_dir': $!\n";
+                }
+                my $out_file = $t_out_dir . '/' . $out_file_infix .  '.' . $file_type;
+                $out_files->{$method_name} = $out_file;
+            }
 
-            print "Running for $cluster->{name} ($cluster->{filename_infix}) -> $out_file.\n";
+            print "Running for $cluster->{name} ($cluster->{filename_infix}).\n";
             my $translator = SQL::Translator->new(
                 filename  => $input_file,
                 parser => 'MySQL',
@@ -169,7 +182,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
                 debug => $debug,
 
                 producer_args => {
-                    out_file => $out_file,
+                    out_files => $out_files,
                     output_type => $output_type,
                     name => $cluster_name,
 
@@ -183,8 +196,8 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
                     fontsize => 18,
 
                     all_clusters => $all_clusters,
-                    only_cluster => $cluster->{name},
-                    #filter_no_cluster_fields_out => 1,
+                    only_clusters => $cluster->{name},
+                    filter_no_cluster_fields_out => 1,
                     filter_in_related_tables => 1,
                     filter_no_cluster_fields_in => 1,
 
@@ -203,15 +216,21 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         }
     }
 
-    my $out_file = $out_dir . '/all.' . $output_type;
-    print "Running for full schema -> $out_file.\n";
+    my $out_files = {};
+    foreach my $method_name ( keys %out_files_map ) {
+        my $file_type = $out_files_map{$method_name};
+        my $out_file = $out_dir . '/' . 'schema' .  '.' . $file_type;
+        $out_files->{$method_name} = $out_file;
+    }
+
+    print "Running for full schema.\n";
     my $translator = SQL::Translator->new(
         filename  => $input_file,
         parser => 'MySQL',
         producer => 'TTGraphViz',
         debug => $debug,
         producer_args => {
-            out_file => $out_file,
+            out_files => $out_files,
             output_type => $output_type,
             name => 'schema',
 
