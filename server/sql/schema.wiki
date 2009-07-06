@@ -445,131 +445,92 @@ Values:
 * 5 .. iterrupted by user
 
 ==== Table trun_status ====
-Test run loading status.
-* trun_status_id
-* name
-* desc
 <source lang=sql>
 CREATE TABLE trun_status (
     trun_status_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name                VARCHAR(25),
     `desc`              TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Test run loading status. Tag:Test_runs.';
 </source>
 
 ==== Table trun ====
-Test run info and test run statistics (cache).
-* trun_id
-* msjobp_cmd_id
-* trun_status_id
-* parse_errors  - ttest sum cache
-* not_seen - ttest sum cache
-* failed - ttest sum cache
-* todo - ttest sum cache
-* skip - ttest sum cache
-* bonus - ttest sum cache
-* ok - ttest sum cache
 <source lang=sql>
 CREATE TABLE trun (
     trun_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msjobp_cmd_id   INT UNSIGNED NOT NULL,
     trun_status_id  INT UNSIGNED NOT NULL,
-    parse_errors    INT UNSIGNED NOT NULL,
-    not_seen        INT UNSIGNED NOT NULL,
-    failed          INT UNSIGNED NOT NULL,
-    todo            INT UNSIGNED NOT NULL,
-    skip            INT UNSIGNED NOT NULL,
-    bonus           INT UNSIGNED NOT NULL,
-    ok              INT UNSIGNED NOT NULL,
+    parse_errors    INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
+    not_seen        INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
+    failed          INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
+    todo            INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
+    skip            INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
+    bonus           INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
+    ok              INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
     INDEX i_msjobp_cmd_id (msjobp_cmd_id),
     CONSTRAINT fk_trun_trun_status_id FOREIGN KEY (trun_status_id) REFERENCES trun_status (trun_status_id),
     CONSTRAINT fk_trun_msjobp_cmd_id FOREIGN KEY (msjobp_cmd_id) REFERENCES msjobp_cmd (msjobp_cmd_id)
-) TYPE=InnoDB COMMENT='Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Test run info and test run statistics (cache). Tag:Test_runs.';
 </source>
 
 ==== Table tskipall_msg ====
-Reasons to skipp all tests.
-* tskippall_msg_id
-* msg
-* hash
 <source lang=sql>
 CREATE TABLE tskipall_msg (
     tskipall_msg_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     msg                 TEXT,
     hash                CHAR(30) NOT NULL,
     INDEX i_hash (hash)
-) TYPE=InnoDB COMMENT='Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Reasons to skipp all tests. Tag:Test_runs.';
 </source>
 
 ==== Table tfile ====
-Test file summary results - summary result for all tests in file. All_passed is shortcup to data test.
-* tfile_id
-* trun_id
-* rep_file_id
-* all_passed -- (in Harness::Straps max == seen == ok)
-* tskipall_msg_id (can be null)
-* hang - if test hang and was killed
 <source lang=sql>
 CREATE TABLE tfile (
     tfile_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     trun_id             INT UNSIGNED NOT NULL,
     rep_file_id         INT UNSIGNED NOT NULL,
-    all_passed          BOOLEAN NOT NULL DEFAULT 0,
+    all_passed          BOOLEAN NOT NULL DEFAULT 0 COMMENT 'In Harness::Straps max == seen == ok.',
     tskipall_msg_id     INT UNSIGNED DEFAULT NULL,
-    hang                BOOLEAN DEFAULT 0,
+    hang                BOOLEAN DEFAULT 0 COMMENT 'One if test hang and was killed.',
     INDEX i_trun_id (trun_id),
     CONSTRAINT fk_tfile_trun_id FOREIGN KEY (trun_id) REFERENCES trun (trun_id),
     CONSTRAINT fk_tfile_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id),
     CONSTRAINT fk_tfile_tskipall_msg_id FOREIGN KEY (tskipall_msg_id) REFERENCES tskipall_msg (tskipall_msg_id)
-) TYPE=InnoDB COMMENT='Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Test file summary results. Summary result for all tests in file. All_passed is shortcup to data test. Tag:Test_runs.';
 </source>
 
 ==== Table trest ====
-Test result info.
-* tresult_id
-* name
-** 1 .. not seen
-** 2 .. failed
-** 3 .. unknown
-** 4 .. todo
-** 5 .. bonus -- unexpectedly succeeded
-** 6 .. skip
-** 7 .. ok
-* desc
 <source lang=sql>
 CREATE TABLE trest (
     trest_id    INT UNSIGNED NOT NULL PRIMARY KEY,
     name        VARCHAR(25),
     `desc`      TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Test result info. Tag:Test_runs.';
 </source>
 
+Values:
+* 1 .. not seen
+* 2 .. failed
+* 3 .. unknown
+* 4 .. todo
+* 5 .. bonus -- unexpectedly succeeded
+* 6 .. skip
+* 7 .. ok
+
 ==== Table rep_test ====
-Number and name of the test. Each rep_file can contains many tests. Rep file gets new id after each file change.
-* rep_test_id
-* rep_file_id
-* number - this test number in rep_file
-* name - first inserted, name of the test (if any and not empty)
-* has_another_name - 1 if another name was found
 <source lang=sql>
 CREATE TABLE rep_test (
     rep_test_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     rep_file_id         INT UNSIGNED NOT NULL,
-    number              INT UNSIGNED NOT NULL,
-    name                VARCHAR(255) NOT NULL,
-    has_another_name    BOOLEAN NOT NULL DEFAULT 0,
+    number              INT UNSIGNED NOT NULL COMMENT 'Test number in rep_file.',
+    name                VARCHAR(255) NOT NULL COMMENT 'First inserted name of the test (if any and not empty).',
+    has_another_name    BOOLEAN NOT NULL DEFAULT 0 COMMENT 'One if another name was found.',
     INDEX i_rep_file_id (rep_file_id),
     INDEX i_rep_file_id_number (rep_file_id, number),
     CONSTRAINT fk_rep_test_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id)
-) TYPE=InnoDB COMMENT='Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Number and name of the test. Each rep_file can contains many tests. Rep file gets new id after each file change. Tag:Test_runs.';
 </source>
 
 ==== Table ttest ====
-Test results for each test (test case, subtest) submitted in trun.
-* ttest_id
-* trun_id
-* rep_test_id
-* trest_id
 <source lang=sql>
 CREATE TABLE ttest (
     ttest_id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -582,15 +543,10 @@ CREATE TABLE ttest (
     CONSTRAINT fk_ttest_trun_id FOREIGN KEY (trun_id) REFERENCES trun (trun_id),
     CONSTRAINT fk_ttest_rep_test_id FOREIGN KEY (rep_test_id) REFERENCES rep_test (rep_test_id),
     CONSTRAINT fk_ttest_trest_id FOREIGN KEY (trest_id) REFERENCES trest (trest_id)
-) TYPE=InnoDB COMMENT='Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Test results for each test (test case, subtest) submitted in trun. Tag:Test_runs.';
 </source>
 
 ==== Table tdiag_msg ====
-Diagnostic messages.
-* tdiag_msg_id
-* ttest_id
-* msg
-* hash
 <source lang=sql>
 CREATE TABLE tdiag_msg (
     tdiag_msg_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -600,30 +556,22 @@ CREATE TABLE tdiag_msg (
     INDEX i_ttest_id (ttest_id),
     INDEX i_hash (hash),
     CONSTRAINT fk_tdiag_msg_ttest_id FOREIGN KEY (ttest_id) REFERENCES ttest (ttest_id)
-) TYPE=InnoDB COMMENT='Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Diagnostic messages. Tag:Test_runs.';
 </source>
 
 ==== Table brun_conf ====
-Benchmark run.
-* brun_conf_id
-* hash
-* args
-* alias_conf_id - another conf with the same semantics, but different syntax
 <source lang=sql>
 CREATE TABLE brun_conf (
     brun_conf_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     hash            CHAR(30) NOT NULL,
     args            VARCHAR(255) DEFAULT NULL,
-    alias_conf_id   INT UNSIGNED DEFAULT NULL,
+    alias_conf_id   INT UNSIGNED DEFAULT NULL COMMENT 'Another conf with the same semantics, but different syntax.',
     INDEX i_hash (hash),
     CONSTRAINT fk_brun_conf_alias_conf_id FOREIGN KEY (alias_conf_id) REFERENCES brun_conf (brun_conf_id)
-) TYPE=InnoDB COMMENT='Tag:Benchmark_runs.';
+) TYPE=InnoDB COMMENT='Benchmark run. Tag:Benchmark_runs.';
 </source>
 
 ==== Table brun ====
-* brun_id
-* msjobp_cmd_id
-* conf_id
 <source lang=sql>
 CREATE TABLE brun (
     brun_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -633,111 +581,74 @@ CREATE TABLE brun (
     INDEX i_conf_id (conf_id),
     CONSTRAINT fk_brun_msjobp_cmd_id FOREIGN KEY (msjobp_cmd_id) REFERENCES msjobp_cmd (msjobp_cmd_id),
     CONSTRAINT fk_brun_conf_id FOREIGN KEY (conf_id) REFERENCES brun_conf (brun_conf_id)
-) TYPE=InnoDB COMMENT='Tag:Benchmark_runs.';
+) TYPE=InnoDB COMMENT='Benchmark runs. Tag:Benchmark_runs.';
 </source>
 
 ==== Table bfile ====
-Bench file results.
-* bfile_id
-* brun_id
-* rep_file_id
-* run_time
-* hang - if test hang and was killed
 <source lang=sql>
 CREATE TABLE bfile (
     bfile_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     brun_id             INT UNSIGNED NOT NULL,
     rep_file_id         INT UNSIGNED NOT NULL,
     run_time            INT UNSIGNED DEFAULT NULL,
-    hang                BOOLEAN DEFAULT 0,
+    hang                BOOLEAN DEFAULT 0 COMMENT 'If test hang and was killed.',
     INDEX i_brun_id (brun_id),
     CONSTRAINT fk_bfile_brun_id FOREIGN KEY (brun_id) REFERENCES brun (brun_id),
     CONSTRAINT fk_bfile_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id)
-) TYPE=InnoDB COMMENT='Tag:Benchmark_runs.';
+) TYPE=InnoDB COMMENT='Bench file results. Tag:Benchmark_runs.';
 </source>
 
 ==== Table fspath ====
-List of directories with files.
-* fspath_id
-* path - full path from root, e.g. /tmp/taptinder/patches/parrot-01/
-* web_path
-* public
-* created
-* deleted
-* name
-* desc
 <source lang=sql>
 CREATE TABLE fspath (
     fspath_id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    path            VARCHAR(1023),
+    path            VARCHAR(1023) COMMENT 'Full path from root, e.g. /tmp/taptinder/patches/parrot-01/.',
     web_path        VARCHAR(255),
     public          BOOLEAN DEFAULT 0,
     created         DATETIME NOT NULL,
     deleted         DATETIME DEFAULT NULL,
     name            VARCHAR(25),
     `desc`          TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='Tag:Files_paths.';
+) TYPE=InnoDB COMMENT='List of directories with files. Tag:Files_paths.';
 </source>
 
 ==== Table fsfile ====
-List of saved files.
-* fsfile_id
-* fspath_id
-* name
-* size -- in bytes
-* created
-* deleted
 <source lang=sql>
 CREATE TABLE fsfile (
     fsfile_id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     fspath_id       INT UNSIGNED NOT NULL,
     name            VARCHAR(255),
-    size            INT UNSIGNED NOT NULL,
+    size            INT UNSIGNED NOT NULL COMMENT 'File size in bytes.',
     created         DATETIME NOT NULL,
     deleted         DATETIME DEFAULT NULL,
     INDEX i_fspath_id (fspath_id),
     CONSTRAINT fk_fsfile_fspath_id FOREIGN KEY (fspath_id) REFERENCES fspath (fspath_id)
-) TYPE=InnoDB COMMENT='Tag:Files_paths.';
+) TYPE=InnoDB COMMENT='List of saved files. Tag:Files_paths.';
 </source>
 
 ==== Table fsfile_ext ====
-Files extracted from another files (archives).
-* fsfile_ext_id
-* archive_id
-* org_name - Orginal file name inside archive.
-* fsfile_id
 <source lang=sql>
 CREATE TABLE fsfile_ext (
     fsfile_ext_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     archive_id      INT UNSIGNED NOT NULL,
-    org_name        VARCHAR(255),
+    org_name        VARCHAR(255) COMMENT 'Orginal file name inside archive.',
     fsfile_id       INT UNSIGNED NOT NULL,
     INDEX i_archive_id_fsfile_id (archive_id, fsfile_id),
     CONSTRAINT fk_fsfile_ext_archive_id FOREIGN KEY (archive_id) REFERENCES fsfile (fsfile_id),
     CONSTRAINT fk_fsfile_ext_fsfile_id FOREIGN KEY (fsfile_id) REFERENCES fsfile (fsfile_id)
-) TYPE=InnoDB COMMENT='Tag:Files_paths.';
+) TYPE=InnoDB COMMENT='Files extracted from another files (archives). Tag:Files_paths.';
 </source>
 
 ==== Table fsfile_type ====
-* fsfile_type_id
-* name
-** command output
-** patch
-* desc
 <source lang=sql>
 CREATE TABLE fsfile_type (
     fsfile_type_id  INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(25),
     `desc`          TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='Tag:FsPSelect.';
+) TYPE=InnoDB COMMENT='List of file types. Used to select proper path. Tag:FsPSelect.';
 </source>
 
 ==== Table fspath_select ====
-Default fsfile_path to save files for each rep_path and file_type.
-* fspath_select_id
-* fsfile_type_id
-* rep_path_id
-* fspath_id
 <source lang=sql>
 CREATE TABLE fspath_select (
     fspath_select_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -748,28 +659,20 @@ CREATE TABLE fspath_select (
     CONSTRAINT fk_fspath_select_fsfile_type_id FOREIGN KEY (fsfile_type_id) REFERENCES fsfile_type (fsfile_type_id),
     CONSTRAINT fk_fspath_select_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
     CONSTRAINT fk_fspath_select_fspath_id FOREIGN KEY (fspath_id) REFERENCES fspath (fspath_id)
-) TYPE=InnoDB COMMENT='Tag:FsPSelect.';
+) TYPE=InnoDB COMMENT='Default fsfile_path to save files for each rep_path and file_type. Tag:FsPSelect.';
 </source>
 
 ==== Table param_type ====
-Types of parameters.
-* param_type_id
-* name
-* desc
 <source lang=sql>
 CREATE TABLE param_type (
     param_type_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(20) NOT NULL,
     `desc`          TEXT DEFAULT NULL COMMENT 'Description.',
     INDEX i_name (name)
-) TYPE=InnoDB COMMENT='Tag:Config.';
+) TYPE=InnoDB COMMENT='Types of parameters. Tag:Config.';
 </source>
 
 ==== Table param ====
-Parameters values.
-* param_id
-* param_type_id
-* value
 <source lang=sql>
 CREATE TABLE param (
     param_id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -777,17 +680,10 @@ CREATE TABLE param (
     value           VARCHAR(255) DEFAULT NULL,
     INDEX i_name (param_type_id),
     CONSTRAINT fk_param_param_type_id FOREIGN KEY (param_type_id) REFERENCES param_type (param_type_id)
-) TYPE=InnoDB COMMENT='Tag:Config.';
+) TYPE=InnoDB COMMENT='Parameters values. Tag:Config.';
 </source>
 
 ==== Table ibot ====
-IRC bots.
-* ibot_id
-* nick
-* full_name
-* server
-* port
-* operator_id -- User_id who operate robot.
 <source lang=sql>
 CREATE TABLE ibot (
     ibot_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -795,43 +691,29 @@ CREATE TABLE ibot (
     full_name       VARCHAR(255) NOT NULL,
     server          VARCHAR(50) NOT NULL,
     port            INT UNSIGNED NOT NULL,
-    operator_id     INT UNSIGNED NOT NULL,
+    operator_id     INT UNSIGNED NOT NULL COMMENT 'User operating the robot.',
     CONSTRAINT fk_ibot_operator_id FOREIGN KEY (operator_id) REFERENCES user (user_id)
-) TYPE=InnoDB COMMENT='Tag:IRC_robot.';
+) TYPE=InnoDB COMMENT='IRC bots. Tag:IRC_robot.';
 </source>
 
 ==== Table ichannel ====
-IRC channel.
-* ichannel_id
-* name
 <source lang=sql>
 CREATE TABLE ichannel (
     ichannel_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(50) NOT NULL
-) TYPE=InnoDB COMMENT='Tag:IRC_robot.';
+) TYPE=InnoDB COMMENT='IRC channel. Tag:IRC_robot.';
 </source>
 
 ==== Table ireport_type_id ====
-* ireport_type_id
-* name
-* desc
 <source lang=sql>
 CREATE TABLE ireport_type (
     ireport_type_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name                VARCHAR(15) NOT NULL,
     `desc`              TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='Tag:IRC_robot.';
+) TYPE=InnoDB COMMENT='IRC robot report types. Tag:IRC_robot.';
 </source>
 
 ==== Table ichannel_conf ====
-Parameters values.
-* ichannel_conf_id
-* ibot_id
-* ichannel_id
-* errors_only
-* ireport_type_id
-* jobp_cmd_id
-* max_age - Maximal commit age in hours.
 <source lang=sql>
 CREATE TABLE ichannel_conf (
     ichannel_conf_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -840,21 +722,15 @@ CREATE TABLE ichannel_conf (
     ireport_type_id     INT UNSIGNED NOT NULL,
     errors_only         BOOLEAN NOT NULL DEFAULT 1,
     jobp_cmd_id         INT UNSIGNED DEFAULT NULL,
-    max_age             INT UNSIGNED DEFAULT NULL,
+    max_age             INT UNSIGNED DEFAULT NULL COMMENT 'Maximal commit age in hours.',
     CONSTRAINT fk_ichannel_conf_ibot_id FOREIGN KEY (ibot_id) REFERENCES ibot (ibot_id),
     CONSTRAINT fk_ichannel_conf_ichannel_id FOREIGN KEY (ichannel_id) REFERENCES ichannel (ichannel_id),
     CONSTRAINT fk_ichannel_conf_ireport_type_id FOREIGN KEY (ireport_type_id) REFERENCES ireport_type (ireport_type_id),
     CONSTRAINT fk_ichannel_conf_jobp_cmd_id FOREIGN KEY (jobp_cmd_id) REFERENCES jobp_cmd (jobp_cmd_id)
-) TYPE=InnoDB COMMENT='Tag:IRC_robot.';
+) TYPE=InnoDB COMMENT='IRC robot parameter values. Tag:IRC_robot.';
 </source>
 
 ==== Table ibot_log ====
-IRC bot log.
-* ibot_log_id
-* ibot_id
-* ichannel_conf_id
-* rep_path_id
-* rev_id
 <source lang=sql>
 CREATE TABLE ibot_log (
     ibot_log_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -866,7 +742,7 @@ CREATE TABLE ibot_log (
     CONSTRAINT fk_ibot_log_ichannel_conf_id FOREIGN KEY (ichannel_conf_id) REFERENCES ichannel_conf (ichannel_conf_id),
     CONSTRAINT fk_ibot_log_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
     CONSTRAINT fk_ibot_log_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id)
-) TYPE=InnoDB COMMENT='Tag:IRC_robot.';
+) TYPE=InnoDB COMMENT='IRC bot log. Tag:IRC_robot.';
 </source>
 
 

@@ -1587,52 +1587,6 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('msjobp_id');
 
 
-package TapTinder::DB::Schema::rep_file_change;
-use base 'TapTinder::DB::DBIxClassBase';
-
-__PACKAGE__->table('rep_file_change');
-
-
-__PACKAGE__->add_columns(
-    'rev_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'rev_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'rev_num' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'rev_num',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'rep_file_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'rep_file_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'change_type_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'change_type_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-);
-
-
 package TapTinder::DB::Schema::rep_test;
 use base 'TapTinder::DB::DBIxClassBase';
 
@@ -1687,6 +1641,52 @@ __PACKAGE__->add_columns(
     },
 );
 __PACKAGE__->set_primary_key('rep_test_id');
+
+
+package TapTinder::DB::Schema::rep_file_change;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('rep_file_change');
+
+
+__PACKAGE__->add_columns(
+    'rev_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'rev_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'rev_num' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'rev_num',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'rep_file_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'rep_file_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'change_type_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'change_type_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+);
 
 
 package TapTinder::DB::Schema::msstatus;
@@ -3035,8 +3035,8 @@ __PACKAGE__->belongs_to('rep_path_id','TapTinder::DB::Schema::rep_path','rep_pat
 __PACKAGE__->has_many('get_rep_file_change', 'TapTinder::DB::Schema::rep_file_change', 'rep_file_id');
 __PACKAGE__->has_many('get_rep_file_change_from', 'TapTinder::DB::Schema::rep_file_change_from', 'rep_file_id');
 __PACKAGE__->has_many('get_rep_file_change_from', 'TapTinder::DB::Schema::rep_file_change_from', 'from_rep_file_id');
-__PACKAGE__->has_many('get_rep_test', 'TapTinder::DB::Schema::rep_test', 'rep_file_id');
 __PACKAGE__->has_many('get_tfile', 'TapTinder::DB::Schema::tfile', 'rep_file_id');
+__PACKAGE__->has_many('get_rep_test', 'TapTinder::DB::Schema::rep_test', 'rep_file_id');
 __PACKAGE__->has_many('get_bfile', 'TapTinder::DB::Schema::bfile', 'rep_file_id');
 
 package TapTinder::DB::Schema::fsfile;
@@ -3078,15 +3078,15 @@ __PACKAGE__->belongs_to('rep_file_id','TapTinder::DB::Schema::rep_file','rep_fil
 __PACKAGE__->belongs_to('change_type_id','TapTinder::DB::Schema::rep_change_type','change_type_id');
 
 
+package TapTinder::DB::Schema::msstatus;
+
+__PACKAGE__->has_many('get_mslog', 'TapTinder::DB::Schema::mslog', 'msstatus_id');
+
 package TapTinder::DB::Schema::rep_test;
 
 __PACKAGE__->belongs_to('rep_file_id','TapTinder::DB::Schema::rep_file','rep_file_id');
 
 __PACKAGE__->has_many('get_ttest', 'TapTinder::DB::Schema::ttest', 'rep_test_id');
-
-package TapTinder::DB::Schema::msstatus;
-
-__PACKAGE__->has_many('get_mslog', 'TapTinder::DB::Schema::mslog', 'msstatus_id');
 
 package TapTinder::DB::Schema::tskipall_msg;
 
@@ -3317,9 +3317,9 @@ __PACKAGE__->register_class('project', 'TapTinder::DB::Schema::project');
 
 __PACKAGE__->register_class('msjobp', 'TapTinder::DB::Schema::msjobp');
 
-__PACKAGE__->register_class('rep_file_change', 'TapTinder::DB::Schema::rep_file_change');
-
 __PACKAGE__->register_class('rep_test', 'TapTinder::DB::Schema::rep_test');
+
+__PACKAGE__->register_class('rep_file_change', 'TapTinder::DB::Schema::rep_file_change');
 
 __PACKAGE__->register_class('msstatus', 'TapTinder::DB::Schema::msstatus');
 
