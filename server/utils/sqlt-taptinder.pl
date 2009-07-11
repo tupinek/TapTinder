@@ -24,6 +24,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         producer  => 'DBIx::Class::FileMJ',
         producer_args => {
             prefix => 'TapTinder::DB::Schema',
+            base_class_name => 'TapTinder::DB::DBIxClassBase',
         },
     ) or die SQL::Translator->error;
 

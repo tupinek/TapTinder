@@ -51,6 +51,8 @@ sub produce
     # Steal the XML producers "prefix" arg for our namespace?
     my $dbixschema     = $translator->producer_args()->{prefix} ||
         $schema->name || 'My::Schema';
+    my $dbixschema_base  = $translator->producer_args()->{base_class_name} ||
+        $schema->name . 'Base' || 'My::SchemaBase';
     my $pkclass = $parser2PK{$translator->parser_type} || '';
 
     my %tt_vars = ();
@@ -73,7 +75,7 @@ DATA
         my $output .= qq{
 
 package ${dbixschema}::${tname};
-use base 'TapTinder::DB::DBIxClassBase';
+use base '${dbixschema_base}';
 
 __PACKAGE__->table('${tname}');
 
