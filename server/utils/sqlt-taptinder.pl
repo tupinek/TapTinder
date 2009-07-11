@@ -22,7 +22,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
     my $translator = SQL::Translator->new(
         filename  => $input_file,
         parser    => 'MySQL',
-        producer  => 'DBIx::Class::TapTinderFile',
+        producer  => 'DBIx::Class::FileMJ',
         producer_args => {
             prefix => 'TapTinder::DB::Schema',
         },

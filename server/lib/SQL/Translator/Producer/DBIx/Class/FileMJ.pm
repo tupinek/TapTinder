@@ -1,4 +1,4 @@
-package SQL::Translator::Producer::DBIx::Class::TapTinderFile;
+package SQL::Translator::Producer::DBIx::Class::FileMJ;
 
 =head1 NAME
 
