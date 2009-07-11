@@ -5,8 +5,6 @@ use Carp qw(carp croak verbose);
 use FindBin qw($RealBin);
 use Data::Dumper;
 
-use lib "$RealBin/../libcpan";
-
 use SQL::Translator;
 use SQL::Translator::Parser::DBI::MySQL; # SQL::Translator bug bypass.
 use File::Spec::Functions;

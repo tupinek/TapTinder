@@ -4,7 +4,6 @@ use warnings;
 use Carp qw(carp croak verbose);
 use FindBin qw($RealBin);
 
-use lib "$RealBin/../libcpan";
 use lib "$RealBin/../lib";
 
 use SQL::Translator;
