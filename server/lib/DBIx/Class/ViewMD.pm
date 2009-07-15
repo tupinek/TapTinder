@@ -24,7 +24,7 @@ DBIx::Class::ViewMD
 
 =head1 SYNOPSIS
 
-  package TapTinder::DB::Schema::person;
+  package MyPoject::DB::Schema::person;
   use base 'DBIx::Class';
   use strict;
   use warnings;

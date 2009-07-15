@@ -12,7 +12,7 @@ use Config::Multi;
 use File::Spec::Functions;
 
 
-=head2 get_new_job
+=head2 load_conf_multi
 
 Use same way as to load config as TapTinder::Web and then delete all but required parts (keys).
 

@@ -15,7 +15,7 @@ CatalystX::Controller::TableBrowser - base for your table browser Catalyst contr
 
 =head1 SYNOPSIS
 
-  package TapTinder::Web::Controller::Table;
+  package MyProject::Web::Controller::Table;
   use base 'CatalystX::Controller::TableBrowser';
 
   sub db_schema_base_class_name {
@@ -23,7 +23,7 @@ CatalystX::Controller::TableBrowser - base for your table browser Catalyst contr
   }
 
   sub db_schema_class_name {
-      return 'TapTinder::Web::Model::WebDB';
+      return 'MyProject::Web::Model::WebDB';
   }
 
   sub index : Path  {
