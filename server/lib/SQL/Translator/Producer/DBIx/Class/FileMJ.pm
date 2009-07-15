@@ -2,19 +2,19 @@ package SQL::Translator::Producer::DBIx::Class::FileMJ;
 
 =head1 NAME
 
-SQL::Translator::Producer::DBIx::Class::TapTinderFile - DBIx::Class file producer for TapTinder
+SQL::Translator::Producer::DBIx::Class::FileMJ - DBIx::Class file producer by mj41
 
 =head1 SYNOPSIS
 
   use SQL::Translator;
 
   my $t = SQL::Translator->new( parser => '...',
-                                producer => 'DBIx::Class::TapTinderFile' );
+                                producer => 'DBIx::Class::FileMJ' );
   print $translator->translate( $file );
 
 =head1 DESCRIPTION
 
-Creates a DBIx::Class::Schema for use with DBIx::Class and TapTinder. Based on
+Creates a DBIx::Class::Schema for use with DBIx::Class. Based on
 SQL::Translator::Producer::DBIx::Class::File.
 
 =cut
