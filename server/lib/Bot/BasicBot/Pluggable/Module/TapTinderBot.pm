@@ -90,14 +90,16 @@ sub _check_news {
         }
         my $data = $max_revs->{$key};
 
-        my $msg = "$data->{author_login}:";
-        $msg .= " $data->{project_name} $data->{rep_path}";
+        my $msg = '';
+        #$msg .= "$data->{author_login}: ";
+        $msg .= "$data->{project_name} $data->{rep_path}";
         $msg .= " r$data->{rev_num} $data->{archname}";
 
         # build report
         if ( $data->{ireport_type_id} == 1 ) {
             $msg .= " $data->{cmd_name} $data->{status_name}";
             $msg .= " " . $self->{server_base_url} . $data->{web_fpath};
+            $msg .= " ( " . $self->{server_base_url} . "/buildstatus/pr-" . $data->{project_name} . "/rp-" . $data->{rep_path} . " )";
             $msg .= " (debug: $self->{loop_num})" if $self->{irc_debug};
             $self->tell( $channel_name, $msg );
 
