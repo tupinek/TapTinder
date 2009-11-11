@@ -116,13 +116,13 @@ table tr.odd {
 
 table tr.even_err th,
 table tr.even_err {
-    background-color:   #ffcaba;
+    background-color:   #ffddd3;
     text-align:         left;
 }
 
 table tr.odd_err th,
 table tr.odd_err {
-    background-color:   #ffddd3;
+    background-color:   #ffcaba;
     text-align:         left;
 }
 
@@ -156,21 +156,21 @@ table td.err a {
 }
 
 table tr.even td.ok {
-    background-color:   #c0ffb2;
+    background-color:   #d3ffc9;
 }
 
 table tr.odd td.ok {
-    background-color:   #d3ffc9;
+    background-color:   #c0ffb2;
 }
 
 table tr.even td.err,
 table tr.even_err td.err {
-    background-color:   #ffcaba;
+    background-color:   #ffddd3;
 }
 
 table tr.odd td.err,
 table tr.odd_err td.err {
-    background-color:   #ffddd3;
+    background-color:   #ffcaba;
 }
 
 
