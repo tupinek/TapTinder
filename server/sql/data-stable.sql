@@ -46,9 +46,10 @@ VALUES (
      6, 'tapir1',           1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.191.11', 'x86_64', 'linux',        'i386-linux-thread-multi',      0, NULL, 2      ), (
      7, 'tapir2',           1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.191.12', 'x86_64', 'linux',        'i386-linux-thread-multi',      0, NULL, 2      ), (
      8, 'pc-strakos',       1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.5.170',  'x86_64', 'MSWin32',      'MSWin32-x86-multi-thread',     0, NULL, NULL   ), (
-     9, 'ttcl-rh5-32',      1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.73',   'i386',   'linux',        'i386-linux-thread-multi',      0, NULL, 2      ), (
-    10, 'ttcl-fbsd-32',     1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.193',  'i386',   'FreeBSD',      'i386-freebsd-64int',           0, NULL, 2      ), (
-    11, 'ttcl-macos-32',    1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.183',  'i386',   'MacOS 10.5',   'darwin-thread-multi-2level',   0, NULL, 2
+     9, 'ttcl-rh5-32',      1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.73',   'i386',   'linux',        'i386-linux-thread-multi',      0, NULL, NULL   ), (
+    10, 'ttcl-fbsd-32',     1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.193',  'i386',   'FreeBSD',      'i386-freebsd-64int',           0, NULL, NULL   ), (
+    11, 'ttcl-macos-32',    1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.183',  'i386',   'MacOS 10.5',   'darwin-thread-multi-2level',   0, NULL, NULL   ), (
+    12, 'ttcl-win-32',      1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.152',  'i386',   'cygwin',       'cygwin-thread-multi-64int',    0, NULL, NULL
 );
 
 
@@ -108,7 +109,16 @@ VALUES (
      8, 8, NULL, NULL, 2,   2  ), (
 
      9, 9, NULL, NULL, 1,   1  ), (
-    10, 9, NULL, NULL, 2,   2
+    10, 9, NULL, NULL, 2,   2  ), (
+
+    11, 10, NULL, NULL, 1,   1  ), (
+    12, 10, NULL, NULL, 2,   2  ), (
+
+    13, 11, NULL, NULL, 1,   1  ), (
+    14, 11, NULL, NULL, 2,   2  ), (
+
+    15, 12, NULL, NULL, 1,   1  ), (
+    16, 12, NULL, NULL, 2,   2
 );
 
 
