@@ -143,15 +143,36 @@ table tr.hover {
 }
 
 
-table td.ok {
-    color:              green;
+table td.ok,
+table td.ok a {
+    color: green;
 }
 
-table td.err {
-    font-family:        "Courier New", Courier, monospace;
-    color:              red;
-    font-weight:        bold;
+table td.err,
+table td.err a {
+    font-family: "Courier New", Courier, monospace;
+    color: red;
+    font-weight: bold;
 }
+
+table tr.even td.ok {
+    background-color:   #c0ffb2;
+}
+
+table tr.odd td.ok {
+    background-color:   #d3ffc9;
+}
+
+table tr.even td.err,
+table tr.even_err td.err {
+    background-color:   #ffcaba;
+}
+
+table tr.odd td.err,
+table tr.odd_err td.err {
+    background-color:   #ffddd3;
+}
+
 
 .tblHeader {
     background-color:   #D0DCE0;
