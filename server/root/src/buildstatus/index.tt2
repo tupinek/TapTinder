@@ -11,7 +11,7 @@
 <th>Author</th>
 <th>Date</th>
 [% FOREACH machine_id IN machines.keys -%]
-<th><a href="[% c.uri_for( '/table/machine/id-' _ machine_id ) %]">[% machine_id %]</a></th>
+<th style="width:3.5em;"><a href="[% c.uri_for( '/table/machine/id-' _ machine_id ) %]">[% machine_id %]</a></th>
 [% END %]
 
 
