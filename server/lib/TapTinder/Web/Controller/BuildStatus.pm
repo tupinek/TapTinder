@@ -65,16 +65,16 @@ sub index : Path  {
         ],
     };
 
-    my $rs = $c->model('WebDB')->schema->resultset( 'BuildStatus' )->search( {}, $search_conf );
-
     #use Time::HiRes qw(time); my $time_start = time();
+
+    my $rs = $c->model('WebDB')->schema->resultset( 'BuildStatus' )->search( {}, $search_conf );
+    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
 
     my %ress = ();
     my %machines = ();
-    while (my $row_obj = $rs->next) {
-        my %row = ( $row_obj->get_columns() );
-        my $machine_id = $row{machine_id};
-        $ress{ $row{rev_id} }->{ $machine_id } = \%row;
+    while ( my $row = $rs->next ) {
+        my $machine_id = $row->{machine_id};
+        $ress{ $row->{rev_id} }->{ $machine_id } = $row;
         $machines{ $machine_id }++;
     }
     #$c->stash->{times}->{1} = time() - $time_start; $self->dumper( $c, $c->stash->{times} );
