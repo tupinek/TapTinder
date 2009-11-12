@@ -63,28 +63,30 @@ sub index : Path  {
             $rep_path_id, # rep_path_id
             $rev_num_from, # rev_num
         ],
+        result_class => 'DBIx::Class::ResultClass::HashRefInflator',
     };
 
     #use Time::HiRes qw(time); my $time_start = time();
 
     my $rs = $c->model('WebDB')->schema->resultset( 'BuildStatus' )->search( {}, $search_conf );
-    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
 
     my %ress = ();
     my %machines = ();
-    while ( my $row = $rs->next ) {
+    my @all_rows = $rs->all;
+    foreach my $row ( @all_rows ) {
         my $machine_id = $row->{machine_id};
         $ress{ $row->{rev_id} }->{ $machine_id } = $row;
         $machines{ $machine_id }++;
     }
-    #$c->stash->{times}->{1} = time() - $time_start; $self->dumper( $c, $c->stash->{times} );
+    #$c->stash->{times}->{'get main data'} = time() - $time_start; $self->dumper( $c, $c->stash->{times} );
 
     $c->stash->{ress} = \%ress;
     $c->stash->{machines} = \%machines;
 
-    $self->dumper( $c, \%machines );
-    $self->dumper( $c, \@revs );
-    $self->dumper( $c, \%ress );
+    #$self->dumper( $c, \%machines );
+    #$self->dumper( $c, \@revs );
+    #$self->dumper( $c, \%ress );
+
 }
 
 
