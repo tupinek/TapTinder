@@ -132,17 +132,6 @@ table tr.marked {
     background-color:   #FFCC99;
 }
 
-/* hovered table rows */
-table tr.odd:hover,
-table tr.even:hover,
-table tr.odd:hover th,
-table tr.even:hover th,
-table tr.hover th,
-table tr.hover {
-    background-color:   #CCFFCC;
-}
-
-
 table td.ok,
 table td.ok a {
     color: green;
@@ -156,11 +145,11 @@ table td.err a {
 }
 
 table tr.even td.ok {
-    background-color:   #d3ffc9;
+    background-color:   #c4ecc3;
 }
 
 table tr.odd td.ok {
-    background-color:   #c0ffb2;
+    background-color:   #a7eca6;
 }
 
 table tr.even td.err,
@@ -173,6 +162,21 @@ table tr.odd_err td.err {
     background-color:   #ffcaba;
 }
 
+table tr.odd:hover,
+table tr.odd:hover th,
+table tr.hover th,
+table tr.odd:hover td,
+table tr.odd_err:hover td,
+table tr.hover {
+    background-color:   #fffcb2;
+}
+
+table tr.even:hover,
+table tr.even:hover th,
+table tr.even:hover td ,
+table tr.even_err:hover td {
+    background-color:   #fffdcd;
+}
 
 .tblHeader {
     background-color:   #D0DCE0;
