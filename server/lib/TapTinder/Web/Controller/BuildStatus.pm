@@ -62,7 +62,6 @@ sub index : Path  {
         bind   => [
             $rep_path_id, # rep_path_id
             $rev_num_from, # rev_num
-            $rep_path_id, # rep_path_id
         ],
     };
 

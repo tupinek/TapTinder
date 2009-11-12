@@ -135,14 +135,14 @@ $new_source3->name(\<<'SQLEND');
            ma.cpuarch,
            ma.osname,
            ma.archname,
-           ( select max(msjpc.end_time)
+           ( select max(msjpc.msjobp_cmd_id)
                from msjob msj,
                     msjobp msjp,
                     msjobp_cmd msjpc
               where msj.msession_id = ms.msession_id
                 and msjp.msjob_id = msj.msjob_id
                 and msjpc.msjobp_id = msjp.msjobp_id
-           ) as last_cmd_finish_time,
+           ) as last_finished_msjobp_cmd_id,
            ( select max(i_ml.mslog_id)
                from mslog i_ml
               where i_ml.msession_id = ms.msession_id
@@ -187,7 +187,7 @@ $new_source4->name(\<<'SQLEND');
     where rrp.rep_path_id = ? -- <
       and r.rev_id = rrp.rev_id
       and r.rev_num > ? -- last 100 revs
-      and jp.rep_path_id = ? -- <
+      and jp.job_id = 1 -- only this job
       and jp.order = 1 -- only first part
       and jpc.jobp_id = jp.jobp_id
       and jpc.cmd_id = 5 -- only make

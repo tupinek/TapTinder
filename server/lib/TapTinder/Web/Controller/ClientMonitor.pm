@@ -23,7 +23,7 @@ sub index : Path  {
 
     my $pr = $self->get_page_params( $params );
 
-    my $plus_rows = [ qw/ msession_id client_rev start_time machine_id machine_name cpuarch osname archname last_cmd_finish_time max_mslog_id /];
+    my $plus_rows = [ qw/ msession_id client_rev start_time machine_id machine_name cpuarch osname archname last_finished_msjobp_cmd_id max_mslog_id /];
     my $search_conf = {
         'select' => $plus_rows,
         'as'     => $plus_rows,
