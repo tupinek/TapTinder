@@ -43,7 +43,7 @@ sub index : Path  {
         join => [ { 'rev_id' => 'author_id' } ],
         order_by => [ 'rev_id.rev_num DESC' ],
         page => 1,
-        rows => 100,
+        rows => 40,
         #offset => 0,
     } );
 
