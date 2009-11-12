@@ -6,7 +6,7 @@ use base 'Catalyst::Controller';
 
 our $VERSION = '0.004';
 
-use Data::Page::HTML qw/get_pager_html/;
+use Data::Page::HTML;
 use Data::Dumper; # TODO - needed only for debug mode
 
 =head1 NAME
@@ -468,7 +468,7 @@ sub prepare_data_orserr {
     $params_part .= 'page-';
     $self->dumper( $c, [ $params_part ] );
     my $page_uri_prefix = $c->uri_for( $table_name, $params_part )->as_string;
-    $c->stash->{pager_html} = get_pager_html( $rs->pager, $page_uri_prefix );
+    $c->stash->{pager_html} = Data::Page::HTML::get_pager_html( $rs->pager, $page_uri_prefix );
     return 1;
 }
 
