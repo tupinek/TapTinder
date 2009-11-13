@@ -40,7 +40,7 @@ sub to_profile {
         'as'     => $plus_rows,
         bind   => [
             1, # $rep_path_id, # rep_path_id
-            40549, #$rev_num_from, # rev_num
+            40500, #$rev_num_from, # rev_num
         ],
         result_class => 'DBIx::Class::ResultClass::HashRefInflator',
     };

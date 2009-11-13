@@ -26,7 +26,7 @@ sub index : Path  {
     # TODO
     my $rep_path_id = 1;
     # TODO last 100
-    my $rev_num_from = 3700;
+    my $rev_num_from = 40500;
 
     # load revision info
     my $rs_revs = $c->model('WebDB::rev_rep_path')->search( {
@@ -54,6 +54,8 @@ sub index : Path  {
     }
     $c->stash->{revs} = \@revs;
 
+    use Time::HiRes qw(time); my $time_start = time();
+
     # load make results
     my $plus_rows = [ qw/ machine_id rev_id status_id status_name web_fpath /];
     my $search_conf = {
@@ -66,7 +68,6 @@ sub index : Path  {
         result_class => 'DBIx::Class::ResultClass::HashRefInflator',
     };
 
-    #use Time::HiRes qw(time); my $time_start = time();
 
     my $rs = $c->model('WebDB')->schema->resultset( 'BuildStatus' )->search( {}, $search_conf );
 
@@ -78,7 +79,7 @@ sub index : Path  {
         $ress{ $row->{rev_id} }->{ $machine_id } = $row;
         $machines{ $machine_id }++;
     }
-    #$c->stash->{times}->{'get main data'} = time() - $time_start; $self->dumper( $c, $c->stash->{times} );
+    $c->stash->{times}->{'get main data'} = time() - $time_start; $self->dumper( $c, $c->stash->{times} );
 
     $c->stash->{ress} = \%ress;
     $c->stash->{machines} = \%machines;
