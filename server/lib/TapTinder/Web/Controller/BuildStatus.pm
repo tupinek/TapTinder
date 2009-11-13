@@ -25,8 +25,7 @@ sub index : Path  {
 
     # TODO
     my $rep_path_id = 1;
-    # TODO last 100
-    my $rev_num_from = 40500;
+    my $rev_num_from = 0;
 
     # load revision info
     my $rs_revs = $c->model('WebDB::rev_rep_path')->search( {
@@ -43,7 +42,7 @@ sub index : Path  {
         join => [ { 'rev_id' => 'author_id' } ],
         order_by => [ 'rev_id.rev_num DESC' ],
         page => 1,
-        rows => 40,
+        rows => 100,
         #offset => 0,
     } );
 
@@ -54,7 +53,8 @@ sub index : Path  {
     }
     $c->stash->{revs} = \@revs;
 
-    use Time::HiRes qw(time); my $time_start = time();
+    # Set rev_num_from to speed up next query.
+    $rev_num_from = $revs[-1]->{rev_num};
 
     # load make results
     my $plus_rows = [ qw/ machine_id rev_id status_id status_name web_fpath /];
@@ -79,13 +79,13 @@ sub index : Path  {
         $ress{ $row->{rev_id} }->{ $machine_id } = $row;
         $machines{ $machine_id }++;
     }
-    $c->stash->{times}->{'get main data'} = time() - $time_start; $self->dumper( $c, $c->stash->{times} );
 
     $c->stash->{ress} = \%ress;
     $c->stash->{machines} = \%machines;
 
     #$self->dumper( $c, \%machines );
     #$self->dumper( $c, \@revs );
+    #$self->dumper( $c, $rev_num_from );
     #$self->dumper( $c, \%ress );
 
 }

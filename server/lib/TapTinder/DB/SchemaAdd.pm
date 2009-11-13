@@ -186,7 +186,7 @@ $new_source4->name(\<<'SQLEND');
           fspath fsp
     where rrp.rep_path_id = ? -- <
       and r.rev_id = rrp.rev_id
-      and r.rev_num > ? -- last 100 revs
+      and r.rev_num >= ? -- last 100 revs
       and jp.job_id = 1 -- only this job
       and jp.order = 1 -- only first part
       and jpc.jobp_id = jp.jobp_id
