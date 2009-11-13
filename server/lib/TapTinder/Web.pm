@@ -26,7 +26,7 @@ our $VERSION = '0.10';
 # configuration, with a external configuration file acting
 # as an override for local deployment.
 
- TapTinder::Web->config(
+TapTinder::Web->config(
     'default_view' => 'TT',
     'Plugin::Config::Multi' => {
          dir =>  TapTinder::Web->path_to('./conf'),
@@ -44,7 +44,7 @@ our $VERSION = '0.10';
 );
 
 
- TapTinder::Web->setup;
+TapTinder::Web->setup;
 
 
 =head1 NAME

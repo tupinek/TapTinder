@@ -2,7 +2,7 @@ package TapTinder::Web::Controller::Table;
 
 use strict;
 use warnings;
-use base qw/CatalystX::Controller::TableBrowser/;
+use base 'CatalystX::Controller::TableBrowser';
 
 =head1 NAME
 
