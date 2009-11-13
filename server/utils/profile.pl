@@ -48,26 +48,40 @@ sub to_profile {
     my $rs = $schema->resultset( 'BuildStatus' )->search( {}, $search_conf );
 
     my @all_rows = $rs->all;
-    return 1;
+    return \@all_rows;
 }
 
 
 sub profile {
     my ( $schema ) = @_;
 
-    my $time_start = time();
-
     DB::enable_profile();
     to_profile( @_ );
     DB::disable_profile();
+}
+
+
+sub profile_simple {
+    my ( $schema ) = @_;
+
+    my $time_start = time();
+
+    my $all_rows = to_profile( @_ );
+    print "rows: " . scalar( @$all_rows ) . "\n";
+    #print Dumper( $all_rows );
 
     my $time_elapsed = time() - $time_start;
     return $time_elapsed;
 }
 
 
-my $time_elapsed = profile( $schema );
-printf( "time_elapsed: %3.2f s\n", $time_elapsed );
+if ( $ARGV[0] ) {
+    my $time_elapsed = profile_simple( $schema );
+    printf( "time_elapsed: %4.3f s\n", $time_elapsed );
+
+} else {
+    profile( $schema );
+}
 
 
 
