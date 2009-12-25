@@ -50,8 +50,8 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
     close $fh;
 
 
-# graph - GraphViz - .png
-} elsif ( $to eq 'graph' || $to eq 'ALL' ) {
+# database documentation (schema and schema parts with GraphViz)
+} elsif ( $to eq 'dbdoc' || $to eq 'ALL' ) {
     produce_db_doc(
         $ver,
         $input_file,

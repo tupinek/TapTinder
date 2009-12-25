@@ -28,5 +28,5 @@ perl utils/wiki_schema.pl sql/schema.wiki 0 1 1 > temp/schema-raw-create-comment
 
 if [ "$1" = "2" ]; then
     echo -n "updating temp/schema.png - "
-    perl utils/sqlt-taptinder.pl graph temp/schema-raw-create-comments.sql 0 && echo done
+    perl utils/sqlt-taptinder.pl dbdoc temp/schema-raw-create-comments.sql 0 && echo done
 fi
