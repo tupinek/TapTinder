@@ -7,7 +7,7 @@
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 
--- Tags_order: Project, Machine, User, Patch, MJConf, FsPSelect, Rep_file_chng, Jobs, Machine_sessions, Test_runs, Benchmark_runs, Files_paths, IRC_robot, Config.
+-- Tags_order: project, machine, user, patch, mjconf, fspath_select, rep_file_change, jobs, machine_sessions, test_runs, benchmark_runs, files_paths, irc_robot, config.
 </source>
 
 === Tables ===
@@ -25,7 +25,7 @@ CREATE TABLE user (
     created     DATETIME NOT NULL COMMENT 'Account creation time.',
     last_login  DATETIME DEFAULT NULL,
     INDEX i_login (login)
-) TYPE=InnoDB COMMENT='User info. Tag:User.';
+) TYPE=InnoDB COMMENT='User info. Tag: user.';
 </source>
 
 ==== Table machine (m) ====
@@ -47,7 +47,7 @@ CREATE TABLE machine (
     CONSTRAINT fk_machine_user_id FOREIGN KEY (user_id) REFERENCES user (user_id),
     CONSTRAINT fk_machine_prev_machine_id FOREIGN KEY (prev_machine_id) REFERENCES machine (machine_id),
     CONSTRAINT fk_machine_farm_id FOREIGN KEY (farm_id) REFERENCES farm (farm_id)
-) TYPE=InnoDB COMMENT='Machine (computer or virtual machine) info. Tag:Machine.';
+) TYPE=InnoDB COMMENT='Machine (computer or virtual machine) info. Tag: machine.';
 </source>
 
 ==== Table farm ====
@@ -57,8 +57,8 @@ CREATE TABLE farm (
     name            VARCHAR(30) NOT NULL,
     has_same_hw     BOOLEAN NOT NULL DEFAULT 0,
     has_same_sw     BOOLEAN NOT NULL DEFAULT 0,
-    `desc`          TEXT DEFAULT NULL COMMENT 'Description. Tag:Machine.'
-) TYPE=InnoDB COMMENT='Group of machines with same HW, SW or both configurations working in farm. Tag:Machine.';
+    `desc`          TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Group of machines with same HW, SW or both configurations working in farm. Tag: machine.';
 </source>
 
 ==== Table project ====
@@ -68,7 +68,7 @@ CREATE TABLE project (
     name        VARCHAR(255) NOT NULL,
     url         VARCHAR(255) NOT NULL,
     `desc`      TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='Project. Tag:Project.';
+) TYPE=InnoDB COMMENT='Project. Tag: project.';
 </source>
 
 ==== Table rep ====
@@ -83,7 +83,7 @@ CREATE TABLE rep (
     default_layout  BOOLEAN NOT NULL DEFAULT 1 COMMENT 'Has default Subversion repository layout (trunk, tags, branches).',
     CONSTRAINT fk_rep_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),
     UNIQUE KEY unique_rep_id_path (rep_id, path)
-) TYPE=InnoDB COMMENT='Project repository. Each project can has only one active repository. Tag:Project.';
+) TYPE=InnoDB COMMENT='Project repository. Each project can has only one active repository. Tag: project.';
 </source>
 
 ==== Table rep_author ====
@@ -98,7 +98,7 @@ CREATE TABLE rep_author (
     INDEX i_user_id (user_id),
     CONSTRAINT fk_user_rep_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
     CONSTRAINT fk_user_rep_user_id FOREIGN KEY (user_id) REFERENCES user (user_id)
-) TYPE=InnoDB COMMENT='Repository and patch authors. Some authors are also users. Tag:Project.';
+) TYPE=InnoDB COMMENT='Repository and patch authors. Some authors are also users. Tag: project.';
 </source>
 
 ==== Table rev ====
@@ -114,7 +114,7 @@ CREATE TABLE rev (
     INDEX i_rev_num (rev_num),
     CONSTRAINT fk_rev_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
     CONSTRAINT fk_rev_rep_author_id FOREIGN KEY (author_id) REFERENCES rep_author (rep_author_id)
-) TYPE=InnoDB COMMENT='Revision info. Tag:Project.';
+) TYPE=InnoDB COMMENT='Revision info. Tag: project.';
 </source>
 
 ==== Table rep_path ====
@@ -130,7 +130,7 @@ CREATE TABLE rep_path (
     INDEX i_rev_num_from (rev_num_from),
     INDEX i_rev_num_to (rev_num_to),
     CONSTRAINT fk_rep_path_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id)
-) TYPE=InnoDB COMMENT='Repository path (trunk/, branch/pdd17pmc/, ...). Tag:Project.';
+) TYPE=InnoDB COMMENT='Repository path (trunk/, branch/pdd17pmc/, ...). Tag: project.';
 </source>
 
 ==== Table rev_rep_path ====
@@ -141,7 +141,7 @@ CREATE TABLE rev_rep_path (
     UNIQUE KEY unique_rep_id_path (rep_path_id, rev_id),
     CONSTRAINT fk_rev_rep_path_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
     CONSTRAINT fk_rev_rep_path_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id)
-) TYPE=InnoDB COMMENT='Revision info to repository path map (M:N). Tag:Project.';
+) TYPE=InnoDB COMMENT='Revision info to repository path map (M:N). Tag: project.';
 </source>
 
 ==== Table rep_file ====
@@ -156,7 +156,7 @@ CREATE TABLE rep_file (
     INDEX i_rev_num_from (rev_num_from),
     INDEX i_rev_num_to (rev_num_to),
     CONSTRAINT fk_rep_file_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id)
-) TYPE=InnoDB COMMENT='Files in repository path. Tag:Project.';
+) TYPE=InnoDB COMMENT='Files in repository path. Tag: project.';
 </source>
 
 ==== Table rep_change_type ====
@@ -166,7 +166,7 @@ CREATE TABLE rep_change_type (
     abbr                VARCHAR(1) NOT NULL,
     `desc`              VARCHAR(10) NOT NULL COMMENT 'Description.',
     INDEX i_abbr (abbr)
-) TYPE=InnoDB COMMENT='Change types and info. Tag:Rep_file_chng.';
+) TYPE=InnoDB COMMENT='Change types and info. Tag: rep_file_change.';
 </source>
 
 ==== Table rep_file_change ====
@@ -182,7 +182,7 @@ CREATE TABLE rep_file_change (
     CONSTRAINT fk_rep_file_change_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
     CONSTRAINT fk_rep_file_change_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id),
     CONSTRAINT fk_rep_file_change_change_type_id FOREIGN KEY (change_type_id) REFERENCES rep_change_type (rep_change_type_id)
-) TYPE=InnoDB COMMENT='Tag:Rep_file_chng.';
+) TYPE=InnoDB COMMENT='Tag: rep_file_change.';
 </source>
 
 ==== Table rep_file_change_from ====
@@ -197,7 +197,7 @@ CREATE TABLE rep_file_change_from (
     CONSTRAINT fk_rep_file_change_from_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id),
     CONSTRAINT fk_rep_file_change_from_from_rev_id FOREIGN KEY (from_rev_id) REFERENCES rev (rev_id),
     CONSTRAINT fk_rep_file_change_from_from_rep_file_id FOREIGN KEY (from_rep_file_id) REFERENCES rep_file (rep_file_id)
-) TYPE=InnoDB COMMENT='From which revision file was copied. Tag:Rep_file_chng.';
+) TYPE=InnoDB COMMENT='From which revision file was copied. Tag: rep_file_change.';
 </source>
 
 ==== Table patch ====
@@ -218,7 +218,7 @@ CREATE TABLE patch (
     CONSTRAINT fk_patch_rep_author_id FOREIGN KEY (author_id) REFERENCES rep_author (rep_author_id),
     CONSTRAINT fk_patch_file_id FOREIGN KEY (fsfile_id) REFERENCES fsfile (fsfile_id),
     CONSTRAINT fk_patch_new_patch_id FOREIGN KEY (new_patch_id) REFERENCES patch (patch_id)
-) TYPE=InnoDB COMMENT='Only one file for each patch. Tag:Patch.';
+) TYPE=InnoDB COMMENT='Only one file for each patch. Tag: patch.';
 </source>
 
 ==== Table job ====
@@ -229,7 +229,7 @@ CREATE TABLE job (
     priority        INT UNSIGNED NOT NULL DEFAULT 1,
     name            VARCHAR(25),
     `desc`          TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='Job table can contain one part or more related parts. Tag:Jobs.';
+) TYPE=InnoDB COMMENT='Job table can contain one part or more related parts. Tag: jobs.';
 </source>
 
 ==== Table jobp ====
@@ -249,7 +249,7 @@ CREATE TABLE jobp (
     CONSTRAINT fk_jobp_job_id FOREIGN KEY (job_id) REFERENCES job (job_id),
     CONSTRAINT fk_jobp_depedns_on_id FOREIGN KEY (depends_on_id) REFERENCES jobp (jobp_id),
     CONSTRAINT fk_jobp_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id)
-) TYPE=InnoDB COMMENT='Job part. Tag:Jobs.';
+) TYPE=InnoDB COMMENT='Job part. Tag: jobs.';
 </source>
 
 ==== Table cmd ====
@@ -259,7 +259,7 @@ CREATE TABLE cmd (
     name        VARCHAR(25),
     `desc`      TEXT DEFAULT NULL COMMENT 'Description.',
     params      TEXT DEFAULT NULL
-) TYPE=InnoDB COMMENT='Possible commands to run on clients. Tag:Jobs.';
+) TYPE=InnoDB COMMENT='Possible commands to run on clients. Tag: jobs.';
 </source>
 
 Client should known what to run for each cmd_id. E.g. 1 (perlconf) means run 'perl Configure.pl' or 'perl.exe Configure.pl' (under win32). Server shoul know, which params client needs.
@@ -275,7 +275,7 @@ CREATE TABLE jobp_cmd (
     INDEX i_jobp_id (jobp_id),
     CONSTRAINT fk_jobp_cmd_jobp_id FOREIGN KEY (jobp_id) REFERENCES jobp (jobp_id),
     CONSTRAINT fk_jobp_cmd_cmd_id FOREIGN KEY (cmd_id) REFERENCES cmd (cmd_id)
-) TYPE=InnoDB COMMENT='Job part command. Tag:Jobs.';
+) TYPE=InnoDB COMMENT='Job part command. Tag: jobs.';
 </source>
 
 ==== Table machine_job_conf ====
@@ -293,7 +293,7 @@ CREATE TABLE machine_job_conf (
     CONSTRAINT fk_machine_job_conf_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
     CONSTRAINT fk_machine_job_conf_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
     CONSTRAINT fk_machine_job_conf_job_id FOREIGN KEY (job_id) REFERENCES job (job_id)
-) TYPE=InnoDB COMMENT='Machine job configuration. Tag:MJConf.';
+) TYPE=InnoDB COMMENT='Machine job configuration. Tag: mjconf.';
 </source>
 
 Defined rep_id is the most general config. Defined job_id the most specific config.
@@ -311,7 +311,7 @@ CREATE TABLE msession (
     INDEX i_machine_id (machine_id),
     CONSTRAINT fk_msession_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id),
     CONSTRAINT fk_msession_abort_reason_id FOREIGN KEY (abort_reason_id) REFERENCES msabort_reason (msabort_reason_id)
-) TYPE=InnoDB COMMENT='Machine session. Each machine can run more than one processes at a time. Tag:Machine_sessions.';
+) TYPE=InnoDB COMMENT='Machine session. Each machine can run more than one processes at a time. Tag: machine_sessions.';
 </source>
 
 ==== Table msjob ====
@@ -327,7 +327,7 @@ CREATE TABLE msjob (
     INDEX i_job_id (job_id),
     CONSTRAINT fk_msjob_msession_id FOREIGN KEY (msession_id) REFERENCES msession (msession_id),
     CONSTRAINT fk_msjob_job_id FOREIGN KEY (job_id) REFERENCES job (job_id)
-) TYPE=InnoDB COMMENT='Machine session job part. Tag:Machine_sessions.';
+) TYPE=InnoDB COMMENT='Machine session job part. Tag: machine_sessions.';
 </source>
 
 Abort reason is determined by msession.
@@ -349,7 +349,7 @@ CREATE TABLE msjobp (
     CONSTRAINT fk_msjobp_jobp_id FOREIGN KEY (jobp_id) REFERENCES jobp (jobp_id),
     CONSTRAINT fk_msjobp_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id),
     CONSTRAINT fk_msjobp_patch_id FOREIGN KEY (patch_id) REFERENCES patch (patch_id)
-) TYPE=InnoDB COMMENT='Machine session job part. Tag:Machine_sessions.';
+) TYPE=InnoDB COMMENT='Machine session job part. Tag: machine_sessions.';
 </source>
 
 ==== Table cmd_status ====
@@ -358,7 +358,7 @@ CREATE TABLE cmd_status (
     cmd_status_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(25),
     `desc`          TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='Command status. Tag:Machine_sessions.';
+) TYPE=InnoDB COMMENT='Command status. Tag: machine_sessions.';
 </source>
 
 Values:
@@ -388,7 +388,7 @@ CREATE TABLE msjobp_cmd (
     CONSTRAINT fk_msjobp_cmd_job_status_id FOREIGN KEY (status_id) REFERENCES cmd_status (cmd_status_id),
     CONSTRAINT fk_msjobp_cmd_output_id FOREIGN KEY (output_id) REFERENCES fsfile (fsfile_id),
     CONSTRAINT fk_msjobp_cmd_outdata_id FOREIGN KEY (outdata_id) REFERENCES fsfile (fsfile_id)
-) TYPE=InnoDB COMMENT='Machine session job part command. Tag:Machine_sessions.';
+) TYPE=InnoDB COMMENT='Machine session job part command. Tag: machine_sessions.';
 </source>
 
 ==== Table mslog ====
@@ -403,7 +403,7 @@ CREATE TABLE mslog (
     INDEX i_msession_id (msession_id),
     CONSTRAINT fk_mslog_msession_id FOREIGN KEY (msession_id) REFERENCES msession (msession_id),
     CONSTRAINT fk_mslog_msstatus_id FOREIGN KEY (msstatus_id) REFERENCES msstatus (msstatus_id)
-) TYPE=InnoDB COMMENT='Machine session log. Tag:Machine_sessions.';
+) TYPE=InnoDB COMMENT='Machine session log. Tag: machine_sessions.';
 </source>
 
 Could be part of msession table, but separate table is better for logging (and log cleaning).
@@ -414,7 +414,7 @@ CREATE TABLE msstatus (
     msstatus_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(25),
     `desc`          TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='Machine session status messages. Tag:Machine_sessions.';
+) TYPE=InnoDB COMMENT='Machine session status messages. Tag: machine_sessions.';
 </source>
 
 Values:
@@ -434,7 +434,7 @@ CREATE TABLE msabort_reason (
     msabort_reason_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name                VARCHAR(25),
     `desc`              TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='Machine session status messages. Tag:Machine_sessions.';
+) TYPE=InnoDB COMMENT='Machine session status messages. Tag: machine_sessions.';
 </source>
 
 Values:
@@ -450,7 +450,7 @@ CREATE TABLE trun_status (
     trun_status_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name                VARCHAR(25),
     `desc`              TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='Test run loading status. Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Test run loading status. Tag: test_runs.';
 </source>
 
 ==== Table trun ====
@@ -469,7 +469,7 @@ CREATE TABLE trun (
     INDEX i_msjobp_cmd_id (msjobp_cmd_id),
     CONSTRAINT fk_trun_trun_status_id FOREIGN KEY (trun_status_id) REFERENCES trun_status (trun_status_id),
     CONSTRAINT fk_trun_msjobp_cmd_id FOREIGN KEY (msjobp_cmd_id) REFERENCES msjobp_cmd (msjobp_cmd_id)
-) TYPE=InnoDB COMMENT='Test run info and test run statistics (cache). Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Test run info and test run statistics (cache). Tag: test_runs.';
 </source>
 
 ==== Table tskipall_msg ====
@@ -479,7 +479,7 @@ CREATE TABLE tskipall_msg (
     msg                 TEXT,
     hash                CHAR(30) NOT NULL,
     INDEX i_hash (hash)
-) TYPE=InnoDB COMMENT='Reasons to skipp all tests. Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Reasons to skipp all tests. Tag: test_runs.';
 </source>
 
 ==== Table tfile ====
@@ -495,7 +495,7 @@ CREATE TABLE tfile (
     CONSTRAINT fk_tfile_trun_id FOREIGN KEY (trun_id) REFERENCES trun (trun_id),
     CONSTRAINT fk_tfile_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id),
     CONSTRAINT fk_tfile_tskipall_msg_id FOREIGN KEY (tskipall_msg_id) REFERENCES tskipall_msg (tskipall_msg_id)
-) TYPE=InnoDB COMMENT='Test file summary results. Summary result for all tests in file. All_passed is shortcup to data test. Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Test file summary results. Summary result for all tests in file. All_passed is shortcup to data test. Tag: test_runs.';
 </source>
 
 ==== Table trest ====
@@ -504,7 +504,7 @@ CREATE TABLE trest (
     trest_id    INT UNSIGNED NOT NULL PRIMARY KEY,
     name        VARCHAR(25),
     `desc`      TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='Test result info. Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Test result info. Tag: test_runs.';
 </source>
 
 Values:
@@ -527,7 +527,7 @@ CREATE TABLE rep_test (
     INDEX i_rep_file_id (rep_file_id),
     INDEX i_rep_file_id_number (rep_file_id, number),
     CONSTRAINT fk_rep_test_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id)
-) TYPE=InnoDB COMMENT='Number and name of the test. Each rep_file can contains many tests. Rep file gets new id after each file change. Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Number and name of the test. Each rep_file can contains many tests. Rep file gets new id after each file change. Tag: test_runs.';
 </source>
 
 ==== Table ttest ====
@@ -543,7 +543,7 @@ CREATE TABLE ttest (
     CONSTRAINT fk_ttest_trun_id FOREIGN KEY (trun_id) REFERENCES trun (trun_id),
     CONSTRAINT fk_ttest_rep_test_id FOREIGN KEY (rep_test_id) REFERENCES rep_test (rep_test_id),
     CONSTRAINT fk_ttest_trest_id FOREIGN KEY (trest_id) REFERENCES trest (trest_id)
-) TYPE=InnoDB COMMENT='Test results for each test (test case, subtest) submitted in trun. Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Test results for each test (test case, subtest) submitted in trun. Tag: test_runs.';
 </source>
 
 ==== Table tdiag_msg ====
@@ -556,7 +556,7 @@ CREATE TABLE tdiag_msg (
     INDEX i_ttest_id (ttest_id),
     INDEX i_hash (hash),
     CONSTRAINT fk_tdiag_msg_ttest_id FOREIGN KEY (ttest_id) REFERENCES ttest (ttest_id)
-) TYPE=InnoDB COMMENT='Diagnostic messages. Tag:Test_runs.';
+) TYPE=InnoDB COMMENT='Diagnostic messages. Tag: test_runs.';
 </source>
 
 ==== Table brun_conf ====
@@ -568,7 +568,7 @@ CREATE TABLE brun_conf (
     alias_conf_id   INT UNSIGNED DEFAULT NULL COMMENT 'Another conf with the same semantics, but different syntax.',
     INDEX i_hash (hash),
     CONSTRAINT fk_brun_conf_alias_conf_id FOREIGN KEY (alias_conf_id) REFERENCES brun_conf (brun_conf_id)
-) TYPE=InnoDB COMMENT='Benchmark run. Tag:Benchmark_runs.';
+) TYPE=InnoDB COMMENT='Benchmark run. Tag: benchmark_runs.';
 </source>
 
 ==== Table brun ====
@@ -581,7 +581,7 @@ CREATE TABLE brun (
     INDEX i_conf_id (conf_id),
     CONSTRAINT fk_brun_msjobp_cmd_id FOREIGN KEY (msjobp_cmd_id) REFERENCES msjobp_cmd (msjobp_cmd_id),
     CONSTRAINT fk_brun_conf_id FOREIGN KEY (conf_id) REFERENCES brun_conf (brun_conf_id)
-) TYPE=InnoDB COMMENT='Benchmark runs. Tag:Benchmark_runs.';
+) TYPE=InnoDB COMMENT='Benchmark runs. Tag: benchmark_runs.';
 </source>
 
 ==== Table bfile ====
@@ -595,7 +595,7 @@ CREATE TABLE bfile (
     INDEX i_brun_id (brun_id),
     CONSTRAINT fk_bfile_brun_id FOREIGN KEY (brun_id) REFERENCES brun (brun_id),
     CONSTRAINT fk_bfile_rep_file_id FOREIGN KEY (rep_file_id) REFERENCES rep_file (rep_file_id)
-) TYPE=InnoDB COMMENT='Bench file results. Tag:Benchmark_runs.';
+) TYPE=InnoDB COMMENT='Bench file results. Tag: benchmark_runs.';
 </source>
 
 ==== Table fspath ====
@@ -609,7 +609,7 @@ CREATE TABLE fspath (
     deleted         DATETIME DEFAULT NULL,
     name            VARCHAR(25),
     `desc`          TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='List of directories with files. Tag:Files_paths.';
+) TYPE=InnoDB COMMENT='List of directories with files. Tag: files_paths.';
 </source>
 
 ==== Table fsfile ====
@@ -623,7 +623,7 @@ CREATE TABLE fsfile (
     deleted         DATETIME DEFAULT NULL,
     INDEX i_fspath_id (fspath_id),
     CONSTRAINT fk_fsfile_fspath_id FOREIGN KEY (fspath_id) REFERENCES fspath (fspath_id)
-) TYPE=InnoDB COMMENT='List of saved files. Tag:Files_paths.';
+) TYPE=InnoDB COMMENT='List of saved files. Tag: files_paths.';
 </source>
 
 ==== Table fsfile_ext ====
@@ -636,7 +636,7 @@ CREATE TABLE fsfile_ext (
     INDEX i_archive_id_fsfile_id (archive_id, fsfile_id),
     CONSTRAINT fk_fsfile_ext_archive_id FOREIGN KEY (archive_id) REFERENCES fsfile (fsfile_id),
     CONSTRAINT fk_fsfile_ext_fsfile_id FOREIGN KEY (fsfile_id) REFERENCES fsfile (fsfile_id)
-) TYPE=InnoDB COMMENT='Files extracted from another files (archives). Tag:Files_paths.';
+) TYPE=InnoDB COMMENT='Files extracted from another files (archives). Tag: files_paths.';
 </source>
 
 ==== Table fsfile_type ====
@@ -645,7 +645,7 @@ CREATE TABLE fsfile_type (
     fsfile_type_id  INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(25),
     `desc`          TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='List of file types. Used to select proper path. Tag:FsPSelect.';
+) TYPE=InnoDB COMMENT='List of file types. Used to select proper path. Tag: fspath_select.';
 </source>
 
 ==== Table fspath_select ====
@@ -659,7 +659,7 @@ CREATE TABLE fspath_select (
     CONSTRAINT fk_fspath_select_fsfile_type_id FOREIGN KEY (fsfile_type_id) REFERENCES fsfile_type (fsfile_type_id),
     CONSTRAINT fk_fspath_select_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
     CONSTRAINT fk_fspath_select_fspath_id FOREIGN KEY (fspath_id) REFERENCES fspath (fspath_id)
-) TYPE=InnoDB COMMENT='Default fsfile_path to save files for each rep_path and file_type. Tag:FsPSelect.';
+) TYPE=InnoDB COMMENT='Default fsfile_path to save files for each rep_path and file_type. Tag: fspath_select.';
 </source>
 
 ==== Table param_type ====
@@ -669,7 +669,7 @@ CREATE TABLE param_type (
     name            VARCHAR(20) NOT NULL,
     `desc`          TEXT DEFAULT NULL COMMENT 'Description.',
     INDEX i_name (name)
-) TYPE=InnoDB COMMENT='Types of parameters. Tag:Config.';
+) TYPE=InnoDB COMMENT='Types of parameters. Tag: config.';
 </source>
 
 ==== Table param ====
@@ -680,7 +680,7 @@ CREATE TABLE param (
     value           VARCHAR(255) DEFAULT NULL,
     INDEX i_name (param_type_id),
     CONSTRAINT fk_param_param_type_id FOREIGN KEY (param_type_id) REFERENCES param_type (param_type_id)
-) TYPE=InnoDB COMMENT='Parameters values. Tag:Config.';
+) TYPE=InnoDB COMMENT='Parameters values. Tag: config.';
 </source>
 
 ==== Table ibot ====
@@ -693,7 +693,7 @@ CREATE TABLE ibot (
     port            INT UNSIGNED NOT NULL,
     operator_id     INT UNSIGNED NOT NULL COMMENT 'User operating the robot.',
     CONSTRAINT fk_ibot_operator_id FOREIGN KEY (operator_id) REFERENCES user (user_id)
-) TYPE=InnoDB COMMENT='IRC bots. Tag:IRC_robot.';
+) TYPE=InnoDB COMMENT='IRC bots. Tag: irc_robot.';
 </source>
 
 ==== Table ichannel ====
@@ -701,7 +701,7 @@ CREATE TABLE ibot (
 CREATE TABLE ichannel (
     ichannel_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(50) NOT NULL
-) TYPE=InnoDB COMMENT='IRC channel. Tag:IRC_robot.';
+) TYPE=InnoDB COMMENT='IRC channel. Tag: irc_robot.';
 </source>
 
 ==== Table ireport_type_id ====
@@ -710,7 +710,7 @@ CREATE TABLE ireport_type (
     ireport_type_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name                VARCHAR(15) NOT NULL,
     `desc`              TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='IRC robot report types. Tag:IRC_robot.';
+) TYPE=InnoDB COMMENT='IRC robot report types. Tag: irc_robot.';
 </source>
 
 ==== Table ichannel_conf ====
@@ -727,7 +727,7 @@ CREATE TABLE ichannel_conf (
     CONSTRAINT fk_ichannel_conf_ichannel_id FOREIGN KEY (ichannel_id) REFERENCES ichannel (ichannel_id),
     CONSTRAINT fk_ichannel_conf_ireport_type_id FOREIGN KEY (ireport_type_id) REFERENCES ireport_type (ireport_type_id),
     CONSTRAINT fk_ichannel_conf_jobp_cmd_id FOREIGN KEY (jobp_cmd_id) REFERENCES jobp_cmd (jobp_cmd_id)
-) TYPE=InnoDB COMMENT='IRC robot parameter values. Tag:IRC_robot.';
+) TYPE=InnoDB COMMENT='IRC robot parameter values. Tag: irc_robot.';
 </source>
 
 ==== Table ibot_log ====
@@ -742,7 +742,7 @@ CREATE TABLE ibot_log (
     CONSTRAINT fk_ibot_log_ichannel_conf_id FOREIGN KEY (ichannel_conf_id) REFERENCES ichannel_conf (ichannel_conf_id),
     CONSTRAINT fk_ibot_log_rep_path_id FOREIGN KEY (rep_path_id) REFERENCES rep_path (rep_path_id),
     CONSTRAINT fk_ibot_log_rev_id FOREIGN KEY (rev_id) REFERENCES rev (rev_id)
-) TYPE=InnoDB COMMENT='IRC bot log. Tag:IRC_robot.';
+) TYPE=InnoDB COMMENT='IRC bot log. Tag: irc_robot.';
 </source>
 
 
