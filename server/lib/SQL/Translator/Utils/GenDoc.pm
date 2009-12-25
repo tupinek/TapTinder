@@ -90,7 +90,7 @@ sub produce_db_doc {
     }
     
 
-    my $out_dir = './temp/schema';
+    my $out_dir = './temp/dbdoc';
     mkdir( $out_dir ) unless -d $out_dir;
 
     my %out_files_map = (
