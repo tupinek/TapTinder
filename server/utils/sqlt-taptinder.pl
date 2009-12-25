@@ -9,12 +9,19 @@ use lib "$RealBin/../lib";
 use SQL::Translator;
 
 use Data::Dumper;
+sub mdump {
+    my $dumper = Data::Dumper->new( \@_ );
+    $dumper->Purity(1)->Terse(1)->Deepcopy(1);
+    print $dumper->Dump;
+}
+
 
 my $to = $ARGV[0] || 'dbix';
 my $input_file = $ARGV[1] || './temp/schema-raw-create.sql';
-my $debug = $ARGV[2] || 0;
+my $ver = $ARGV[2] || 3;
 
-print "to: $to, input '$input_file', debug: $debug\n" if $debug;
+print "to: $to, input '$input_file', ver $ver\n" if $ver >= 3;
+
 
 # package - DBIx::Class - .pm
 if ( $to eq 'dbix' || $to eq 'ALL' ) {
@@ -41,115 +48,86 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
     my $output_type = 'png';
     $output_type = 'svg';
 
+    my $tr = SQL::Translator->new(
+        parser    => 'MySQL',
+        filename  => $input_file,
+    ) or die SQL::Translator->error;
+
+    # Mined from $tr->translate method
+    my $data = $tr->data;
+    $tr->parser->( $tr, $$data );
+
+    # Invoke an anonymous subroutine directly
+    my $schema = $tr->schema;
+    my @tables = $schema->get_tables;
+
+    # Get tags and tags shortcuts for tables.
+    my $tags_tables = {};
+    my $tags_shortcuts = {};
+    foreach my $table ( @tables ) {
+        my $comment = $table->comments;
+        my $table_name = $table->name;
+        
+        print $table_name . "\n" if $ver >= 3;
+        print "  comment: '$comment'\n" if $ver >= 4;
+        my @tags = ();
+        my $found = 0;
+        if ( my ( $tags_part ) = $comment =~ m/ Tag\: \s* ([^\.]+) \s* (?:\.|$) /isx ) {
+            print "  tags str: '$tags_part'\n" if $ver >= 4;
+            my @raw_tags = split( ',', $tags_part );
+            print '  raw: ' . join(', ', @raw_tags ) . "\n" if $ver >= 4;
+            foreach my $tag ( @raw_tags ) {
+                $tag =~ s/^\s+//;
+                $tag =~ s/\s+$//;
+                $tags_tables->{ $tag } = [] unless exists $tags_tables->{ $tag };
+                $found = 1;
+                push @{ $tags_tables->{ $tag } }, $table_name;
+            }
+        }
+        
+        print "  found: $found\n" if $ver >= 4;
+        unless ( $found ) {
+            my $tag = '_no_tags';
+            push @{ $tags_tables->{ $tag } }, $table_name;
+        }
+        
+        print "\n" if $ver >= 3;
+    }
+    #mdump( $tags_tables ); exit;
+
+
+    my $tag_colors = [
+        [ qw/ Moccasin burlywood4 / ],
+        [ qw/ BurlyWood SaddleBrown / ],
+        [ qw/ YellowGreen darkgoldenrod4 / ],
+        [ qw/ cadetblue cadetblue4 / ],
+        [ qw/ LightCoral FireBrick / ],
+        [ qw/ LightSalmon Crimson / ],
+        [ qw/ Pink DeepPink / ],
+        [ qw/ Coral OrangeRed / ],
+        [ qw/ Khaki brown4 / ],
+        [ qw/ RoyalBlue MidnightBlue / ],
+        [ qw/ Plum deeppink4 / ],
+        [ qw/ PaleGreen LimeGreen / ],
+        [ qw/ PaleTurquoise dodgerblue3 / ],
+        [ qw/ Grey DimGray / ],
+    ];
+
+
     my $all_clusters = [];
-
-    push @$all_clusters, {
-        name => 'Project',
-        filename_infix => 'pr',
-        tables => [
-          qw/ project rep rep_path rep_author rev rev_rep_path rep_file /,
-        ],
-        colors => [ qw/ Moccasin burlywood4 / ],
-    };
-
-    push @$all_clusters, {
-        name => 'Machine',
-        filename_infix => 'm',
-        tables => [
-          qw/ machine farm /,
-        ],
-        colors => [ qw/ BurlyWood SaddleBrown / ],
-    };
-
-    push @$all_clusters, {
-        name => 'User',
-        filename_infix => 'u',
-        tables => [ qw/ user /, ],
-        colors => [ qw/ YellowGreen darkgoldenrod4 / ],
-    };
-
-    push @$all_clusters, {
-        name => 'Patch',
-        filename_infix => 'p',
-        tables => [ qw/ patch /, ],
-        colors => [ qw/ cadetblue cadetblue4 / ],
-    };
-
-    push @$all_clusters, {
-        name => 'MJConf',
-        filename_infix => 'mjc',
-        tables => [ qw/ machine_job_conf /, ],
-        colors => [ qw/ LightCoral FireBrick / ],
-    };
-
-    push @$all_clusters, {
-        name => 'FsPSelect',
-        filename_infix => 'fss',
-        tables => [ qw/ fspath_select fsfile_type /, ],
-        colors => [ qw/ LightSalmon Crimson / ],
-    };
-
-    push @$all_clusters, {
-        name => 'Rep_file_chng',
-        filename_infix => 'rch',
-        tables => [
-          qw/ rep_file_change rep_file_change_from rep_change_type /,
-        ],
-        colors => [ qw/ Pink DeepPink / ],
-    };
-
-
-    push @$all_clusters, {
-        name => 'Jobs',
-        filename_infix => 'job',
-        tables => [ qw/ job jobp jobp_cmd cmd /, ],
-        colors => [ qw/ Coral OrangeRed / ],
-    };
-
-    push @$all_clusters, {
-        name => 'Machine_sessions',
-        filename_infix => 'ms',
-        tables => [ qw/ msession msabort_reason mslog msstatus msjob msjobp msjobp_cmd cmd_status / ],
-        colors => [ qw/ Khaki brown4 / ],
-    };
-
-    push @$all_clusters, {
-        name => 'Test_runs',
-        filename_infix => 'trun',
-        tables => [ qw/ trun trun_status ttest trest tdiag_msg rep_test tfile tskipall_msg / ],
-        colors => [ qw/ RoyalBlue MidnightBlue / ],
-    };
-
-    push @$all_clusters, {
-        name => 'Benchmark_runs',
-        filename_infix => 'brun',
-        tables => [ qw/ brun brun_conf bfile / ],
-        colors => [ qw/ Plum deeppink4 / ],
-    };
-
-    push @$all_clusters, {
-        name => 'Files_paths',
-        filename_infix => 'file',
-        tables => [ qw/ fspath fsfile fsfile_ext /, ],
-        colors => [ qw/ PaleGreen LimeGreen / ],
-    };
-
-    push @$all_clusters, {
-        name => 'IRC_robot',
-        filename_infix => 'ibot',
-        tables => [ qw/ ibot ichannel ichannel_conf ireport_type ibot_log / ],
-        colors => [ qw/ PaleTurquoise dodgerblue3 / ],
-    };
-
-
-    push @$all_clusters, {
-        name => 'Config',
-        filename_infix => 'conf',
-        tables => [ qw/ param param_type /, ],
-        colors => [ qw/ Grey DimGray / ],
-    };
+    my $tag_num = 0;
+    foreach my $tag ( keys %$tags_tables ) {
+        push @$all_clusters, {
+            name => $tag,
+            tables => $tags_tables->{ $tag },
+            colors => $tag_colors->[ $tag_num ],
+        };
+        $tag_num++;
+    }
+    
 
     my $out_dir = './temp/schema';
+    mkdir( $out_dir ) unless -d $out_dir;
 
     my %out_files_map = (
         'as_png' => 'png',
@@ -164,13 +142,13 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
 
             my $out_files = {};
             foreach my $method_name ( keys %out_files_map ) {
-                my $out_file_infix = $cluster->{filename_infix};
-                my $file_type = $out_files_map{$method_name};
+                my $out_file_basename = $cluster->{name};
+                my $file_type = $out_files_map{ $method_name };
                 my $t_out_dir = $out_dir . '/' . 'cluster-' . $file_type;
                 unless ( -d $t_out_dir ) {
                     mkdir( $t_out_dir ) or croak "Can't create directory '$t_out_dir': $!\n";
                 }
-                my $out_file = $t_out_dir . '/' . $out_file_infix .  '.' . $file_type;
+                my $out_file = $t_out_dir . '/' . $out_file_basename .  '.' . $file_type;
                 $out_files->{$method_name} = $out_file;
             }
 
@@ -179,7 +157,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
                 filename  => $input_file,
                 parser => 'MySQL',
                 producer => 'TTGraphViz',
-                debug => $debug,
+                debug => ( $ver >= 6 ),
 
                 producer_args => {
                     out_files => $out_files,
@@ -228,7 +206,7 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
         filename  => $input_file,
         parser => 'MySQL',
         producer => 'TTGraphViz',
-        debug => $debug,
+        debug => ( $ver >= 6 ),
         producer_args => {
             out_files => $out_files,
             output_type => $output_type,
