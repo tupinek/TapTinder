@@ -24,9 +24,13 @@ sub index : Path  {
     my $pr = $self->get_page_params( $params );
 
     my $date_from = DateTime->now( time_zone => 'GMT' );
+    my $second_back = 1.5*60*60 + ( $date_from->second );
+    if ( $c->log->is_debug  ) {
+        $second_back = 7*24*60*60 + ( $date_from->second );
+    }
     $date_from->add(
         # 1.5 hours old and caching each minute.
-        seconds => -1.5*60*60 - ( $date_from->second )
+        seconds => -$second_back,
     );
     my $date_from_str = $date_from->ymd . ' ' . $date_from->hms;
     #$self->dumper( $c, $date_from_str );
@@ -36,6 +40,8 @@ sub index : Path  {
         cpuarch osname archname last_finished_msjobp_cmd_id
         max_mslog_id
         mslog_id mslog_change_time msstatus_name
+        last_cmd_name last_cmd_end_time
+        last_cmd_rev_num last_cmd_rep_path last_cmd_author last_cmd_project_name
     /];
     # $mslog{mslog_change_time} gt $date_from_str
     my $search_conf = {

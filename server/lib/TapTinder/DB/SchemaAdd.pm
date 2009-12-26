@@ -130,16 +130,22 @@ $new_source3->name(\<<'SQLEND');
     select xm.*,
            msl.mslog_id,
            msl.change_time as mslog_change_time,
-           mss.name as msstatus_name
+           mss.name as msstatus_name,
+           c.name as last_cmd_name,
+           mjpc.end_time as last_cmd_end_time,
+           rev.rev_num as last_cmd_rev_num,
+           rp.path as last_cmd_rep_path,
+           ra.rep_login as last_cmd_author,
+           project.name as last_cmd_project_name
       from (
-        select ms.msession_id,
-               ms.client_rev,
-               ms.start_time,
-               ma.machine_id,
+        select ma.machine_id,
                ma.name as machine_name,
                ma.cpuarch,
                ma.osname,
                ma.archname,
+               ms.msession_id,
+               ms.client_rev,
+               ms.start_time,
                ( select max(msjpc.msjobp_cmd_id)
                    from msjob msj,
                         msjobp msjp,
@@ -157,13 +163,33 @@ $new_source3->name(\<<'SQLEND');
          where ma.machine_id = ms.machine_id
            and ms.end_time is null
            and ms.abort_reason_id is null
-         order by ms.machine_id, ms.start_time
       ) xm,
       mslog msl,
-      msstatus mss
+      msstatus mss,
+      msjobp_cmd mjpc,
+      msjobp mjp,
+      jobp_cmd jpc,
+      jobp jp,
+      cmd c,
+      rev,
+      rep_path rp,
+      rep_author ra,
+      rep,
+      project
     where msl.mslog_id = xm.max_mslog_id
       and msl.change_time > ?
       and mss.msstatus_id = msl.msstatus_id
+      and mjpc.msjobp_cmd_id = last_finished_msjobp_cmd_id
+      and mjp.msjobp_id = mjpc.msjobp_id
+      and jpc.jobp_cmd_id = mjpc.jobp_cmd_id
+      and jp.jobp_id = jpc.jobp_id
+      and c.cmd_id = jpc.cmd_id
+      and rev.rev_id = mjp.rev_id
+      and ra.rep_author_id = rev.author_id
+      and rep.rep_id = rev.rep_id
+      and rp.rep_path_id = jp.rep_path_id
+      and project.project_id = rep.project_id
+    order by xm.machine_id, xm.msession_id, xm.start_time
 )
 SQLEND
 

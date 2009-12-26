@@ -5,33 +5,35 @@
 <table class=data>
 <tr>
 <th>&nbsp;</th>
-<th colspan=3>MSession</th>
 <th colspan=2>Machine</th>
-<th colspan=3>Info</th>
+<th colspan=3>Machine session</th>
+<th colspan=2>Session log info</th>
+<th colspan=2>Last finished command</th>
 </tr>
 <tr>
 <th>&nbsp;</th>
-<th>&nbsp;</th><th>Start time</th><th>Client rev</th>
 <th>&nbsp</th><th>Name</th>
-<th>Last finished cmd</th>
-<th>Session status</th>
-<th>Session last info</th>
+<th>&nbsp;</th><th>Start time</th><th>Cl.rev</th>
+<th>Status</th><th>Last info</th>
+<th>Command info</th><th>Finish time</th>
 </tr>
 
 [% FOREACH st IN states -%]
   <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %]">
     <td align=right>[% loop.count() %]</td>
 
+    <td><a href="[% c.uri_for( '/table/machine/id-' _ st.machine_id ) %]">[% st.machine_id %]</a></td>
+    <td>[% st.machine_name %]</td>
+
     <td><a href="[% c.uri_for( '/table/msession/id-' _ st.msession_id ) %]">[% st.msession_id %]</a></td>
     <td>[% st.start_time %]</td>
     <td>[% st.client_rev %]</td>
 
-    <td><a href="[% c.uri_for( '/table/machine/id-' _ st.machine_id ) %]">[% st.machine_id %]</a></td>
-    <td>[% st.machine_name %]</td>
-
-    <td>[% st.last_cmd_finish_time %]</td>
     <td>[% st.msstatus_name %]</td>
     <td>[% st.mslog_change_time %]</td>
+
+    <td>[% st.last_cmd_name %] - r[% st.last_cmd_rev_num %] [% st.last_cmd_project_name %] [% st.last_cmd_rep_path %]</td>
+    <td>[% st.last_cmd_end_time %]</td>
   </tr>
 [% END -%]
 </table>
