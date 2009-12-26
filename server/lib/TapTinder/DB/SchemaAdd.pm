@@ -127,32 +127,43 @@ $new_source3->source_name( 'MSessionStatus' );
 # mslog_id is autoincrement
 $new_source3->name(\<<'SQLEND');
 (
-    select ms.msession_id,
-           ms.client_rev,
-           ms.start_time,
-           ma.machine_id,
-           ma.name as machine_name,
-           ma.cpuarch,
-           ma.osname,
-           ma.archname,
-           ( select max(msjpc.msjobp_cmd_id)
-               from msjob msj,
-                    msjobp msjp,
-                    msjobp_cmd msjpc
-              where msj.msession_id = ms.msession_id
-                and msjp.msjob_id = msj.msjob_id
-                and msjpc.msjobp_id = msjp.msjobp_id
-           ) as last_finished_msjobp_cmd_id,
-           ( select max(i_ml.mslog_id)
-               from mslog i_ml
-              where i_ml.msession_id = ms.msession_id
-           ) as max_mslog_id
-      from msession ms,
-           machine ma
-     where ma.machine_id = ms.machine_id
-       and ms.end_time is null
-       and ms.abort_reason_id is null
-     order by ms.machine_id, ms.start_time
+    select xm.*,
+           msl.mslog_id,
+           msl.change_time as mslog_change_time,
+           mss.name as msstatus_name
+      from (
+        select ms.msession_id,
+               ms.client_rev,
+               ms.start_time,
+               ma.machine_id,
+               ma.name as machine_name,
+               ma.cpuarch,
+               ma.osname,
+               ma.archname,
+               ( select max(msjpc.msjobp_cmd_id)
+                   from msjob msj,
+                        msjobp msjp,
+                        msjobp_cmd msjpc
+                  where msj.msession_id = ms.msession_id
+                    and msjp.msjob_id = msj.msjob_id
+                    and msjpc.msjobp_id = msjp.msjobp_id
+               ) as last_finished_msjobp_cmd_id,
+               ( select max(i_ml.mslog_id)
+                   from mslog i_ml
+                  where i_ml.msession_id = ms.msession_id
+               ) as max_mslog_id
+          from msession ms,
+               machine ma
+         where ma.machine_id = ms.machine_id
+           and ms.end_time is null
+           and ms.abort_reason_id is null
+         order by ms.machine_id, ms.start_time
+      ) xm,
+      mslog msl,
+      msstatus mss
+    where msl.mslog_id = xm.max_mslog_id
+      and msl.change_time > ?
+      and mss.msstatus_id = msl.msstatus_id
 )
 SQLEND
 

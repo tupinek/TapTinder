@@ -23,45 +23,34 @@ sub index : Path  {
 
     my $pr = $self->get_page_params( $params );
 
-    my $plus_rows = [ qw/ msession_id client_rev start_time machine_id machine_name cpuarch osname archname last_finished_msjobp_cmd_id max_mslog_id /];
+    my $date_from = DateTime->now( time_zone => 'GMT' );
+    $date_from->add(
+        # 1.5 hours old and caching each minute.
+        seconds => -1.5*60 - ( $date_from->second )
+    );
+    my $date_from_str = $date_from->ymd . ' ' . $date_from->hms;
+    #$self->dumper( $c, $date_from_str );
+
+    my $plus_rows = [ qw/ 
+        msession_id client_rev start_time machine_id machine_name
+        cpuarch osname archname last_finished_msjobp_cmd_id
+        max_mslog_id
+        mslog_id mslog_change_time msstatus_name
+    /];
+    # $mslog{mslog_change_time} gt $date_from_str
     my $search_conf = {
         'select' => $plus_rows,
         'as'     => $plus_rows,
-        bind   => [],
+        bind   => [ $date_from_str ],
         page => $pr->{page},
         rows => $pr->{rows} || 50,
         offset => $pr->{offset} || 0,
+        result_class => 'DBIx::Class::ResultClass::HashRefInflator',
     };
 
     my $rs = $c->model('WebDB')->schema->resultset( 'MSessionStatus' )->search( {}, $search_conf );
 
-    # ToDo - haven't time to find right solution
-    my $date_from = DateTime->now( time_zone => 'GMT' );
-    $date_from->add( hours => -1.5 );
-    my $date_from_str = $date_from->ymd . ' ' . $date_from->hms;
-    #$self->dumper( $c, $date_from_str );
-
-    my @states = ();
-    while (my $state = $rs->next) {
-        my %state_rows = ( $state->get_columns() );
-
-        my $mslog_row = $c->model('WebDB::mslog')->find(
-            {
-                'mslog_id' => $state_rows{max_mslog_id},
-            }, {
-               join => 'msstatus_id',
-               select => [ qw/ me.mslog_id me.change_time msstatus_id.name / ],
-               as => [ qw/ mslog_id mslog_change_time msstatus_name / ],
-            }
-        );
-
-        my %mslog = $mslog_row->get_columns;
-        if ( $mslog{mslog_change_time} gt $date_from_str ) {
-            push @states, { %state_rows, %mslog };
-        }
-        #$self->dumper( $c, \%mslog );
-    }
-
+    my @states = $rs->all;
     $c->stash->{states} = \@states;
 
     my $base_uri = '/' . $c->action->namespace . '/page-';
