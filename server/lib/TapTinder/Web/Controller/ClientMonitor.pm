@@ -26,7 +26,7 @@ sub index : Path  {
     my $date_from = DateTime->now( time_zone => 'GMT' );
     $date_from->add(
         # 1.5 hours old and caching each minute.
-        seconds => -1.5*60 - ( $date_from->second )
+        seconds => -1.5*60*60 - ( $date_from->second )
     );
     my $date_from_str = $date_from->ymd . ' ' . $date_from->hms;
     #$self->dumper( $c, $date_from_str );
