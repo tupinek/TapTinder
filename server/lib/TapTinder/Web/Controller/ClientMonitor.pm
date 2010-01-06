@@ -25,7 +25,7 @@ sub index : Path  {
 
     my $date_from = DateTime->now( time_zone => 'GMT' );
     my $second_back = 1.5*60*60 + ( $date_from->second );
-    if ( $c->log->is_debug  ) {
+    if ( 0 && $c->log->is_debug  ) {
         $second_back = 7*24*60*60 + ( $date_from->second );
     }
     $date_from->add(
@@ -35,7 +35,7 @@ sub index : Path  {
     my $date_from_str = $date_from->ymd . ' ' . $date_from->hms;
     #$self->dumper( $c, $date_from_str );
 
-    my $plus_rows = [ qw/ 
+    my $plus_rows = [ qw/
         msession_id client_rev start_time machine_id machine_name
         cpuarch osname archname last_finished_msjobp_cmd_id
         max_mslog_id
