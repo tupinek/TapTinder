@@ -8,9 +8,6 @@ use base qw(Exporter);
 
 sub produce_db_doc {
     my ( $ver, $input_file, $table_name_url_prefix ) = @_;
-    
-    my $output_type = 'png';
-    $output_type = 'svg';
 
     my $translator = SQL::Translator->new(
         parser    => 'MySQL',
@@ -31,8 +28,8 @@ sub produce_db_doc {
     foreach my $table ( @tables ) {
         my $comment = $table->comments;
         my $table_name = $table->name;
-        
-        print $table_name . "\n" if $ver >= 3;
+
+        print "Table '$table_name' found.\n" if $ver >= 3;
         print "  comment: '$comment'\n" if $ver >= 4;
         my @tags = ();
         my $found = 0;
@@ -48,14 +45,14 @@ sub produce_db_doc {
                 push @{ $tags_tables->{ $tag } }, $table_name;
             }
         }
-        
+
         print "  found: $found\n" if $ver >= 4;
         unless ( $found ) {
             my $tag = '_no_tags';
             push @{ $tags_tables->{ $tag } }, $table_name;
         }
-        
-        print "\n" if $ver >= 3;
+
+        print "\n" if $ver >= 4;
     }
     #mdump( $tags_tables ); exit;
 
@@ -88,7 +85,7 @@ sub produce_db_doc {
         };
         $tag_num++;
     }
-    
+
 
     my $out_dir = './temp/dbdoc';
     mkdir( $out_dir ) unless -d $out_dir;
@@ -116,7 +113,7 @@ sub produce_db_doc {
                 $out_files->{$method_name} = $out_file;
             }
 
-            print "Running for $cluster->{name} ($cluster->{filename_infix}).\n";
+            print "Running for tag '$cluster->{name}'.\n" if $ver >= 3;
             my $translator = SQL::Translator->new(
                 filename  => $input_file,
                 parser => 'MySQL',
@@ -125,7 +122,6 @@ sub produce_db_doc {
 
                 producer_args => {
                     out_files => $out_files,
-                    output_type => $output_type,
                     name => $cluster_name,
 
                     #layout => 'neato',
@@ -159,7 +155,7 @@ sub produce_db_doc {
         $out_files->{$method_name} = $out_file;
     }
 
-    print "Running for full schema.\n" if $ver >= 2;
+    print "Running for full schema.\n" if $ver >= 3;
     my $translator = SQL::Translator->new(
         filename  => $input_file,
         parser => 'MySQL',
@@ -167,7 +163,6 @@ sub produce_db_doc {
         debug => ( $ver >= 6 ),
         producer_args => {
             out_files => $out_files,
-            output_type => $output_type,
             name => 'schema',
 
             layout => 'dot',
