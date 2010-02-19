@@ -49,7 +49,9 @@ VALUES (
      9, 'ttcl-rh5-32',      1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.73',   'i386',   'linux',        'i386-linux-thread-multi',      0, NULL, NULL   ), (
     10, 'ttcl-fbsd-32',     1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.193',  'i386',   'FreeBSD',      'i386-freebsd-64int',           0, NULL, NULL   ), (
     11, 'ttcl-macos-32',    1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.183',  'i386',   'MacOS 10.5',   'darwin-thread-multi-2level',   0, NULL, NULL   ), (
-    12, 'ttcl-win-32',      1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.152',  'i386',   'cygwin',       'cygwin-thread-multi-64int',    0, NULL, NULL
+    12, 'ttcl-win-32',      1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.152',  'i386',   'cygwin',       'cygwin-thread-multi-64int',    0, NULL, NULL   ), (
+    13, 'ttcl-win2-32',     1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.160',  'i386',   'MSWin32',      'MSWin32-x86-multi-thread',     0, NULL, NULL   ), (
+    14, 'ttcl-osol-64',     1, substring(MD5(RAND()), -8), NULL, NOW(), '147.229.2.152',  'i86pc',  'OpenSolari',   'i86pc-solaris-64int',    		0, NULL, NULL
 );
 
 
@@ -118,8 +120,15 @@ VALUES (
     14, 11, NULL, NULL, 2,   2  ), (
 
     15, 12, NULL, NULL, 1,   1  ), (
-    16, 12, NULL, NULL, 2,   2
+    16, 12, NULL, NULL, 2,   2  ), (
+
+    17, 13, NULL, NULL, 1,   1  ), (
+    18, 13, NULL, NULL, 2,   2  ), (
+
+    19, 14, NULL, NULL, 1,   1  ), (
+    20, 14, NULL, NULL, 2,   2
 );
+
 
 
 INSERT INTO fspath ( fspath_id, path, web_path, public, created, deleted, name, `desc` )
