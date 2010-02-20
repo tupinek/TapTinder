@@ -1,16 +1,16 @@
-package TapTinder::Web::Controller::Table;
+package TapTinder::Web::Controller::CWM;
 
 use strict;
 use warnings;
-use base 'CatalystX::Controller::TableBrowser';
+use base 'CatalystX::Controller::CWebMagic';
 
 =head1 NAME
 
-TapTinder::Web::Controller::Table - Catalyst Controller
+TapTinder::Web::Controller::CWM - See web magic Catalyst Controller
 
 =head1 DESCRIPTION
 
-Catalyst Controller for TapTinder simple table browsing.
+Catalyst Controller to see web magic on TapTinder.
 
 =head1 METHODS
 
@@ -21,8 +21,17 @@ sub db_schema_base_class_name {
   return 'WebDB';
 }
 
+
 sub db_schema_class_name {
   return 'TapTinder::Web::Model::WebDB';
+}
+
+
+sub get_prepare_conf {
+    my ( $self, $c ) = @_;
+    return {
+        skip_tables => [ 'mslog' ],
+    };
 }
 
 

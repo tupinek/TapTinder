@@ -410,93 +410,28 @@ TapTinder::DB::Schema->register_extra_source($new_source_name7 => $new_source7);
 
 # ViewMD - view metadata
 
-package TapTinder::DB::Schema::cmd;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
-
-package TapTinder::DB::Schema::cmd_status;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
-
-package TapTinder::DB::Schema::farm;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
-
-package TapTinder::DB::Schema::fsfile;
-__PACKAGE__->cols_in_foreign_tables( [ qw/fspath_id name/ ] );
-
-package TapTinder::DB::Schema::fsfile_type;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
-
-package TapTinder::DB::Schema::fspath;
-__PACKAGE__->cols_in_foreign_tables( [ qw/path/ ] );
-
-package TapTinder::DB::Schema::job;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
-
-package TapTinder::DB::Schema::jobp;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
-
-package TapTinder::DB::Schema::jobp_cmd;
-__PACKAGE__->cols_in_foreign_tables( [ qw/jobp_id order cmd_id/ ] );
-
 package TapTinder::DB::Schema::machine;
-__PACKAGE__->restricted_cols( { 'passwd' => 1, 'ip' => 1, } );
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
-
-package TapTinder::DB::Schema::msabort_reason;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
+__PACKAGE__->cwm_col_auth( { passwd => 'R', ip => 'R', } );
 
 package TapTinder::DB::Schema::msession;
-__PACKAGE__->restricted_cols( { 'key' => 1, 'pid' => 1, } );
-
-package TapTinder::DB::Schema::msjob;
-__PACKAGE__->cols_in_foreign_tables( [ qw/msession_id job_id/ ] );
-
-package TapTinder::DB::Schema::msjobp;
-__PACKAGE__->cols_in_foreign_tables( [ qw/msjob_id jobp_id/ ] );
-
-package TapTinder::DB::Schema::msstatus;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
-
-package TapTinder::DB::Schema::param_type;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
-
-package TapTinder::DB::Schema::project;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
-
-package TapTinder::DB::Schema::rep;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name rep_id/ ] );
+__PACKAGE__->cwm_col_auth( { key => 'R', pid => 'R', } );
 
 package TapTinder::DB::Schema::rep_author;
-__PACKAGE__->cols_in_foreign_tables( [ qw/rep_login/ ] );
-
-package TapTinder::DB::Schema::rep_change_type;
-__PACKAGE__->cols_in_foreign_tables( [ qw/desc/ ] );
+__PACKAGE__->cwm_col_type( { rep_login => 'G', } );
 
 package TapTinder::DB::Schema::rep_file;
-__PACKAGE__->cols_in_foreign_tables( [ qw/rep_path_id sub_path rev_num_from rev_num_to/ ] );
+__PACKAGE__->cwm_col_type( { sub_path => 'G', rev_num_from => 'G', rev_num_to => 'G', } );
 
 package TapTinder::DB::Schema::rep_path;
-__PACKAGE__->cols_in_foreign_tables( [ qw/rep_id path rev_num_from rev_num_to/ ] );
+__PACKAGE__->cwm_col_type( { rev_num_from => 'G', rev_num_to => 'G', } );
 
 package TapTinder::DB::Schema::rep_test;
-__PACKAGE__->cols_in_foreign_tables( [ qw/rep_file_id number/ ] );
+__PACKAGE__->cwm_col_type( { number => 'G', } );
 
 package TapTinder::DB::Schema::rev;
-__PACKAGE__->cols_in_foreign_tables( [ qw/rep_id rev_num/ ] );
-
-package TapTinder::DB::Schema::trest;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
+__PACKAGE__->cwm_col_type( { rev_num => 'G', } );
 
 package TapTinder::DB::Schema::user;
-__PACKAGE__->restricted_cols( { 'passwd' => 1, } );
-__PACKAGE__->cols_in_foreign_tables( [ qw/login/ ] );
-
-package TapTinder::DB::Schema::ibot;
-__PACKAGE__->cols_in_foreign_tables( [ qw/nick/ ] );
-
-package TapTinder::DB::Schema::ichannel;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
-
-package TapTinder::DB::Schema::ireport_type;
-__PACKAGE__->cols_in_foreign_tables( [ qw/name/ ] );
+__PACKAGE__->cwm_col_auth( { 'passwd' => 'R', } );
 
 1;
