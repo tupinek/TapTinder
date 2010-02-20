@@ -11,7 +11,7 @@
 <th>Author</th>
 <th>Date</th>
 [% FOREACH machine_id IN machines.keys -%]
-<th style="width:3.5em;"><a href="[% c.uri_for( '/table/machine/id-' _ machine_id ) %]">[% machine_id %]</a></th>
+<th style="width:3.5em;"><a href="[% c.uri_for( '/cwm/machine/id-' _ machine_id ) %]">[% machine_id %]</a></th>
 [% END %]
 
 
@@ -20,7 +20,7 @@
 [% FOREACH rev IN revs -%]
   <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %]">
     <td>
-      <a href="/table/rev/id-[% rev.rev_id %]" title="[% rev.msg | html %]">
+      <a href="/cwm/rev/id-[% rev.rev_id %]" title="[% rev.msg | html %]">
         [% rev.rev_num %]
       </a>
       </td>

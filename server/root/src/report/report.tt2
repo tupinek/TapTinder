@@ -12,9 +12,9 @@
     [% END -%]
     <tr>
     <td align=left colspan=[% table_col_num %]>
-        <a href="[% c.uri_for( '/table/rev/id-' _ rev.rev_id ) %]" title="[% rev.msg | html %]">[% rev.rev_num %]</a>,
+        <a href="[% c.uri_for( '/cwm/rev/id-' _ rev.rev_id ) %]" title="[% rev.msg | html %]">[% rev.rev_num %]</a>,
         [% rev.date %],
-        <a href="[% c.uri_for( '/table/rep_author/id-' _ rev.author_id ) %]">[% rev.rep_login %]</a>
+        <a href="[% c.uri_for( '/cwm/rep_author/id-' _ rev.author_id ) %]">[% rev.rep_login %]</a>
     </td>
     </tr>
 
@@ -56,11 +56,11 @@
   <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %][% IF build.parse_errors or build.not_seen or build.failed %]_err[% END %]">
     <td align=right>[% loop.count() %]</td>
 
-    <td><a href="[% c.uri_for( '/table/machine/id-' _ build.machine_id ) %]">[% build.machine_name %]</a></td>
+    <td><a href="[% c.uri_for( '/cwm/machine/id-' _ build.machine_id ) %]">[% build.machine_name %]</a></td>
     <td>[% build.cpuarch %]</td>
     <td>[% build.osname %]</td>
 
-    <td align=center><a href="[% c.uri_for( '/table/trun/id-' _ build.trun_id ) %]">[% build.trun_id %]</a></td>
+    <td align=center><a href="[% c.uri_for( '/cwm/trun/id-' _ build.trun_id ) %]">[% build.trun_id %]</a></td>
     <td[% IF build.parse_errors %] class="err"[% END %] align=center>[% build.parse_errors %]</td>
     <td[% IF build.not_seen %] class=err[% END %] align=center>[% build.not_seen %]</td>
     <td[% IF build.failed %] class=err[% END %] align=center>[% build.failed %]</td>
@@ -97,7 +97,7 @@
 
 [% pager_html %]
 <div class=footinfo>
-Report for: <a href="[% c.uri_for('/table/project/id-' _ project_id ) %]">[% project_name %]</a>,
-[% IF rep_path_type %][% rep_path_type %] [% END %]<a href="[% c.uri_for( '/table/rep_path/id-' _ rep_path_id ) %]">[% rep_path_nice %]</a>
+Report for: <a href="[% c.uri_for('/cwm/project/id-' _ project_id ) %]">[% project_name %]</a>,
+[% IF rep_path_type %][% rep_path_type %] [% END %]<a href="[% c.uri_for( '/cwm/rep_path/id-' _ rep_path_id ) %]">[% rep_path_nice %]</a>
 </div>
 

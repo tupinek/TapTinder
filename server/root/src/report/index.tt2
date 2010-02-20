@@ -28,9 +28,9 @@
   <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %]">
     <td align=right>[% loop.count() %]</td>
     <td>[% IF rp.path_type %][% rp.path_type %] [% END %]<a href="[% rp.path_report_uri %]" class=ext>[% rp.path_nice %]</a></td>
-    <td><a href="[% c.uri_for( '/table/rev/id-' _ rp.rev_id ) %]">[% rp.max_rev_num %]</a></td>
+    <td><a href="[% c.uri_for( '/cwm/rev/id-' _ rp.rev_id ) %]">[% rp.max_rev_num %]</a></td>
     <td>[% rp.date %]</td>
-    <td><a href="[% c.uri_for( '/table/rep_author/id-' _ rp.author_id ) %]">[% rp.rep_login %]</a></td>
+    <td><a href="[% c.uri_for( '/cwm/rep_author/id-' _ rp.author_id ) %]">[% rp.rep_login %]</a></td>
   </tr>
 [% END -%]
 </table>

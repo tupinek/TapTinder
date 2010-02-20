@@ -22,10 +22,10 @@
   <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %]">
     <td align=right>[% loop.count() %]</td>
 
-    <td><a href="[% c.uri_for( '/table/machine/id-' _ st.machine_id ) %]">[% st.machine_id %]</a></td>
+    <td><a href="[% c.uri_for( '/cwm/machine/id-' _ st.machine_id ) %]">[% st.machine_id %]</a></td>
     <td>[% st.machine_name %]</td>
 
-    <td><a href="[% c.uri_for( '/table/msession/id-' _ st.msession_id ) %]">[% st.msession_id %]</a></td>
+    <td><a href="[% c.uri_for( '/cwm/msession/id-' _ st.msession_id ) %]">[% st.msession_id %]</a></td>
     <td>[% st.start_time %]</td>
     <td>[% st.client_rev %]</td>
 
