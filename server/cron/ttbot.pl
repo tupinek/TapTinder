@@ -94,7 +94,13 @@ $TapTinderBot_handler->_my_init(
     $ibot_id, $schema, $server_base_url, $ver, $debug
 );
 
-$bot->run();
+# This is how you can debug some TapTinderBot methods.
+if ( $debug ) {
+    $TapTinderBot_handler->_check_news( 1 );
+
+} else {
+    $bot->run();
+}
 
 __END__
 

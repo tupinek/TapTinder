@@ -1,3 +1,14 @@
+package Bot::BasicBot::Pluggable::Module::TapTinderBot;
+
+use base qw(Bot::BasicBot::Pluggable::Module);
+use warnings;
+use strict;
+
+use Data::Dumper;
+use Carp qw(carp croak verbose);
+
+our $tick_counter = 0;
+
 =head1 NAME
 
 Bot::BasicBot::Pluggable::Module::TapTinderBot - report status
@@ -7,16 +18,6 @@ Bot::BasicBot::Pluggable::Module::TapTinderBot - report status
 ...
 
 =cut
-
-package Bot::BasicBot::Pluggable::Module::TapTinderBot;
-use base qw(Bot::BasicBot::Pluggable::Module);
-use warnings;
-use strict;
-
-use Data::Dumper;
-use Carp qw(carp croak verbose);
-
-our $tick_counter = 0;
 
 sub init {
     my $self = shift;
@@ -49,36 +50,104 @@ sub _save_done {
 
 
 sub _check_news {
-    my ( $self ) = @_;
+    my ( $self, $debug ) = @_;
     $self->{loop_num}++;
 
-    my $search_conf = { 'me.ibot_id' => $self->{ibot_id} };
-    my $search_attrs = {
-        'select' => [ qw/
-            ibot_id ichannel_id channel ichannel_conf_id ireport_type_id machine_id machine_name
-            archname rep_path_id project_name rep_path cmd_name rev_id
-            rev_num author_login status_name msjobp_cmd_id web_fpath
-            reported
-        / ],
-    };
+    my $sql = <<'SQLEND';
+        select ichc.ibot_id,
+               ichc.ichannel_id,
+               ichc.ireport_type_id,
+               ichc.ichannel_conf_id,
+               ich.name as channel,
+               m.machine_id,
+               m.name as machine_name,
+               m.archname,
+               jp.rep_path_id,
+               c.name as cmd_name,
+               p.name as project_name,
+               rp.path as rep_path,
+               mjp.rev_id,
+               r.rev_num,
+               ra.rep_login as author_login,
+               cs.name as status_name,
+               mjpc.msjobp_cmd_id,
+               concat(fsp.web_path, '/', fsf.name) as web_fpath,
+               (
+                 select 1
+                   from ibot_log ibl
+                  where ibl.ibot_id = ichc.ibot_id
+                    and ibl.ichannel_conf_id = ichc.ichannel_conf_id
+                    and ibl.rep_path_id = rp.rep_path_id
+                    and ibl.rev_id = r.rev_id
+                  limit 1
+               ) as reported
+          from ichannel_conf ichc,
+               ichannel ich,
+               jobp_cmd jpc,
+               jobp jp,
+               cmd c,
+               job j,
+               msjobp_cmd mjpc,
+               msjobp mjp,
+               rev r,
+               rep_author ra,
+               msjob mj,
+               msession ms,
+               machine m,
+               rep_path rp,
+               rep rep,
+               project p,
+               cmd_status cs,
+               fsfile fsf,
+               fspath fsp
+         where ichc.ibot_id = ? -- <<<
+           and ich.ichannel_id = ichc.ichannel_id
+           and jpc.jobp_cmd_id = ichc.jobp_cmd_id
+           and jp.jobp_id = jpc.jobp_id
+           and c.cmd_id = jpc.cmd_id
+           and j.job_id = jp.job_id
+           and mjpc.jobp_cmd_id = ichc.jobp_cmd_id
+           and ( mjpc.status_id = 4 or mjpc.status_id = 6 )
+           and ( ichc.errors_only = 0 or mjpc.status_id = 6 )
+           and mjp.msjobp_id = mjpc.msjobp_id
+           and mjp.jobp_id = jp.jobp_id
+           and r.rev_id = mjp.rev_id
+           and ( ichc.max_age is null or DATE_SUB(CURDATE(), INTERVAL ichc.max_age HOUR) <= r.date )
+           and ra.rep_author_id = r.author_id
+           and mj.msjob_id = mjp.msjob_id
+           and mj.job_id = j.job_id
+           and ms.msession_id = mj.msession_id
+           and m.machine_id = ms.machine_id
+           and rp.rep_path_id = jp.rep_path_id
+           and rep.rep_id = rp.rep_id
+           and p.project_id = rep.project_id
+           and cs.cmd_status_id = mjpc.status_id
+           and fsf.fsfile_id = mjpc.output_id
+           and fsp.fspath_id = fsf.fspath_id
+         order by ichc.ichannel_id, ichc.ireport_type_id, rp.rep_path_id, r.rev_num
+SQLEND
 
-    my $rs = $self->{schema}->resultset( 'BotReportStatus' )->search( $search_conf, $search_attrs );
+    my $ba = [ $self->{ibot_id} ];
+
+    my $dbh = $self->{schema}->storage->dbh;
+    my $sth = $dbh->prepare( $sql );
+    $sth->execute( @$ba );
 
     my $max_revs = {};
-    while ( my $row = $rs->next ) {
-        my %cols = $row->get_columns;
+    while ( my $row = $sth->fetchrow_hashref() ) {
+        #print Dumper( $row ) if $debug;
         my $key =
-              $cols{ichannel_id} . '-'
-            . $cols{ireport_type_id} . '-'
-            . $cols{archname} . '-'
-            . $cols{rep_path_id} . '-'
-            . $cols{status_name}
+              $row->{ichannel_id} . '-'
+            . $row->{ireport_type_id} . '-'
+            . $row->{archname} . '-'
+            . $row->{rep_path_id} . '-'
+            . $row->{status_name}
         ;
-        if ( (not exists $max_revs->{$key}) || $cols{rev_num} > $max_revs->{$key}->{rev_num} ) {
-            $max_revs->{$key} = { %cols };
+        if ( (not exists $max_revs->{$key}) || $row->{rev_num} > $max_revs->{$key}->{rev_num} ) {
+            $max_revs->{$key} = { %$row };
         }
     }
-    # print Dumper( $max_revs );
+    print Dumper( $max_revs ) if $debug;
 
     foreach my $key ( keys %$max_revs ) {
         next if $max_revs->{$key}->{reported};
