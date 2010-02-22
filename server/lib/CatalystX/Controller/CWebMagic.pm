@@ -310,7 +310,11 @@ sub _rec_get_base_cwm_configs {
             }
         }
 
-        if ( $foreign_as_normal || exists $primary_cols->{$cn} || exists $cwm_types_to_colspan->{ $col_cwm_type } ) {
+        if ( $foreign_as_normal 
+             || exists $primary_cols->{$cn}
+             || exists $cwm_types_to_colspan->{ $col_cwm_type }
+             || ( $col_cwm_type eq 'S' && $view_conf->{primary_table_name} eq $table_name )
+        ) {
             $view_item_conf->{show} = 1;
             my $index = $tmp->{offsets}->[ $deep ];
             if ( $view_conf->{levels}->[ $deep ]->[ $index ] ) {
@@ -959,15 +963,16 @@ sub init_default_cwm_config {
 
 
     my $default_col_types = {
-        'login' => 'G',
-        'nick' => 'G',
-        'name' => 'G',
-        'value' => 'G',
-        'msg' => 'G',
         'first_name' => 'G',
         'last_name' => 'G',
+        'login' => 'G',
+        'name' => 'G',
         'path' => 'G',
-        'order' => 'G',
+
+        'nick' => 'S',
+        'value' => 'S',
+        'msg' => 'S',
+        'order' => 'S',
 
         'num' => 'S',
         'date' => 'S',
@@ -997,11 +1002,11 @@ sub init_default_cwm_config {
             if ( exists $restricted_cols->{ $col_name } ) {
                 $cwm_conf->{ $table_name }->{ $col_name } = 'R';
 
+            } elsif ( exists $in_cwm_conf->{ $table_name }->{ $col_name } ) {
+                $cwm_conf->{ $table_name }->{ $col_name } = $in_cwm_conf->{ $table_name }->{ $col_name };
+
             } elsif ( exists $schema_col_types->{ $col_name } ) {
                 $cwm_conf->{ $table_name }->{ $col_name } = $schema_col_types->{ $col_name };
-
-            } elsif ( exists $primary_cols->{ $col_name } ) {
-                $cwm_conf->{ $table_name }->{ $col_name } = 'S';
 
             } elsif ( exists $primary_cols->{ $col_name } ) {
                 $cwm_conf->{ $table_name }->{ $col_name } = 'S';
@@ -1017,7 +1022,7 @@ sub init_default_cwm_config {
                 $cwm_conf->{ $table_name }->{ $col_name } = $default_col_types->{ $col_name };
 
             } else {
-                $cwm_conf->{ $table_name }->{ $col_name } = 'N';
+                $cwm_conf->{ $table_name }->{ $col_name } = 'S';
             }
         }
     }
@@ -1051,8 +1056,10 @@ sub prepare_own_cwm_conf {
         foreach my $col_name ( keys %{ $self->{cwm_conf}->{ $table_name } } ) {
             if ( exists $prepare_conf->{cwm_conf}->{ $table_name }->{ $col_name } ) {
                 $cwm_conf->{ $table_name }->{ $col_name } = $prepare_conf->{cwm_conf}->{ $table_name }->{ $col_name };
+
             } elsif ( exists $primary_cols->{ $col_name } ) {
                 $cwm_conf->{ $table_name }->{ $col_name } = 'G';
+
             } else {
                 $cwm_conf->{ $table_name }->{ $col_name } = $self->{cwm_conf}->{ $table_name }->{ $col_name };
             }

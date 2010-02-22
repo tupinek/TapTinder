@@ -330,13 +330,13 @@ package TapTinder::DB::Schema::msession;
 __PACKAGE__->cwm_col_auth( { key => 'R', pid => 'R', } );
 
 package TapTinder::DB::Schema::rep_author;
-__PACKAGE__->cwm_col_type( { rep_login => 'G', } );
+__PACKAGE__->cwm_col_type( { rep_login => 'S', } );
 
 package TapTinder::DB::Schema::rep_file;
-__PACKAGE__->cwm_col_type( { sub_path => 'G', rev_num_from => 'G', rev_num_to => 'G', } );
+__PACKAGE__->cwm_col_type( { sub_path => 'G', rev_num_from => 'S', rev_num_to => 'S', } );
 
 package TapTinder::DB::Schema::rep_path;
-__PACKAGE__->cwm_col_type( { rev_num_from => 'G', rev_num_to => 'G', } );
+__PACKAGE__->cwm_col_type( { rev_num_from => 'S', rev_num_to => 'S', } );
 
 package TapTinder::DB::Schema::rep_test;
 __PACKAGE__->cwm_col_type( { number => 'G', } );
@@ -346,5 +346,8 @@ __PACKAGE__->cwm_col_type( { rev_num => 'G', } );
 
 package TapTinder::DB::Schema::user;
 __PACKAGE__->cwm_col_auth( { 'passwd' => 'R', } );
+
+package TapTinder::DB::Schema::jobp;
+__PACKAGE__->cwm_col_type( { order => 'S', } );
 
 1;
