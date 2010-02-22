@@ -278,7 +278,7 @@ sub _rec_get_base_cwm_configs {
 
             my ( $fr_table, $fr_col, $fr_rel_name ) = @{ $foreign_cols->{$cn} };
             next unless exists $cwm_conf->{$fr_table};
-            $self->dump( $c, "$deep $table_name.$cn ($col_cwm_type)" );
+            #$self->dump( $c, "$deep $table_name.$cn ($col_cwm_type)" );
 
             if ( $fr_table eq $table_name ) {
                 $foreign_to_self = 1;
@@ -435,7 +435,7 @@ sub get_base_cwm_configs {
                 next unless %$lc;
                 next if exists $lc->{foreign_table_name} && (not exists $lc->{foreign_as_normal});
                 my $rowspan = $last_deep_index - $deep + 1;
-                $self->dump($c,"$deep $lc_num $lc->{col_name}, rowspan $rowspan\n");
+                #$self->dump($c,"$deep $lc_num $lc->{col_name}, rowspan $rowspan\n");
                 $lc->{rowspan} = $rowspan;
             }
         }
@@ -552,12 +552,18 @@ sub get_content_html {
             my $sel_cpos = $view_conf->{sel_cpos}->{ $col_name };
             my $val = $row_data->[ $sel_cpos ] || '&nbsp;';
 
-            if ( $table_name ne $vc->{table_name} && not exists $uris_done->{$alias_name} ) {
+            if ( ($table_name ne $vc->{table_name} || exists $vc->{foreign_as_normal} ) && not exists $uris_done->{$alias_name} ) {
                 my $primary_cols = $view_conf->{primary_cols}->{$alias_name};
                 my $id_uri_part = 'id';
-                foreach my $col_name ( @$primary_cols ) {
-                    my $id = $row_data->[ $view_conf->{sel_cpos}->{$alias_name.'.'.$col_name} ];
-                    $id_uri_part .= '-' . $id if $id;
+                
+                if ( exists $vc->{foreign_as_normal} ) {
+                    $id_uri_part .= '-' . $row_data->[ $sel_cpos ];
+                } else {
+                    foreach my $col_name ( @$primary_cols ) {
+                        my $pr_col_cpos = $view_conf->{sel_cpos}->{$alias_name.'.'.$col_name};
+                        my $id = $row_data->[ $pr_col_cpos ];
+                        $id_uri_part .= '-' . $id if $id;
+                    }
                 }
                 my $row_uri = $c->uri_for( $vc->{table_name}, $id_uri_part )->as_string;
                 if ( $row_uri ) {
