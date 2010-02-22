@@ -469,22 +469,41 @@ sub get_header_html {
             next if $view_conf->{use_row_spans} && not %$col_conf;
             next if exists $col_conf->{show} && not $col_conf->{show};
 
-            $html .=
-                '<th'
-                . ( exists $col_conf->{colspan} ? ' colspan="'.$col_conf->{colspan}.'"' : '' )
-                . ( exists $col_conf->{rowspan} ? ' rowspan="'.$col_conf->{rowspan}.'"' : '' )
-                . '>'
-            ;
+            my $col_name = $col_conf->{col_name};
 
-            my $val = $col_conf->{col_name} || '&nbsp;';
+            my $val = '';
+            my $title = '';
+            my $alias_name = $col_conf->{alias_name};
+
+            # ToDo - more primary keys
+            if ( $view_conf->{primary_cols}->{$alias_name}->[0] eq $col_name ) {
+                $val = 'id';
+                $title = "full name: '$col_name'";
+
+            } elsif ( $col_name ) {
+                $val = $col_name;
+                if ( exists $col_conf->{foreign_table_name} ) {
+                    $title = "foreign table: '" . $col_conf->{foreign_table_name} . "'";
+                }
+
+            } else {
+                $val = '&nbsp;';
+            }
+
             if ( exists $col_conf->{colspan} ) {
                 my $fr_table_uri = $c->uri_for( $col_conf->{foreign_table_name},  )->as_string;
                 $val = '<a href="' . $fr_table_uri . '">' . $val . '</a>';
             }
-
-            $html .= $val;
-            $html .= "</th>\n";
-
+            
+            $html .=
+                '<th'
+                . ( exists $col_conf->{colspan} ? ' colspan="'.$col_conf->{colspan}.'"' : '' )
+                . ( exists $col_conf->{rowspan} ? ' rowspan="'.$col_conf->{rowspan}.'"' : '' )
+                . ( $title ? ' title="'.$title.'"' : '' )
+                . '>'
+                . $val
+                . "</th>\n"
+            ;
             #$self->dump( $c, "col_conf level $level_num", $col_conf );
         }
         $html .= "</tr>\n";
