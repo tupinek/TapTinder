@@ -326,28 +326,29 @@ TapTinder::DB::Schema->register_extra_source('ActiveRepPathList' => $new_source6
 package TapTinder::DB::Schema::machine;
 __PACKAGE__->cwm_col_auth( { passwd => 'R', ip => 'R', } );
 
+
 package TapTinder::DB::Schema::msession;
 __PACKAGE__->cwm_col_auth( { key => 'R', pid => 'R', } );
+
 
 package TapTinder::DB::Schema::rep_author;
 __PACKAGE__->cwm_col_type( { rep_login => 'S', } );
 
-package TapTinder::DB::Schema::rep_file;
-__PACKAGE__->cwm_col_type( { sub_path => 'G', rev_num_from => 'S', rev_num_to => 'S', } );
 
-package TapTinder::DB::Schema::rep_path;
-__PACKAGE__->cwm_col_type( { rev_num_from => 'S', rev_num_to => 'S', } );
+package TapTinder::DB::Schema::rep_file;
+__PACKAGE__->cwm_col_type( { sub_path => 'G', } );
+
 
 package TapTinder::DB::Schema::rep_test;
 __PACKAGE__->cwm_col_type( { number => 'G', } );
 
+
 package TapTinder::DB::Schema::rev;
 __PACKAGE__->cwm_col_type( { rev_num => 'G', } );
+
 
 package TapTinder::DB::Schema::user;
 __PACKAGE__->cwm_col_auth( { 'passwd' => 'R', } );
 
-package TapTinder::DB::Schema::jobp;
-__PACKAGE__->cwm_col_type( { order => 'S', } );
 
 1;

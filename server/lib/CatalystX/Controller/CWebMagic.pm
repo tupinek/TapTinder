@@ -271,7 +271,7 @@ sub _rec_get_base_cwm_configs {
 
 
         my $is_foreign = 0;
-        my $foreign_as_normal = 0;
+        my $foreign_to_self = 0;
         if ( exists $foreign_cols->{$cn} ) {
             next if exists $tmp->{table}->{$table_name}->{$cn};
             $tmp->{table}->{$table_name}->{$cn} = 1;
@@ -281,7 +281,7 @@ sub _rec_get_base_cwm_configs {
             $self->dump( $c, "$deep $table_name.$cn ($col_cwm_type)" );
 
             if ( $fr_table eq $table_name ) {
-                $foreign_as_normal = 1;
+                $foreign_to_self = 1;
                 $view_item_conf->{foreign_table_name} = $fr_table;
                 $view_item_conf->{foreign_as_normal} = 1;
 
@@ -310,7 +310,7 @@ sub _rec_get_base_cwm_configs {
             }
         }
 
-        if ( $foreign_as_normal 
+        if ( ( $foreign_to_self && $col_cwm_type ne 'S' )
              || exists $primary_cols->{$cn}
              || exists $cwm_types_to_colspan->{ $col_cwm_type }
              || ( $col_cwm_type eq 'S' && $view_conf->{primary_table_name} eq $table_name )
