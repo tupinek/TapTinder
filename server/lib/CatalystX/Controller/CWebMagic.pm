@@ -990,12 +990,18 @@ sub init_default_cwm_config {
         my $foreign_cols = $self->get_foreign_cols( $c, $schema, $table_name );
         my ( $cols, $restricted_cols ) = $self->get_cols_and_restricted_cols( $c, $schema, $table_name );
 
+        my $view_class = $self->db_schema_class_name.'::'.$table_name;
+        my $schema_col_types = $view_class->cwm_col_type;
+
         foreach my $col_name ( @$cols ) {
             if ( exists $restricted_cols->{ $col_name } ) {
                 $cwm_conf->{ $table_name }->{ $col_name } = 'R';
 
-            } elsif ( exists $in_cwm_conf->{ $table_name }->{ $col_name } ) {
-                $cwm_conf->{ $table_name }->{ $col_name } = $in_cwm_conf->{ $table_name }->{ $col_name };
+            } elsif ( exists $schema_col_types->{ $col_name } ) {
+                $cwm_conf->{ $table_name }->{ $col_name } = $schema_col_types->{ $col_name };
+
+            } elsif ( exists $primary_cols->{ $col_name } ) {
+                $cwm_conf->{ $table_name }->{ $col_name } = 'S';
 
             } elsif ( exists $primary_cols->{ $col_name } ) {
                 $cwm_conf->{ $table_name }->{ $col_name } = 'S';
