@@ -967,23 +967,9 @@ sub init_default_cwm_config {
         'last_name' => 'G',
         'login' => 'G',
         'name' => 'G',
-        'path' => 'G',
-
-        'nick' => 'S',
-        'value' => 'S',
-        'msg' => 'S',
-        'order' => 'S',
-
-        'num' => 'S',
-        'date' => 'S',
-
-        'created' => 'D',
-        'descr' => 'D',
 
         'passwd' => 'R',
         'password' => 'R',
-
-        'newer_id' => 'N',
     };
 
     foreach my $table_name ( sort @tables ) {
