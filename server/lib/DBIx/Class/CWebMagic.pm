@@ -9,10 +9,7 @@ BEGIN {
     use Carp qw/croak/;
 
     __PACKAGE__->mk_group_accessors('inherited' => qw/
-        cwm_col_title
-        cwm_col_descr
-        cwm_col_type
-        cwm_col_auth
+        cwm_conf
     /);
 };
 
@@ -32,17 +29,29 @@ DBIx::Class::CWebMagic
   __PACKAGE__->table('person');
 
   __PACKAGE__->add_columns(
-    'person_id' => {
+      'person_id' => {
         ...
-    'first_name' => {
+      'first_name' => {
         ...
-    'last_name' => {
+      'last_name' => {
         ...
-    'passwd' => {
+      'passwd' => {
         ...
+
+    ...
     ...
 
-  __PACKAGE__->cwm_col_type( { 'person_id' => 'S', 'first_name' => 'G',  }  );
+  __PACKAGE__->cwm_conf( { 
+      auth => {
+          my_password => 'R',
+      },
+      col_types => {
+          person_id => 'G', # general ... show everywhere
+          first_name => 'S', # secondary ... show inside primary table
+      },
+      deep => 4,
+      skip_tables => [ qw/ user_history user_log / ],
+  } );
 
 
 =head1 DESCRIPTION

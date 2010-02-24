@@ -89,7 +89,8 @@ sub debug_suffix {
 
     $msg .= " ";
     $msg .= "(" unless $has_new_line;
-    $msg .= "$caller_sub on line $caller_line";
+    $msg .= "$caller_sub " if $caller_sub;
+    $msg .= "on line $caller_line";
     $msg .= ')' unless $has_new_line;
     $msg .= ".\n";
     $msg .= "\n" if $has_new_line;
@@ -168,7 +169,7 @@ sub warn {
     $msg = '' unless defined $msg;
 
     $msg = "[!!!] Warning: " . $msg;
-    $msg = $self->debug_suffix( $msg, 2 );
+    $msg = $self->debug_suffix( $msg, 1 );
     warn( $msg );
 
     return 1 unless $c->log->is_debug;
@@ -199,28 +200,9 @@ sub get_cwm_types_to_colspan {
 }
 
 
-sub _rec_get_base_cwm_configs {
-    my (
-        $self,
-        $c, $schema, $table_name, $cwm_conf, $search_conf,
-        $view_conf, $rel_name, $tmp, $deep
-    ) = @_;
-
-    my $debug = 0;
-
-    my $cols_allowed = [ $self->get_allowed_cols( $c, $schema, $table_name ) ];
-
-    my ( $ar_primary_cols, $primary_cols ) = $self->get_primary_cols( $c, $schema, $table_name );
-
-    my $foreign_cols = $self->get_foreign_cols( $c, $schema, $table_name );
-
-    my $cwm_types_to_select = $self->get_cwm_types_to_select();
-    my $cwm_types_to_colspan = $self->get_cwm_types_to_colspan();
-
-    unless ( defined $view_conf->{levels}->[ $deep ] ) {
-        $view_conf->{levels}->[ $deep ] = [];
-    }
-
+sub get_alias_name {
+    my ( $self, $c, $tmp, $rel_name ) = @_;
+    
     my $alias_name = $rel_name;
     if ( exists $tmp->{alias}->{$alias_name} ) {
         $alias_name .= '_2';
@@ -231,27 +213,55 @@ sub _rec_get_base_cwm_configs {
         $self->dump($c, "alias: '$alias_name'");
     }
     $tmp->{alias}->{$alias_name} = $rel_name;
+    return $alias_name;
+}
+    
+
+sub _rec_get_base_cwm_configs {
+    my (
+        $self, $c, $schema,
+        $cwm_conf, $search_conf, $view_conf, $tmp,
+        $table_name, $rel_name, $alias_name, $max_deep,
+        $deep
+    ) = @_;
+
+    my $debug = 0;
+
+    my $cols_allowed = [ $self->get_allowed_cols( $c, $schema, $table_name ) ];
+
+    my ( $ar_primary_cols, $primary_cols ) = $self->get_primary_cols( $c, $schema, $table_name );
+
+    my $fr_cols = $self->get_foreign_cols( $c, $schema, $table_name );
+
+    # ToDo - add as attribute once
+    my $cwm_types_to_select = $self->get_cwm_types_to_select();
+    my $cwm_types_to_colspan = $self->get_cwm_types_to_colspan();
+
+    unless ( defined $view_conf->{levels}->[ $deep ] ) {
+        $view_conf->{levels}->[ $deep ] = [];
+    }
+   
     unless ( defined $tmp->{offsets}->[ $deep ] ) {
         $tmp->{offsets}->[ $deep ] = $tmp->{offsets}->[ $deep-1 ];
     }
 
     $view_conf->{primary_cols}->{$alias_name} = $ar_primary_cols;
-
+    # $self->dump( $c, "$deep table $table_name, max deep $max_deep" ); # debug
 
     my $join = undef;
     my $col_num = 0;
     my $colspan = 0;
 
     foreach my $cn ( @$cols_allowed ) {
-        unless ( exists $cwm_conf->{$table_name}->{$cn} ) {
+        unless ( exists $cwm_conf->{$table_name}->{col_conf}->{$cn} ) {
             $self->warn( $c, "cwm_conf not found for table:'$table_name', col:'$cn'" );
             next;
         }
 
-        my $col_cwm_type = $cwm_conf->{$table_name}->{$cn};
+        my $col_cwm_type = $cwm_conf->{$table_name}->{col_conf}->{$cn};
         next unless exists $cwm_types_to_select->{ $col_cwm_type };
 
-        my $full_col_name = $alias_name.'.'.$cn;
+        my $full_col_name = $alias_name . '.' . $cn;
         push @{ $search_conf->{select} }, $full_col_name;
 
         my $full_col_num = $#{ $search_conf->{select} };
@@ -271,33 +281,51 @@ sub _rec_get_base_cwm_configs {
 
 
         my $is_foreign = 0;
-        my $foreign_to_self = 0;
-        if ( exists $foreign_cols->{$cn} ) {
+        my $fr_to_self = 0;
+        if ( exists $fr_cols->{$cn} ) {
             next if exists $tmp->{table}->{$table_name}->{$cn};
             $tmp->{table}->{$table_name}->{$cn} = 1;
 
-            my ( $fr_table, $fr_col, $fr_rel_name ) = @{ $foreign_cols->{$cn} };
-            next unless exists $cwm_conf->{$fr_table};
-            #$self->dump( $c, "$deep $table_name.$cn ($col_cwm_type)" );
+            my ( $fr_table_name, $fr_col, $fr_rel_name ) = @{ $fr_cols->{$cn} };
+            next unless exists $cwm_conf->{$fr_table_name};
+            
+            my $fr_alias_name = $self->get_alias_name( $c, $tmp, $fr_rel_name );
+            #$self->dump( $c, "$deep $table_name.$cn ($col_cwm_type) - fr_alias_name $fr_alias_name" );
 
-            if ( $fr_table eq $table_name ) {
-                $foreign_to_self = 1;
-                $view_item_conf->{foreign_table_name} = $fr_table;
-                $view_item_conf->{foreign_as_normal} = 1;
+            # Set max_deep to lower value if defined by sub-table.
+            my $fr_max_deep = $max_deep;
+            if ( exists $cwm_conf->{$fr_table_name}->{max_deep} && $cwm_conf->{$fr_table_name}->{max_deep} + $deep < $fr_max_deep  ) {
+                 $fr_max_deep = $cwm_conf->{$fr_table_name}->{max_deep} + $deep + 1;
+                 # $self->dump( $c, "$deep $cn - fr table deep $cwm_conf->{$fr_table_name}->{max_deep} - new max deep $fr_max_deep from table conf $fr_table_name" ); # debug
+            }
 
-            } elsif ( $deep >= 2 ) {
-                $view_item_conf->{foreign_table_name} = $fr_table;
-                $view_item_conf->{foreign_limit} = 1;
+            $view_item_conf->{fr_table_name} = $fr_table_name;
+            $view_item_conf->{fr_alias_name} = $fr_alias_name;
+
+            # Check deep level for sub-table.
+            if ( $fr_table_name eq $table_name ) {
+                $fr_to_self = 1;
+                $view_item_conf->{fr_as_normal} = 1;
+
+            } elsif ( $deep + 1 >= $fr_max_deep ) {
+                $view_item_conf->{fr_limit} = 1;
+                $view_item_conf->{fr_as_normal} = 1;
+                # $self->dump( $c, "max deep $fr_max_deep reached for col $cn" ); # debug
+                my ( $fr_ar_primary_cols, $fr_primary_cols ) = $self->get_primary_cols( $c, $schema, $fr_table_name );
+                $view_conf->{primary_cols}->{$fr_alias_name} = $fr_ar_primary_cols;
+
 
             } else {
+                
                 my ( $fr_join, $fr_colspan, $fr_colspan_sum ) = $self->_rec_get_base_cwm_configs(
-                    $c, $schema, $fr_table, $cwm_conf, $search_conf,
-                    $view_conf, $fr_rel_name, $tmp, $deep + 1
+                    $c, $schema,
+                    $cwm_conf, $search_conf, $view_conf, $tmp,
+                    $fr_table_name, $fr_rel_name, $fr_alias_name, $fr_max_deep,
+                    $deep + 1 
                 );
 
                 $is_foreign = 1;
                 $colspan += $fr_colspan_sum;
-                $view_item_conf->{foreign_table_name} = $fr_table;
                 $view_item_conf->{colspan} = $fr_colspan_sum;
                 $view_item_conf->{_fr_colspan} = $fr_colspan;
 
@@ -310,11 +338,13 @@ sub _rec_get_base_cwm_configs {
             }
         }
 
-        if ( ( $foreign_to_self && $col_cwm_type ne 'S' )
-             || exists $primary_cols->{$cn}
-             || exists $cwm_types_to_colspan->{ $col_cwm_type }
-             || ( $col_cwm_type eq 'S' && $view_conf->{primary_table_name} eq $table_name )
+        # If col is shown.
+        if ( 
+             exists $cwm_types_to_colspan->{ $col_cwm_type }  # col type is intendent to be shown
+             || exists $primary_cols->{$cn} # col is table primary key
+             || ( $col_cwm_type eq 'S' && $view_conf->{primary_table_name} eq $table_name ) # column from main table marked as S
         ) {
+            #$self->dump( $c, "$deep -> $col_num $view_item_conf->{col_name} -- colspan $colspan -- is_foreign $is_foreign" );
             $view_item_conf->{show} = 1;
             my $index = $tmp->{offsets}->[ $deep ];
             if ( $view_conf->{levels}->[ $deep ]->[ $index ] ) {
@@ -389,9 +419,12 @@ sub get_base_cwm_configs {
         'offsets' => [ 0 ],
     };
 
+    my $max_deep = $cwm_conf->{$table_name}->{max_deep};
     my ( $join, $col_num, $colspan ) = $self->_rec_get_base_cwm_configs(
-        $c, $schema, $table_name, $cwm_conf, $search_conf,
-        $view_conf, 'me', $tmp, 0,
+        $c, $schema, 
+        $cwm_conf, $search_conf, $view_conf, $tmp,
+        $table_name, 'me', 'me', $max_deep,
+        0
     );
     $search_conf->{join} = $join if defined $join;
 
@@ -433,7 +466,7 @@ sub get_base_cwm_configs {
             foreach my $lc_num ( 0..$#$level_conf ) {
                 my $lc = $level_conf->[ $lc_num ];
                 next unless %$lc;
-                next if exists $lc->{foreign_table_name} && (not exists $lc->{foreign_as_normal});
+                next if exists $lc->{fr_table_name} && (not exists $lc->{fr_as_normal});
                 my $rowspan = $last_deep_index - $deep + 1;
                 #$self->dump($c,"$deep $lc_num $lc->{col_name}, rowspan $rowspan\n");
                 $lc->{rowspan} = $rowspan;
@@ -441,16 +474,13 @@ sub get_base_cwm_configs {
         }
     }
 
-    $self->dump( $c, '$view_conf->{levels}', $view_conf->{levels} );
-
-
     if ( $debug || $c->log->is_debug ) {
         #$self->dump( $c, '$cwm_conf', $cwm_conf );
-        $self->dump( $c, '$search_conf', $search_conf );
-        $self->dump( $c, '$view_conf', $view_conf );
-        $self->dump( $c, '$view_conf->levels', $view_conf->{levels} );
+        #$self->dump( $c, '$search_conf', $search_conf );
         $self->dump( $c, '$view_conf->cols', $view_conf->{cols} );
-        $self->dump( $c, '$tmp', $tmp );
+        $self->dump( $c, '$view_conf', $view_conf );
+        #$self->dump( $c, '$view_conf->levels', $view_conf->{levels} );
+        #$self->dump( $c, '$tmp', $tmp );
     }
 
     return ( $search_conf, $view_conf );
@@ -482,16 +512,16 @@ sub get_header_html {
 
             } elsif ( $col_name ) {
                 $val = $col_name;
-                if ( exists $col_conf->{foreign_table_name} ) {
-                    $title = "foreign table: '" . $col_conf->{foreign_table_name} . "'";
+                if ( exists $col_conf->{fr_table_name} ) {
+                    $title = "foreign table: '" . $col_conf->{fr_table_name} . "'";
                 }
 
             } else {
                 $val = '&nbsp;';
             }
 
-            if ( exists $col_conf->{colspan} ) {
-                my $fr_table_uri = $c->uri_for( $col_conf->{foreign_table_name},  )->as_string;
+            if ( exists $col_conf->{fr_table_name} ) {
+                my $fr_table_uri = $c->uri_for( $col_conf->{fr_table_name} )->as_string;
                 $val = '<a href="' . $fr_table_uri . '">' . $val . '</a>';
             }
             
@@ -552,24 +582,33 @@ sub get_content_html {
             my $sel_cpos = $view_conf->{sel_cpos}->{ $col_name };
             my $val = $row_data->[ $sel_cpos ] || '&nbsp;';
 
-            if ( ($table_name ne $vc->{table_name} || exists $vc->{foreign_as_normal} ) && not exists $uris_done->{$alias_name} ) {
-                my $primary_cols = $view_conf->{primary_cols}->{$alias_name};
+            my $link_primary_cols = undef;
+            my $link_table_name = undef;
+            if ( $table_name ne $vc->{table_name} && not exists $uris_done->{$alias_name} ) {
+                $link_primary_cols = $view_conf->{primary_cols}->{ $alias_name };
+                $link_table_name = $vc->{table_name};
+                $uris_done->{$alias_name} = 1;
+
+            } elsif ( exists $vc->{fr_as_normal} && not exists $uris_done->{ $vc->{fr_alias_name} } ) {
+                my $fr_alias_name = $vc->{fr_alias_name};
+                $link_primary_cols = $view_conf->{primary_cols}->{ $fr_alias_name };
+                $link_table_name = $vc->{fr_table_name};
+                $uris_done->{$fr_alias_name} = 1;
+            }
+            
+            if ( defined $link_primary_cols ) {
+
                 my $id_uri_part = 'id';
-                
-                if ( exists $vc->{foreign_as_normal} ) {
-                    $id_uri_part .= '-' . $row_data->[ $sel_cpos ];
-                } else {
-                    foreach my $col_name ( @$primary_cols ) {
-                        my $pr_col_cpos = $view_conf->{sel_cpos}->{$alias_name.'.'.$col_name};
-                        my $id = $row_data->[ $pr_col_cpos ];
-                        $id_uri_part .= '-' . $id if $id;
-                    }
+                foreach my $col_name ( @$link_primary_cols ) {
+                    my $full_col_name = $alias_name . '.' . $col_name;
+                    my $pr_col_cpos = $view_conf->{sel_cpos}->{$full_col_name};
+                    my $id = $row_data->[ $pr_col_cpos ];
+                    $id_uri_part .= '-' . $id if $id;
                 }
-                my $row_uri = $c->uri_for( $vc->{table_name}, $id_uri_part )->as_string;
+                my $row_uri = $c->uri_for( $link_table_name, $id_uri_part )->as_string;
                 if ( $row_uri ) {
                     $val = '<a href="' . $row_uri . '">' . $val . '</a>';
                 }
-                $uris_done->{$alias_name} = 1;
             }
 
             $html .= '<td>';
@@ -623,7 +662,8 @@ sub base_index  {
     my $prepare_conf = $self->get_prepare_conf( $c );
 
     my ( $ar_primary_cols, $primary_cols ) = $self->get_primary_cols( $c, $schema, $table_name );
-    my $cwm_conf = $self->prepare_own_cwm_conf( $c, $schema, $prepare_conf, $table_name, $primary_cols );
+    my $cwm_conf = $self->prepare_own_cwm_conf( $c, $schema, $prepare_conf, $table_name );
+    # $self->dump( $c, '$cwm_conf', $cwm_conf ); # debug
 
 
     my $use_complex_search_by_id = $self->use_complex_search_by_id();
@@ -857,7 +897,7 @@ sub get_primary_cols {
 sub get_foreign_cols {
     my ( $self, $c, $schema, $table_name ) = @_;
 
-    my $foreign_cols = {};
+    my $fr_cols = {};
     my @raw_rels = $schema->source($table_name)->relationships;
     foreach my $rel_name ( @raw_rels ) {
         my $info = $schema->source($table_name)->relationship_info( $rel_name );
@@ -871,11 +911,11 @@ sub get_foreign_cols {
             my $col = (values %{$info->{cond}})[0];
             $col =~ s/^self\.//;
 
-            $foreign_cols->{ $col } = [ $fr_table, $fr_col, $rel_name ];
+            $fr_cols->{ $col } = [ $fr_table, $fr_col, $rel_name ];
         }
     }
 
-    return $foreign_cols;
+    return $fr_cols;
 }
 
 
@@ -885,17 +925,22 @@ sub get_cols_and_restricted_cols {
     my $view_class = $self->db_schema_class_name.'::'.$table_name;
     my @cols = $schema->source( $table_name )->columns;
 
-    if ( !$view_class->can('cwm_col_auth') ) {
+    if ( !$view_class->can('cwm_conf') ) {
         my $msg = "CWebMagic for table '$table_name' missing. Try '__PACKAGE__->load_components(qw/CWebMagic/);' inside package '$view_class'.";
         $c->stash->{error} = $msg;
         return undef;
     }
 
-    my $restricted_cols = $view_class->cwm_col_auth;
-    foreach my $col_name ( keys %$restricted_cols ) {
-        # R - restricted
-        if ( $restricted_cols->{$col_name} ne 'R' ) {
-            delete $restricted_cols->{$col_name};
+    my $restricted_cols = {};
+
+    my $schema_cwm_conf = $view_class->cwm_conf;
+    if ( exists $schema_cwm_conf->{auth} ) {
+        $restricted_cols = { %{$schema_cwm_conf->{auth}} };
+        foreach my $col_name ( keys %$restricted_cols ) {
+            # R - restricted
+            if ( $restricted_cols->{$col_name} ne 'R' ) {
+                delete $restricted_cols->{$col_name};
+            }
         }
     }
 
@@ -1003,39 +1048,48 @@ sub init_default_cwm_config {
         next if $table_name =~ /^[A-Z]/;
 
         my ( $ar_primary_cols, $primary_cols ) = $self->get_primary_cols( $c, $schema, $table_name );
-        my $foreign_cols = $self->get_foreign_cols( $c, $schema, $table_name );
+        my $fr_cols = $self->get_foreign_cols( $c, $schema, $table_name );
         my ( $cols, $restricted_cols ) = $self->get_cols_and_restricted_cols( $c, $schema, $table_name );
 
         my $view_class = $self->db_schema_class_name.'::'.$table_name;
-        my $schema_col_types = $view_class->cwm_col_type;
+        my $sch_tbl_cwm_conf = $view_class->cwm_conf;
+        my $schema_col_types = {};
+        $schema_col_types = $sch_tbl_cwm_conf->{col_conf} if exists $sch_tbl_cwm_conf->{col_conf};
 
         foreach my $col_name ( @$cols ) {
             if ( exists $restricted_cols->{ $col_name } ) {
-                $cwm_conf->{ $table_name }->{ $col_name } = 'R';
+                $cwm_conf->{ $table_name }->{col_conf}->{ $col_name } = 'R';
 
-            } elsif ( exists $in_cwm_conf->{ $table_name }->{ $col_name } ) {
-                $cwm_conf->{ $table_name }->{ $col_name } = $in_cwm_conf->{ $table_name }->{ $col_name };
+            } elsif ( exists $in_cwm_conf->{ $table_name }->{col_conf}->{ $col_name } ) {
+                $cwm_conf->{ $table_name }->{col_conf}->{ $col_name } = $in_cwm_conf->{ $table_name }->{col_conf}->{ $col_name };
 
             } elsif ( exists $schema_col_types->{ $col_name } ) {
-                $cwm_conf->{ $table_name }->{ $col_name } = $schema_col_types->{ $col_name };
+                $cwm_conf->{ $table_name }->{col_conf}->{ $col_name } = $schema_col_types->{ $col_name };
 
             } elsif ( exists $primary_cols->{ $col_name } ) {
-                $cwm_conf->{ $table_name }->{ $col_name } = 'S';
+                $cwm_conf->{ $table_name }->{col_conf}->{ $col_name } = 'S';
 
-            } elsif ( exists $foreign_cols->{ $col_name } ) {
-                if ( $foreign_cols->{ $col_name }->[0] eq $table_name ) {
-                    $cwm_conf->{ $table_name }->{ $col_name } = 'S';
+            } elsif ( exists $fr_cols->{ $col_name } ) {
+                if ( $fr_cols->{ $col_name }->[0] eq $table_name ) {
+                    $cwm_conf->{ $table_name }->{col_conf}->{ $col_name } = 'S';
                 } else {
-                    $cwm_conf->{ $table_name }->{ $col_name } = 'G';
+                    $cwm_conf->{ $table_name }->{col_conf}->{ $col_name } = 'G';
                 }
 
             } elsif ( exists $default_col_types->{ $col_name } ) {
-                $cwm_conf->{ $table_name }->{ $col_name } = $default_col_types->{ $col_name };
+                $cwm_conf->{ $table_name }->{col_conf}->{ $col_name } = $default_col_types->{ $col_name };
 
             } else {
-                $cwm_conf->{ $table_name }->{ $col_name } = 'S';
+                $cwm_conf->{ $table_name }->{col_conf}->{ $col_name } = 'S';
             }
         }
+        
+        if ( exists $sch_tbl_cwm_conf->{max_deep} ) {
+            $cwm_conf->{ $table_name }->{max_deep} = $sch_tbl_cwm_conf->{max_deep};
+        } else {
+            $cwm_conf->{ $table_name }->{max_deep} = 3;
+        }
+        
     }
 
     #$self->dump( $c, 'default cwm_conf', $cwm_conf );
@@ -1045,11 +1099,12 @@ sub init_default_cwm_config {
 
 
 sub prepare_own_cwm_conf {
-    my ( $self, $c, $schema, $prepare_conf, $table_name, $primary_cols ) = @_;
+    my ( $self, $c, $schema, $prepare_conf, $table_name ) = @_;
 
     return $self->{cwm_conf} unless $prepare_conf;
 
-    # ToDo
+    # ToDo - probably use max_deep instead of skip tables
+
     my $cwm_conf = {};
     my $tables = undef;
     if ( exists $prepare_conf->{these_tables} ) {
@@ -1062,19 +1117,24 @@ sub prepare_own_cwm_conf {
     foreach my $table_name (@{ $prepare_conf->{skip_tables} } ) {
        $skip_tables->{ $table_name } = 1;
     }
+
     foreach my $table_name ( @$tables ) {
         next if exists $skip_tables->{ $table_name };
-        foreach my $col_name ( keys %{ $self->{cwm_conf}->{ $table_name } } ) {
-            if ( exists $prepare_conf->{cwm_conf}->{ $table_name }->{ $col_name } ) {
-                $cwm_conf->{ $table_name }->{ $col_name } = $prepare_conf->{cwm_conf}->{ $table_name }->{ $col_name };
-
-            } elsif ( exists $primary_cols->{ $col_name } ) {
-                $cwm_conf->{ $table_name }->{ $col_name } = 'G';
+        foreach my $col_name ( keys %{ $self->{cwm_conf}->{ $table_name }->{col_conf} } ) {
+            if ( exists $prepare_conf->{cwm_conf}->{ $table_name }->{col_conf}->{ $col_name } ) {
+                $cwm_conf->{ $table_name }->{col_conf}->{ $col_name } = $prepare_conf->{cwm_conf}->{ $table_name }->{col_conf}->{ $col_name };
 
             } else {
-                $cwm_conf->{ $table_name }->{ $col_name } = $self->{cwm_conf}->{ $table_name }->{ $col_name };
+                $cwm_conf->{ $table_name }->{col_conf}->{ $col_name } = $self->{cwm_conf}->{ $table_name }->{col_conf}->{ $col_name };
             }
         }
+        
+        if ( exists $prepare_conf->{cwm_conf}->{ $table_name }->{max_deep} ) {
+            $cwm_conf->{ $table_name }->{max_deep} = $prepare_conf->{cwm_conf}->{ $table_name }->{max_deep};
+        } else {
+            $cwm_conf->{ $table_name }->{max_deep} = $self->{cwm_conf}->{ $table_name }->{max_deep};
+        }
+        
     }
 
     return $cwm_conf;
