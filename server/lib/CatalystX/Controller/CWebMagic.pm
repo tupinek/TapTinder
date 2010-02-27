@@ -205,10 +205,11 @@ sub get_alias_name {
     
     my $alias_name = $rel_name;
     if ( exists $tmp->{alias}->{$alias_name} ) {
-        $alias_name .= '_2';
+        my $num = 2;
+        $alias_name = $rel_name . '_' . $num;
         while ( exists $tmp->{alias}->{$alias_name} ) {
-            # ToDo
-            $alias_name = $alias_name++;
+            $num++;
+            $alias_name = $rel_name . '_' . $num;
         }
         $self->dump($c, "alias: '$alias_name'");
     }
@@ -476,9 +477,9 @@ sub get_base_cwm_configs {
 
     if ( $debug || $c->log->is_debug ) {
         #$self->dump( $c, '$cwm_conf', $cwm_conf );
-        #$self->dump( $c, '$search_conf', $search_conf );
         $self->dump( $c, '$view_conf->cols', $view_conf->{cols} );
         $self->dump( $c, '$view_conf', $view_conf );
+        $self->dump( $c, '$search_conf', $search_conf );
         #$self->dump( $c, '$view_conf->levels', $view_conf->{levels} );
         #$self->dump( $c, '$tmp', $tmp );
     }
