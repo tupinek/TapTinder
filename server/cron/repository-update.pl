@@ -15,7 +15,7 @@ use Devel::StackTrace;
 use lib "$FindBin::Bin/../lib";
 use SVN::Log;
 
-#$SVN::Log::FORCE_COMMAND_LINE_SVN = 1;
+$SVN::Log::FORCE_COMMAND_LINE_SVN = 1;
 
 use lib "$FindBin::Bin/../lib";
 use TapTinder::DB;
