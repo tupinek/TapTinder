@@ -29,9 +29,7 @@ sub db_schema_class_name {
 
 sub get_prepare_conf {
     my ( $self, $c ) = @_;
-    return {
-        skip_tables => [ 'mslog' ],
-    };
+    return {};
 }
 
 

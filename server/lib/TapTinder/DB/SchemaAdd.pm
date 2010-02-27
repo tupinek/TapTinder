@@ -324,31 +324,67 @@ TapTinder::DB::Schema->register_extra_source('ActiveRepPathList' => $new_source6
 # ViewMD - view metadata
 
 package TapTinder::DB::Schema::machine;
-__PACKAGE__->cwm_col_auth( { passwd => 'R', ip => 'R', } );
+__PACKAGE__->cwm_conf( {
+    auth => {
+        'passwd' => 'R',
+        'ip' => 'R',
+    },
+} );
 
 
 package TapTinder::DB::Schema::msession;
-__PACKAGE__->cwm_col_auth( { key => 'R', pid => 'R', } );
+__PACKAGE__->cwm_conf( {
+    auth => {
+        'key' => 'R',
+        'pid' => 'R',
+    },
+} );
+
+
+package TapTinder::DB::Schema::mslog;
+__PACKAGE__->cwm_conf( {
+     max_deep => 1,
+} );
 
 
 package TapTinder::DB::Schema::rep_author;
-__PACKAGE__->cwm_col_type( { rep_login => 'S', } );
+__PACKAGE__->cwm_conf( {
+    col_type => {
+        'rep_login' => 'S',
+    },
+} );
 
 
 package TapTinder::DB::Schema::rep_file;
-__PACKAGE__->cwm_col_type( { sub_path => 'G', } );
+__PACKAGE__->cwm_conf( {
+    col_type => {
+        'sub_path' => 'G',
+    },
+} );
 
 
 package TapTinder::DB::Schema::rep_test;
-__PACKAGE__->cwm_col_type( { number => 'G', } );
+__PACKAGE__->cwm_conf( {
+    col_type => {
+        'number' => 'G',
+    },
+} );
 
 
 package TapTinder::DB::Schema::rev;
-__PACKAGE__->cwm_col_type( { rev_num => 'G', } );
+__PACKAGE__->cwm_conf( {
+    col_type => {
+        'rev_num' => 'G',
+    },
+} );
 
 
 package TapTinder::DB::Schema::user;
-__PACKAGE__->cwm_col_auth( { 'passwd' => 'R', } );
+__PACKAGE__->cwm_conf( {
+    auth => {
+        'passswd' => 'R',
+    },
+} );
 
 
 1;
