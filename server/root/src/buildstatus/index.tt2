@@ -32,8 +32,10 @@
 
     [% IF res.status_name == 'error' %]
   <td align=center class="err">
-    [% ELSE %]
+    [% ELSIF res.status_name == 'ok' %]
   <td align=center class="ok">
+    [% ELSE %]
+  <td align=center class="unk">
     [% END %]
 
     [% IF res.status_name %]
