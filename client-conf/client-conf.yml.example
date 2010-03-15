@@ -4,4 +4,4 @@ parrot:
    machine_passwd: YourClientPasswd
    email: email@somedomain.com
    irc_nick: YourProjectIRCNick
-   taptinderserv: http://tt.ro.vutbr.cz/
+   taptinderserv: http://tt.taptinder.org/
