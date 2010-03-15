@@ -598,7 +598,8 @@ sub start_new_job {
     my $msjobp_cmd_id = $self->create_msjobp_cmd( $c, $data, $msjobp_id, $jobp_cmd_id );
     return 0 unless defined $msjobp_cmd_id;
 
-    $self->dumper( $c, "job_id: $job_id, rev_id: $rev_id, patch_id: $patch_id");
+    my $str_patch_id = ( defined $patch_id ) ? $patch_id : '';
+    $self->dumper( $c, "job_id: $job_id, rev_id: $rev_id, patch_id: $str_patch_id");
     $self->dumper( $c, "jobp_id: $jobp_id, jobp_cmd_id: $jobp_cmd_id");
     $self->dumper( $c, "msjob_id: $msjob_id, msjobp_id: $msjobp_id, msjobp_cmd_id: $msjobp_cmd_id" );
 
