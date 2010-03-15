@@ -21,6 +21,7 @@ Example:
 USAGE_END
 }
 
+
 function start_fastcgi {
     TYPE=$1
     CMD=$2
@@ -36,9 +37,12 @@ function start_fastcgi {
             export CATALYST_DEBUG=1
         fi
     
+        # prefork engine
         if [ "$CMD" == "dp" ]; then
           export CATALYST_ENGINE='HTTP::Prefork'
         fi 
+        
+        # start normal engine
         perl script/taptinder_web_server.pl -r -p $PORT_DEV
         exit
     fi
@@ -46,6 +50,7 @@ function start_fastcgi {
     
     if [ "$CMD" == "f" ]; then 
         if [ "$CMD_PAR" == "start" ]; then 
+            # start fastcgi engine
             perl script/taptinder_web_fastcgi.pl -l :$PORT_FCGI -n 2 -p $PIDFNAME -d
             exit
         fi
@@ -64,12 +69,12 @@ function start_fastcgi {
     exit
 }
 
+
 TYPE="$1"
 CMD="$2"
 CMD_PAR="$3"
 
 if [ "$TYPE" == "dev" ]; then
-
     start_fastcgi "$TYPE" "$CMD" "$CMD_PAR" 2000 3000 "temp/ttdev.pid"
 fi
 
