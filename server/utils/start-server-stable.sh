@@ -1,1 +1,0 @@
-echo "Stable server runs under Apache. Configure Apache and run 'service httpd start' :-)."
