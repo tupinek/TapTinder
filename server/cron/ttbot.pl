@@ -85,9 +85,10 @@ my $bot = Bot::BasicBot::Pluggable->new(
 $bot->load("Auth");
 $bot->load("TapTinderBot");
 
-my $server_base_url = 'http://tt.ro.vutbr.cz/';
-$server_base_url = 'http://ttdev.ro.vutbr.cz:3000/' if $db_type eq 'dev';
-$server_base_url = 'http://ttcopy.ro.vutbr.cz:4000/' if $db_type eq 'copy';
+my $server_base_url = 'http://tt.taptinder.org/';
+$server_base_url = 'http://tapir1.ro.vutbr.cz:2000/' if $db_type eq 'dev';
+#$server_base_url = 'http://ttdev.taptinder.org/' if $db_type eq 'dev';
+$server_base_url = 'http://ttcopy.taptinder.org/' if $db_type eq 'copy';
 
 my $TapTinderBot_handler = $bot->handler("TapTinderBot");
 $TapTinderBot_handler->_my_init(
