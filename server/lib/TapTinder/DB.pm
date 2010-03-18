@@ -12,8 +12,6 @@ use DBI;
 use Data::Dumper;
 use Devel::StackTrace;
 
-our $VERSION = '0.10';
-
 
 =head1 NAME
 

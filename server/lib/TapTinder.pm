@@ -1,6 +1,6 @@
 package TapTinder;
 
-our $VERSION = '0.10';
+our $VERSION = '0.22';
 
 =head1 NAME
 

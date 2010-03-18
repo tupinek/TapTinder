@@ -21,7 +21,7 @@ SQL::Translator::Producer::DBIx::Class::File.
 
 use strict;
 use vars qw[ $VERSION $DEBUG $WARN ];
-$VERSION = '0.1';
+$VERSION = '0.11';
 $DEBUG   = 0 unless defined $DEBUG;
 
 use SQL::Translator::Schema::Constants;

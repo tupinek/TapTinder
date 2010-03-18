@@ -5,7 +5,6 @@ use warnings;
 use Carp qw(carp croak verbose);
 
 use base 'Exporter';
-our $VERSION = 0.01;
 our @EXPORT = qw(load_conf_multi);
 
 use Config::Multi;

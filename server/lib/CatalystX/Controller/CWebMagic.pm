@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use base 'Catalyst::Controller';
 
-our $VERSION = '0.004';
+our $VERSION = '0.11';
 
 use Data::Page::HTML;
 use Data::Dumper; # TODO - needed only for debug mode
@@ -202,7 +202,7 @@ sub get_cwm_types_to_colspan {
 
 sub get_alias_name {
     my ( $self, $c, $tmp, $rel_name ) = @_;
-    
+
     my $alias_name = $rel_name;
     if ( exists $tmp->{alias}->{$alias_name} ) {
         my $num = 2;
@@ -216,7 +216,7 @@ sub get_alias_name {
     $tmp->{alias}->{$alias_name} = $rel_name;
     return $alias_name;
 }
-    
+
 
 sub _rec_get_base_cwm_configs {
     my (
@@ -241,7 +241,7 @@ sub _rec_get_base_cwm_configs {
     unless ( defined $view_conf->{levels}->[ $deep ] ) {
         $view_conf->{levels}->[ $deep ] = [];
     }
-   
+
     unless ( defined $tmp->{offsets}->[ $deep ] ) {
         $tmp->{offsets}->[ $deep ] = $tmp->{offsets}->[ $deep-1 ];
     }
@@ -289,7 +289,7 @@ sub _rec_get_base_cwm_configs {
 
             my ( $fr_table_name, $fr_col, $fr_rel_name ) = @{ $fr_cols->{$cn} };
             next unless exists $cwm_conf->{$fr_table_name};
-            
+
             my $fr_alias_name = $self->get_alias_name( $c, $tmp, $fr_rel_name );
             #$self->dump( $c, "$deep $table_name.$cn ($col_cwm_type) - fr_alias_name $fr_alias_name" );
 
@@ -317,12 +317,12 @@ sub _rec_get_base_cwm_configs {
 
 
             } else {
-                
+
                 my ( $fr_join, $fr_colspan, $fr_colspan_sum ) = $self->_rec_get_base_cwm_configs(
                     $c, $schema,
                     $cwm_conf, $search_conf, $view_conf, $tmp,
                     $fr_table_name, $fr_rel_name, $fr_alias_name, $fr_max_deep,
-                    $deep + 1 
+                    $deep + 1
                 );
 
                 $is_foreign = 1;
@@ -340,7 +340,7 @@ sub _rec_get_base_cwm_configs {
         }
 
         # If col is shown.
-        if ( 
+        if (
              exists $cwm_types_to_colspan->{ $col_cwm_type }  # col type is intendent to be shown
              || exists $primary_cols->{$cn} # col is table primary key
              || ( $col_cwm_type eq 'S' && $view_conf->{primary_table_name} eq $table_name ) # column from main table marked as S
@@ -422,7 +422,7 @@ sub get_base_cwm_configs {
 
     my $max_deep = $cwm_conf->{$table_name}->{max_deep};
     my ( $join, $col_num, $colspan ) = $self->_rec_get_base_cwm_configs(
-        $c, $schema, 
+        $c, $schema,
         $cwm_conf, $search_conf, $view_conf, $tmp,
         $table_name, 'me', 'me', $max_deep,
         0
@@ -525,7 +525,7 @@ sub get_header_html {
                 my $fr_table_uri = $c->uri_for( $col_conf->{fr_table_name} )->as_string;
                 $val = '<a href="' . $fr_table_uri . '">' . $val . '</a>';
             }
-            
+
             $html .=
                 '<th'
                 . ( exists $col_conf->{colspan} ? ' colspan="'.$col_conf->{colspan}.'"' : '' )
@@ -596,7 +596,7 @@ sub get_content_html {
                 $link_table_name = $vc->{fr_table_name};
                 $uris_done->{$fr_alias_name} = 1;
             }
-            
+
             if ( defined $link_primary_cols ) {
 
                 my $id_uri_part = 'id';
@@ -1084,13 +1084,13 @@ sub init_default_cwm_config {
                 $cwm_conf->{ $table_name }->{col_conf}->{ $col_name } = 'S';
             }
         }
-        
+
         if ( exists $sch_tbl_cwm_conf->{max_deep} ) {
             $cwm_conf->{ $table_name }->{max_deep} = $sch_tbl_cwm_conf->{max_deep};
         } else {
             $cwm_conf->{ $table_name }->{max_deep} = 3;
         }
-        
+
     }
 
     #$self->dump( $c, 'default cwm_conf', $cwm_conf );
@@ -1129,13 +1129,13 @@ sub prepare_own_cwm_conf {
                 $cwm_conf->{ $table_name }->{col_conf}->{ $col_name } = $self->{cwm_conf}->{ $table_name }->{col_conf}->{ $col_name };
             }
         }
-        
+
         if ( exists $prepare_conf->{cwm_conf}->{ $table_name }->{max_deep} ) {
             $cwm_conf->{ $table_name }->{max_deep} = $prepare_conf->{cwm_conf}->{ $table_name }->{max_deep};
         } else {
             $cwm_conf->{ $table_name }->{max_deep} = $self->{cwm_conf}->{ $table_name }->{max_deep};
         }
-        
+
     }
 
     return $cwm_conf;

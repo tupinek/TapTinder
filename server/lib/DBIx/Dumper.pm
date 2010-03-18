@@ -2,7 +2,7 @@ package DBIx::Dumper;
 
 use strict;
 use warnings;
-our $VERSION = '0.01';
+our $VERSION = '0.22';
 
 our @EXPORT_OK = qw/dump_row/;
 

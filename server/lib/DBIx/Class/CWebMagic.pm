@@ -2,7 +2,7 @@ package DBIx::Class::CWebMagic;
 
 use strict;
 use warnings;
-our $VERSION = '0.02';
+our $VERSION = '0.11';
 
 BEGIN {
     use base qw/DBIx::Class::Row Class::Accessor::Grouped/;
@@ -41,7 +41,7 @@ DBIx::Class::CWebMagic
     ...
     ...
 
-  __PACKAGE__->cwm_conf( { 
+  __PACKAGE__->cwm_conf( {
       auth => {
           my_password => 'R',
       },

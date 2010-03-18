@@ -2,7 +2,7 @@ package Data::Page::HTML;
 
 use strict;
 use warnings;
-our $VERSION = '0.001';
+our $VERSION = '0.11';
 
 our @EXPORT_OK = qw/get_pager_html/;
 

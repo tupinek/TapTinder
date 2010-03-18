@@ -18,7 +18,7 @@ use Catalyst qw/
     Session::State::Cookie
 /;
 
-our $VERSION = '0.10';
+our $VERSION = '0.22';
 
 
 # Note that settings in web_*.yml take precedence over this.
