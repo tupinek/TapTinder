@@ -1,1 +1,4 @@
-server/temp/*
+/client-conf/*.yml
+/server/conf/*.yml
+/server/temp/*
+/server/root/lib/config/main
