@@ -2,3 +2,6 @@
 /server/conf/*.yml
 /server/temp/*
 /server/root/lib/config/main
+/server-data/*
+/server/conf/*-dump.pl
+/server/conf/*-state.pl
