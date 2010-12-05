@@ -3,7 +3,7 @@
 <!-- perl utils\wiki_schema.pl sql\schema.wiki 1 > sql\schema.sql -->
 <!-- PARSE PART DBCREATE BEGIN -->
 <source lang=sql>
--- schema revision: $LastChangedRevision$
+-- schema revision: $LastChangedRevision: 385 $
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 
@@ -401,6 +401,7 @@ CREATE TABLE mslog (
     change_time             DATETIME NOT NULL COMMENT 'Time when machine change msession state to this status_id.',
     estimated_finish_time   DATETIME DEFAULT NULL COMMENT 'Time when machine will probably change msession status again.',
     INDEX i_msession_id (msession_id),
+    INDEX i_change_time (change_time),
     CONSTRAINT fk_mslog_msession_id FOREIGN KEY (msession_id) REFERENCES msession (msession_id),
     CONSTRAINT fk_mslog_msstatus_id FOREIGN KEY (msstatus_id) REFERENCES msstatus (msstatus_id)
 ) TYPE=InnoDB COMMENT='Machine session log. Tag: machine_sessions.';
