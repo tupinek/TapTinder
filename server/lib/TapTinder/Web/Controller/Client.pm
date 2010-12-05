@@ -22,6 +22,7 @@ Catalyst controller for TapTinder client services.
 
 =head1 METHODS
 
+
 =head2 dump_rs
 
 Dump result set.
@@ -389,21 +390,84 @@ Return new job description for client.
 sub get_new_job {
     my ( $self, $c, $data, $machine_id, $msession_id ) = @_;
 
-    my $plus_rows = [ qw/ job_id jobp_id rep_path_id rev_id rev_num mjc_priority jpriority /];
-    my $search_conf = {
-        'select' => $plus_rows,
-        'as'     => $plus_rows,
-        'bind'   => [ $machine_id, $machine_id, $machine_id, $machine_id ],
-    };
+    my $cols = [ qw/ 
+        a_r.job_id
+        a_r.jobp_id
+        a_r.rep_path_id
+        a_r.rev_id
+        a_r.rev_num
+        a_r.mjc_priority
+        a_r.jpriority
+    / ];
 
-    my $rs = $c->model('WebDB')->schema->resultset( 'NotTestedJobs' )->search( {}, $search_conf );
+    my $sql = "
+          from (
+                select a_jp.job_id,
+                       a_jp.jobp_id,
+                       a_jp.rep_path_id,
+                       r.rev_id,
+                       r.rev_num,
+                       a_jp.mjc_priority,
+                       j.priority as jpriority
+                  from (
+                        select distinct sa_jp.*
+                          from (
+                                -- ToDo, empty mjc.rep_id
+                                ( select jp.jobp_id, mjc.priority as mjc_priority, jp.rep_path_id, jp.job_id, jp.max_age
+                                    from machine_job_conf mjc,
+                                         rep_path rp,
+                                         jobp jp
+                                   where mjc.machine_id = ?
+                                     and rp.rep_id = mjc.rep_id
+                                     and jp.rep_path_id = rp.rep_path_id
+                                )
+                                union all
+                                ( select jp.jobp_id, mjc.priority as mjc_priority, jp.rep_path_id, jp.job_id, jp.max_age
+                                    from machine_job_conf mjc,
+                                         jobp jp
+                                   where mjc.machine_id = ?
+                                     and mjc.rep_path_id is not null
+                                     and jp.rep_path_id = mjc.rep_path_id
+                                )
+                                union all
+                                ( select jp.jobp_id, mjc.priority as mjc_priority, jp.rep_path_id, jp.job_id, jp.max_age
+                                    from machine_job_conf mjc,
+                                         jobp jp
+                                   where mjc.machine_id = ?
+                                     and mjc.job_id is not null
+                                     and jp.job_id = mjc.job_id
+                                )
+                               ) sa_jp
+                      ) a_jp,
+                      rev_rep_path rrp,
+                      rev r,
+                      job j
+                where rrp.rep_path_id = a_jp.rep_path_id
+                  and r.rev_id = rrp.rev_id
+                  and ( a_jp.max_age is null or DATE_SUB(CURDATE(), INTERVAL a_jp.max_age HOUR) <= r.date )
+                  and j.job_id = a_jp.job_id
+                order by a_jp.mjc_priority, j.priority, r.rev_num desc, a_jp.jobp_id
+              ) a_r
+        where not exists (
+                select 1
+                  from msession ms,
+                       msjob msj,
+                       msjobp msjp,
+                       jobp jp
+                 where ms.machine_id = ?
+                   and msj.msession_id = ms.msession_id
+                   and msjp.msjob_id = msj.msjob_id
+                   and jp.jobp_id = msjp.jobp_id
+                   and msjp.jobp_id = a_r.jobp_id
+                   and jp.rep_path_id = a_r.rep_path_id
+                   and msjp.rev_id = a_r.rev_id
+              )
+    "; # end sql
+
+    my $ba = [ $machine_id, $machine_id, $machine_id, $machine_id ];
+    my $row_data = $self->edbi_selectrow_hashref( $c, $cols, $sql, $ba );
 
     # TODO - new job not found
-
-    my $row = $rs->next;
-    return undef unless $row;
-    my $row_data = { $row->get_columns };
-    #$self->dumper( $c, $row_data );
     return $row_data;
 }
 
@@ -499,24 +563,31 @@ Get next cmd info.
 sub get_next_cmd {
     my ( $self, $c, $data, $job_id, $rep_path_id, $jobp_order, $jobp_cmd_order ) = @_;
 
-    my $plus_rows = [ qw/ jobp_id jobp_cmd_id cmd_name /];
-    my $search_conf = {
-        'select' => $plus_rows,
-        'as'     => $plus_rows,
-        'bind'   => [
-            $job_id,
-            $rep_path_id,
-            $jobp_cmd_order, $jobp_cmd_order,
-            $jobp_order, $jobp_order,
-        ],
-    };
+    my $sql = "
+        select jp.jobp_id,
+               jpc.jobp_cmd_id,
+               c.name as cmd_name
+          from jobp jp,
+               jobp_cmd jpc,
+               cmd c
+         where jp.job_id = ?
+           and jp.rep_path_id = ?
+           and jpc.jobp_id = jp.jobp_id
+           and (    ( ? is null or jpc.order > ? )
+                 or ( ? is null or jp.order > ? )
+               )
+           and c.cmd_id = jpc.cmd_id
+         order by jp.order, jpc.order
+    "; # end sql
 
-    my $rs = $c->model('WebDB')->schema->resultset( 'NextJobCmd' )->search( {}, $search_conf );
+    my $ba = [
+        $job_id,
+        $rep_path_id,
+        $jobp_cmd_order, $jobp_cmd_order,
+        $jobp_order, $jobp_order,
+    ];
+    my $row_data = $self->edbi_selectrow_hashref( $c, undef, $sql, $ba );
 
-    my $row = $rs->next;
-    return undef unless $row;
-
-    my $row_data = { $row->get_columns };
     #$self->dumper( $c, $row_data );
     #TODO, if jobp_cmd_id changed, then
     return $row_data;
