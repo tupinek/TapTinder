@@ -45,10 +45,12 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
 
     my $out_fn = './lib/TapTinder/DB/Schema.pm';
     my $content = $translator->translate;
-    my $fh;
-    open ( $fh, '>', $out_fn ) || die $!;
-    print $fh $content;
-    close $fh;
+    if ( $content ) {
+        my $fh;
+        open ( $fh, '>', $out_fn ) || die $!;
+        print $fh $content;
+        close $fh;
+    }
 
 
 # database documentation (schema and schema parts with GraphViz)
