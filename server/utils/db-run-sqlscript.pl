@@ -17,7 +17,8 @@ use TapTinder::Utils::Cmd qw(run_cmd_ipc);
 my $sql_fpath = $ARGV[0] || undef;
 my $noipc = $ARGV[1] || 0;
 
-croak "SQL file '$sql_fpath' not found." unless -f $sql_fpath;
+croak "SQL file path not given" unless defined $sql_fpath;
+croak "SQL file '$sql_fpath' not found" unless -f $sql_fpath;
 
 my $conf_fpath = catfile( $RealBin, '..', 'conf', 'web_db.yml' );
 my ( $conf ) = YAML::LoadFile( $conf_fpath );
