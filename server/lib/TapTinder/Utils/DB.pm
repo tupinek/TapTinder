@@ -11,7 +11,7 @@ use TapTinder::DB::SchemaAdd;
 
 =head2 get_connected_schema
 
-Return TapTinder::DB::SchemaAdd->connect(...)
+ TapTinder::DB::SchemaAdd->connect(...)
 
 =cut
 
@@ -26,5 +26,62 @@ sub get_connected_schema {
     );
     return $schema;
 }
+
+
+=head2 get_drop_sql_list
+
+Connect to DB. Take list of DB tables. Return list of sql statements to drop all these tables.
+
+=cut
+
+sub get_drop_sql_list {
+    my ( $schema ) = @_;
+    
+    my $dbh = $schema->storage->dbh;
+    my @tables = $dbh->tables();
+    
+    my @sql_list = ();
+    push @sql_list, "SET foreign_key_checks=0;";
+    foreach my $table_name ( @tables ) {
+        push @sql_list, "DROP TABLE IF EXISTS $table_name;";
+    }
+    push @sql_list, "SET foreign_key_checks=1;";
+    return @sql_list;
+}
+
+
+=head2 get_drop_all_existing_tables_sql
+
+Connect to DB. Take list of DB tables. Return sql to drop all these tables.
+
+=cut
+
+sub get_drop_all_existing_tables_sql {
+    my ( $schema ) = @_;
+
+    my @sql_list = get_drop_sql_list( $schema );
+    my $drop_sql = join("\n", @sql_list) . "\n";
+    return $drop_sql;
+}
+
+
+=head2 do_drop_all_existing_tables
+
+Connect to DB. Take list of DB tables. Drop all these tables.
+
+=cut
+
+sub do_drop_all_existing_tables {
+    my ( $schema ) = @_;
+
+    my @sql_list = get_drop_sql_list( $schema );
+
+    my $dbh = $schema->storage->dbh;
+    foreach my $statement ( @sql_list ) {
+        $dbh->do($statement) or croak $dbh->errstr;
+    }
+    return 1;
+}
+
 
 1;
