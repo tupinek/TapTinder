@@ -80,7 +80,6 @@ CREATE TABLE rep (
     path            VARCHAR(255) NOT NULL,
     descr           TEXT DEFAULT NULL COMMENT 'Description.',
     active          BOOLEAN NOT NULL DEFAULT 1 COMMENT '1 .. repository is active, 0 .. old (deprecated) repository',
-    default_layout  BOOLEAN NOT NULL DEFAULT 1 COMMENT 'Has default Subversion repository layout (trunk, tags, branches).',
     CONSTRAINT fk_rep_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),
     UNIQUE KEY unique_rep_id_path (rep_id, path)
 ) TYPE=InnoDB COMMENT='Project repository. Each project can has only one active repository. Tag: project.';

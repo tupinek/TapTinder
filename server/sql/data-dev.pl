@@ -35,19 +35,19 @@ return sub {
     $schema->resultset('project')->delete_all() if $delete_all;
     $schema->resultset('project')->populate([
         [ qw/ project_id name url descr / ],
-        [ 1, 'TapTinder-tr1', 'http://dev.taptinder.org/wiki/TapTinder-tr1', 'TapTinder test repository 1' ],
-        [ 2, 'TapTinder-tr2', 'http://dev.taptinder.org/wiki/TapTinder-tr2', 'TapTinder test repository 2' ],
-        [ 3, 'TapTinder-tr3', 'http://dev.taptinder.org/wiki/TapTinder-tr3', 'TapTinder test repository 3' ],
+        [ 1, 'tt-tr1', 'http://dev.taptinder.org/wiki/TapTinder-tr1', 'TapTinder test repository 1' ],
+        [ 2, 'tt-tr2', 'http://dev.taptinder.org/wiki/TapTinder-tr2', 'TapTinder test repository 2' ],
+        [ 3, 'tt-tr3', 'http://dev.taptinder.org/wiki/TapTinder-tr3', 'TapTinder test repository 3' ],
     ]);
 
  
     # table: rep
     $schema->resultset('rep')->delete_all() if $delete_all;
     $schema->resultset('rep')->populate([
-        [ qw/ rep_id project_id active name path descr default_layout / ],
-        [ 1, 1, 1, 'default', 'http://dev.taptinder.org/svn/taptinder-tr1/', 'Parrot like repository',                            1 ],
-        [ 2, 2, 1, 'default', 'http://dev.taptinder.org/svn/taptinder-tr2/', 'Pugs like repository (Rakudo external spectests)',  0 ],
-        [ 3, 3, 1, 'default', 'http://dev.taptinder.org/svn/taptinder-tr3/', 'ParTcl like repository, external repository',       1 ],
+        [ qw/ rep_id project_id active name path descr / ],
+        [ 1, 1, 1, 'default', 'tt-tr1', 'Defautl repository', ],
+        [ 2, 2, 1, 'default', 'tt-tr2', 'Defautl repository', ],
+        [ 3, 3, 1, 'default', 'tt-tr3', 'Defautl repository', ],
     ]);
 
 =pod

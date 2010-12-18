@@ -2813,15 +2813,6 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => 0
     },
-    'default_layout' => {
-      'data_type' => 'BOOLEAN',
-      'is_auto_increment' => 0,
-      'default_value' => '1',
-      'is_foreign_key' => 0,
-      'name' => 'default_layout',
-      'is_nullable' => 0,
-      'size' => 0
-    },
 );
 __PACKAGE__->set_primary_key('rep_id');
 

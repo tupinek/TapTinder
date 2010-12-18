@@ -24,14 +24,13 @@ if ( 0 ) {
     $repo_url = 'git://github.com/rakudo/rakudo.git';
 } else {
    $repo_name = 'tt-test-repo1';
-   $repo_name = 'TapTinder';
-   $repo_name = 'tt-r2';
+   #$repo_name = 'tt-r2';
    $repo_url = undef;
 }
 
 
 my $base_dir = catdir( $FindBin::RealBin, '..', '..' );
-my $work_tree = catdir( $base_dir, 'repos', $repo_name );
+my $work_tree = catdir( $base_dir, 'server-repos', $repo_name );
  
 print "Config:\n";
 print "  work_tree: $work_tree\n";

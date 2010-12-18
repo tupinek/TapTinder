@@ -5,3 +5,4 @@
 /server-data/*
 /server/conf/*-dump.pl
 /server/conf/*-state.pl
+/server-repos/*
