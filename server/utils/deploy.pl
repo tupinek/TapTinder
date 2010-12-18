@@ -18,24 +18,30 @@ use TapTinder::Utils::DB qw(get_connected_schema);
 
 my $help = 0;
 my $ver = 2;
-my $save = 0;
-my $deploy = 0;
+my $opt_save = 0;
+my $opt_drop = 0;
+my $opt_deploy = 0;
+my $opt_data = 0;
 my $options_ok = GetOptions(
-    'save' => \$save,
-    'deploy' => \$deploy,
+    'save' => \$opt_save,
+    'drop' => \$opt_drop,
+    'deploy' => \$opt_deploy,
+    'data=s' => \$opt_data,
     'help|h|?' => \$help,
     'ver|v=i' => \$ver,
 );
-pod2usage(1) if $help || !$options_ok || ( !$save && !$deploy );
+
+my $db_work = ( $opt_drop || $opt_deploy || $opt_data );
+pod2usage(1) if $help || !$options_ok || ( !$opt_save && !$db_work );
 
 my $conf = load_conf_multi( undef, 'db' );
 croak "Configuration for database is empty.\n" unless $conf->{db};
 
 my $schema = get_connected_schema( $conf->{db} );
 
-if ( $save ) {
+if ( $opt_save ) {
     my $ddl_dir = catdir( $RealBin, '..', 'temp', 'deploy-ddl' );
-    unless ( - $ddl_dir ) {
+    unless ( -d $ddl_dir ) {
         mkdir $ddl_dir or croak $!;
     }
 
@@ -51,10 +57,61 @@ if ( $save ) {
     print "DDL files saved to $ddl_dir\n" if $ver >= 2;
 }
 
-if ( $deploy ) {
+
+sub run_perl_sql_file {
+    my $req_fname = shift;
+    # Others from @_ used below.
+    
+    my $req_fpath = catdir( $RealBin, '..', 'sql', $req_fname );
+    carp "File '$req_fpath' doesn't exists." unless -f $req_fpath;
+    my $do_sub = require $req_fpath;
+    if ( ref $do_sub ne 'CODE' ) {
+        carp "No code reference returned from '$req_fpath'.";
+        return 0;
+    }
+    return $do_sub->( @_ );
+}
+
+
+
+if ( $db_work ) {
+    $schema->storage->txn_begin;
+}
+
+if ( $opt_drop ) {
     my $rc = TapTinder::Utils::DB::do_drop_all_existing_tables( $schema );
+}
+
+if ( $opt_deploy ) {
     $schema->deploy();
 }
+
+
+if ( $opt_data ) {
+
+    my $base_data = {};
+    $base_data->{db_version} = '0.5';
+    run_perl_sql_file(
+        'data-base.pl', # $req_fname
+        $schema,        # $schema
+        1,              # $delete_old
+        $base_data      # data
+    );
+
+    my $req_fname = 'data-' . $opt_data . '.pl';
+    run_perl_sql_file(
+        $req_fname,     # $req_fname
+        $schema,        # $schema
+        1,              # $delete_old
+        undef           # data
+    );
+}
+
+
+if ( $db_work ) {
+    $schema->storage->txn_commit;
+}
+
 
 
 =head1 NAME
@@ -67,12 +124,15 @@ perl deploy.pl [options]
 
  Options:
    --save .. Save ddl files to temp/deploy-ddl.
-   --deploy .. Drop all tables and deploy new schema.
+   --drop .. Drop all existing tables.
+   --deploy .. Deploy new schema.
+   --data=prod .. Insert production data.
+   --data=dev .. Insert devel data.
    --help
    --ver=$NUM .. Verbosity level. Default 2.
 
 =head1 DESCRIPTION
 
-B<This program> will delete ..
+B<This program> will ...
 
 =cut

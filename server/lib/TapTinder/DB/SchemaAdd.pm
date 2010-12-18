@@ -3,13 +3,6 @@ package TapTinder::DB::SchemaAdd;
 use base 'TapTinder::DB::Schema';
 
 
-
-package TapTinder::DB::Schema::rev_rep_path;
-
-__PACKAGE__->add_unique_constraint([ qw/rev_id rep_path_id/ ]);
-
-
-
 # Own resultsets:
 
 package TapTinder::DB::Schema::msession;
@@ -91,7 +84,7 @@ TapTinder::DB::Schema->register_extra_source( 'MSessionStatus' => $new_source3 )
 
 
 
-package TapTinder::DB::Schema::rev_rep_path;
+package TapTinder::DB::Schema::rcommit;
 
 my $source4 = __PACKAGE__->result_source_instance();
 my $new_source4 = $source4->new( $source4 );
@@ -182,7 +175,7 @@ TapTinder::DB::Schema->register_extra_source( 'NotLoadedTruns' => $new_source5 )
 
 
 
-package TapTinder::DB::Schema::rep_path;
+package TapTinder::DB::Schema::rpath;
 
 my $source6 = __PACKAGE__->result_source_instance();
 my $new_source6 = $source5->new( $source6 );
@@ -241,7 +234,7 @@ __PACKAGE__->cwm_conf( {
 } );
 
 
-package TapTinder::DB::Schema::rep_author;
+package TapTinder::DB::Schema::rauthor;
 __PACKAGE__->cwm_conf( {
     col_type => {
         'rep_login' => 'S',
@@ -249,7 +242,7 @@ __PACKAGE__->cwm_conf( {
 } );
 
 
-package TapTinder::DB::Schema::rep_file;
+package TapTinder::DB::Schema::rfile;
 __PACKAGE__->cwm_conf( {
     col_type => {
         'sub_path' => 'G',
@@ -257,18 +250,10 @@ __PACKAGE__->cwm_conf( {
 } );
 
 
-package TapTinder::DB::Schema::rep_test;
+package TapTinder::DB::Schema::rtest;
 __PACKAGE__->cwm_conf( {
     col_type => {
         'number' => 'G',
-    },
-} );
-
-
-package TapTinder::DB::Schema::rev;
-__PACKAGE__->cwm_conf( {
-    col_type => {
-        'rev_num' => 'G',
     },
 } );
 

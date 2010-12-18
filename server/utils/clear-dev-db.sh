@@ -83,8 +83,8 @@ if [ "$1" = "c" ]; then
         echo ""
     fi
 
-    echo "Executing temp/all-dev.sql (perl utils/db-run-sqlscript.pl):"
-    perl ./utils/db-run-sqlscript.pl ./temp/all-dev.sql 1
+    echo "Executing utils/deploy --drop --deploy --data=dev"
+    perl ./utils/deploy.pl --drop --deploy --data=dev
     echo ""
 
     echo "Copying temp/schema-raw-create.sql to temp/schema-raw-create-dump.sql"
