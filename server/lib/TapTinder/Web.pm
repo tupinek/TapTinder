@@ -27,20 +27,22 @@ our $VERSION = '0.22';
 # as an override for local deployment.
 
 TapTinder::Web->config(
+    'namespace' => '',
     'default_view' => 'TT',
     'Plugin::Config::Multi' => {
-         dir =>  TapTinder::Web->path_to('./conf'),
-         prefix => '',
-         app_name => 'web',
-         extension => 'yml',
-     },
-     'static' => {
-         #logging => 1,
-         #debug => 1,
-         mime_types => {
-             t => 'text/plain', # Show test files, as text plain. BY mime type it si 'application/x-troff'.
-         },
-     },
+        dir => TapTinder::Web->path_to('./conf'),
+        prefix => '',
+        app_name => 'web',
+        extension => 'yml',
+    },
+    'static' => {
+        #logging => 1,
+        #debug => 1,
+        mime_types => {
+            t => 'text/plain', # Show test files, as text plain. BY mime type it si 'application/x-troff'.
+        },
+    },
+    'root' => TapTinder::Web->path_to('root'),
 );
 
 
