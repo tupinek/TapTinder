@@ -27,12 +27,12 @@ sub index : Args(0)  {
     my $prefix = 'root/dbdoc/';
     my $full_path = TapTinder::Web->path_to($prefix);
 
-    my $prev_dir = undef;
+    my $prev_dir = '';
     foreach my $item ( @items ) {
         my $name = substr( $item, length($prefix) );
         my ( $dir, $fname ) = $name =~ /^(?:(.*)\/)?([^\/]+)$/;
         if ( $dir ne $prev_dir ) {
-            $content .= "</ul>\n" if defined $prev_dir;
+            $content .= "</ul>\n" if $prev_dir;
             $content .= "<h2>$dir</h2>";
             $content .= "<ul>\n";
             $prev_dir = $dir;
