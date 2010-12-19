@@ -108,7 +108,8 @@ print "\n";
 
 
 my $log_obj = Git::Repository::LogRaw->new( $repo, $ver );
-my $log = $log_obj->get_log( $repo );
+my $log = $log_obj->get_log();
+#print Dumper( $log );
 
 
 sub find_or_create_rep {
@@ -133,38 +134,43 @@ sub find_or_create_rep {
         repo_url   => $repo_url,
         project_id => $project_id,
         active => 1,
-    });
+    })->id;
 
     return $rep_id;
 }
   
-#print Dumper( $log );
 $schema->storage->txn_begin;
 
-  
-my $rep_row = find_or_create_rep( $schema, $project_name, $repo_url );
-#print Dumper( { $rep_row->get_columns } );
-my $rep_id = $rep_row->get_column('rep_id');
+my $rep_id = find_or_create_rep( $schema, $project_name, $repo_url );
 print "rep_id $rep_id\n";
 
 my $rcommit_rs = $schema->resultset('rcommit')->search(
     {},
     {
         join => 'sha_id',
+        'select' => [ 'me.rcommit_id', 'sha_id.sha' ],
     }
 );
 
-my $rcommits_rows = [ $rcommit_rs->cursor->all ]; 
 
-print Dumper( $rcommits_rows );
-
+my $rcommits_sha_list = {};
+foreach my $rcommit_row ( $rcommit_rs->cursor->all ) {
+    my $rcommit_id = $rcommit_row->[0];
+    my $sha = $rcommit_row->[1];
+    $rcommits_sha_list->{ $sha } = $rcommit_id;
+}
 
 $rcommit_rs = $schema->resultset('rcommit');
 my $sha_rs = $schema->resultset('sha');
 my $rauthor_rs = $schema->resultset('rauthor');
-my $rcommit_sha_list = {};
 my $all_ok = 1;
-LOG_COMMIT: foreach my $log_commit ( @$log ) {
+LOG_COMMIT: foreach my $log_num ( 0..$#$log ) {
+    my $log_commit = $log->[ $log_num ];
+    #last if $log_num > $#$log / 2; # debug
+
+    my $rcommit_sha = $log_commit->{commit};
+    next if exists $rcommits_sha_list->{ $rcommit_sha };
+    
     
     print "log msg '$log_commit->{msg}'\n";
     
@@ -172,19 +178,18 @@ LOG_COMMIT: foreach my $log_commit ( @$log ) {
     my $first_parent_sha_id = undef;
     if ( defined $log_commit->{parents}->[0] ) {
        $first_parent_sha = $log_commit->{parents}->[0];
-       unless ( exists $rcommit_sha_list->{$first_parent_sha} ) {
+       unless ( exists $rcommits_sha_list->{$first_parent_sha} ) {
           $all_ok = 0; 
           last LOG_COMMIT;
        }
-       $first_parent_sha_id = $rcommit_sha_list->{$first_parent_sha};
+       $first_parent_sha_id = $rcommits_sha_list->{ $first_parent_sha };
     }
     
-    my $rcommit_sha = $log_commit->{commit};
     my $rcommit_sha_id = $sha_rs->create({
         sha => $rcommit_sha,
     })->id;
     #my $rcommit_sha_id = $rcommit_sha_row->get_column('sha_id');
-    $rcommit_sha_list->{ $rcommit_sha } = $rcommit_sha_id;
+    $rcommits_sha_list->{ $rcommit_sha } = $rcommit_sha_id;
 
     my $tree_sha_id = $sha_rs->find_or_create({
         sha => $log_commit->{tree},

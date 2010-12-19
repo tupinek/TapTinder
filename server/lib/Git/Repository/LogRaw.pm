@@ -107,9 +107,9 @@ sub parse_person_log_line_part {
 
 
 sub get_log {
-    my ( $self, $repo ) = @_;
+    my ( $self ) = @_;
     
-    my $cmd = $repo->command( 'log' => '--reverse', '--all', '--pretty=raw', '--raw', '-c', '-t', '--root', '--abbrev=40', '--raw' );
+    my $cmd = $self->{repo}->command( 'log' => '--reverse', '--all', '--pretty=raw', '--raw', '-c', '-t', '--root', '--abbrev=40', '--raw' );
     print "LogRaw cmdline: '" . join(' ', $cmd->cmdline() ) . "'\n" if $self->{ver} >= 3;
 
     
@@ -302,6 +302,94 @@ sub get_log {
 sub get_err_msg {
     my ( $self ) = @_;
     return $self->{err_msg};
+}
+
+
+
+sub get_refs {
+    my ( $self, $type ) = @_;
+    
+    my $cmd;
+    if ( defined $type ) {
+        $cmd = $self->{repo}->command( 'for-each-ref' => $type );
+    } else {
+        $cmd = $self->{repo}->command( 'for-each-ref' );
+    }
+    print "LogRaw cmdline: '" . join(' ', $cmd->cmdline() ) . "'\n" if $self->{ver} >= 3;
+
+    
+    my $line_num = 0;
+    my $refs = {};
+    my $err_msg = undef;
+
+    my $out_fh = $cmd->stdout;
+    PARSE_REF: while ( my $line = <$out_fh> ) {
+        $line_num++;
+        chomp $line;
+        printf( "%3d: '%s'\n", $line_num, $line ) if $self->{ver} >= 3;
+
+        if ( my ( $sha, $sha_type, $tag_name ) = $line =~ /^([0-9a-f]{40})\ (commit|tag)\t(.*)$/ ) {
+            if ( my ( $name_prefix, $name_base ) = $tag_name =~ /^([^\/]+\/[^\/]+)\/(.*)$/ ) {
+                my $ref_info = {
+                    sha => $sha,
+                    sha_type => $sha_type,
+                    prefix => $name_prefix,
+                };
+                if ( $name_prefix eq 'refs/remotes' ) {
+                    if ( my ( $repo_alias, $branch_name ) = $name_base =~ /^([^\/]+)\/(.*)$/ ) {
+                        $ref_info->{type} = 'remote_ref';
+                        $ref_info->{repo_alias} = $repo_alias;
+                        $ref_info->{branch_name} = $branch_name;
+                    } else {
+                        $err_msg = "Can't split refs/remote to repo_alias and branch_name";
+                        last PARSE_REF;
+                    }
+                } elsif ( $name_prefix eq 'refs/tags' ) {
+                    $ref_info->{type} = 'tag';
+                    $ref_info->{tag_name} = $name_base;
+                    
+                } elsif ( $name_prefix eq 'refs/heads' ) {
+                    $ref_info->{type} = 'local_ref';
+                    $ref_info->{ref_name} = $name_base;
+
+                } else {
+                    $ref_info->{type} = 'unknown';
+                    $ref_info->{name_base} = $name_base;
+                }
+
+                $refs->{ $tag_name } = $ref_info;
+            
+            } else {
+                $err_msg = "Can't split ref name '$tag_name' to parts";
+                last PARSE_REF;
+            }
+            next;
+        }
+
+        # error
+        $err_msg = "Can't parse line";
+        last PARSE_REF;
+    }
+    
+    if ( $err_msg ) {
+        print "Parsing error on line $line_num: $err_msg\n";
+    }
+
+    my $err = $cmd->stderr(); 
+    my $err_out = do { local $/; <$err> };
+    if ( $err_out ) {
+        $self->{err_msg} = "Error:\n  $err_out\n" . $err_msg;
+        print $self->{err_msg} if $self->{ver} >= 2;
+        return undef;
+    }
+    if ( $err_msg ) {
+        $self->{err_msg} = $err_msg;
+        print $self->{err_msg} if $self->{ver} >= 2;
+        return undef;
+    }
+
+    $cmd->close;
+    return $refs;
 }
 
 

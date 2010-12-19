@@ -19,7 +19,7 @@ my $repo_url;
 if ( 0 ) {
     $repo_name = 'perl6-spec';
     $repo_url = 'git://github.com/perl6/specs.git';
-} elsif ( 0 ) {
+} elsif ( 1 ) {
     $repo_name = 'rakudo';
     $repo_url = 'git://github.com/rakudo/rakudo.git';
 } else {
@@ -83,9 +83,10 @@ if ( 0 ) {
     $cmd->close;
 }
 
-if ( 1 ) {
-    my $log_obj = Git::Repository::LogRaw->new( $repo, $ver );
-    my $log = $log_obj->get_log( $repo );
+my $repo_obj = Git::Repository::LogRaw->new( $repo, $ver );
+
+if ( 0 ) {
+    my $log = $repo_obj->get_log();
     
     my $fh;
     open( $fh, '>temp/out-'.$repo_name.'.txt' ) || croak;
@@ -103,10 +104,17 @@ if ( 0 ) {
     $cmd->close;
 }
 
-$cmd = $repo->command( 'for-each-ref' => '--perl' );
-debug_cmd( $cmd );
-$cmd->close;
+if ( 1 ) {
+    my $refs = $repo_obj->get_refs();
+    print Dumper( $refs );
+} 
 
+if ( 1 ) {
+    #$cmd = $repo->command( 'for-each-ref' => 'refs/remotes' );
+    $cmd = $repo->command( 'for-each-ref' );
+    debug_cmd( $cmd );
+    $cmd->close;
+}
 
 
 =pod
