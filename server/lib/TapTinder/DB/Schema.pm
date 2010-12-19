@@ -210,7 +210,16 @@ __PACKAGE__->add_columns(
       'is_foreign_key' => 0,
       'name' => 'name',
       'is_nullable' => 0,
-      'size' => '1000'
+      'size' => '500'
+    },
+    'fullname' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'fullname',
+      'is_nullable' => 0,
+      'size' => '500'
     },
     'rcommit_id' => {
       'data_type' => 'int',

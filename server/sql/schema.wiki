@@ -134,6 +134,7 @@ CREATE TABLE rcommit (
 ) TYPE=InnoDB COMMENT='Commit info. Tag: project.';
 </source>
 
+ ToDo
     CONSTRAINT fk_rcommit_parent_id FOREIGN KEY (parent_id) REFERENCES rcommit (rcommit_id),
 
 
@@ -153,7 +154,8 @@ CREATE TABLE rcparent (
 CREATE TABLE rref (
     rref_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     rep_id          INT UNSIGNED NOT NULL,
-    name            VARCHAR(1000) NOT NULL,
+    name            VARCHAR(500) NOT NULL,
+    fullname        VARCHAR(500) NOT NULL,
     rcommit_id      INT UNSIGNED NOT NULL,
     active          BOOLEAN NOT NULL DEFAULT 1,
     INDEX i_rep_id (rep_id),
@@ -162,7 +164,11 @@ CREATE TABLE rref (
     CONSTRAINT fk_rref_rcommit_id FOREIGN KEY (rcommit_id) REFERENCES rcommit (rcommit_id)
 ) TYPE=InnoDB COMMENT='Repository referencies. Tag: project.';
 </source>
-
+ 
+ ToDo
+   add 'rtag_id' and 'rtag' table
+   
+   
 ==== Table rfile ====
 <source lang=sql>
 CREATE TABLE rfile (

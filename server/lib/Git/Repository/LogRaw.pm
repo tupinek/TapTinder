@@ -307,16 +307,10 @@ sub get_err_msg {
 
 
 sub get_refs {
-    my ( $self, $type ) = @_;
+    my ( $self, $filter_type ) = @_;
     
-    my $cmd;
-    if ( defined $type ) {
-        $cmd = $self->{repo}->command( 'for-each-ref' => $type );
-    } else {
-        $cmd = $self->{repo}->command( 'for-each-ref' );
-    }
+    my $cmd = $self->{repo}->command( 'for-each-ref' );
     print "LogRaw cmdline: '" . join(' ', $cmd->cmdline() ) . "'\n" if $self->{ver} >= 3;
-
     
     my $line_num = 0;
     my $refs = {};
@@ -356,7 +350,8 @@ sub get_refs {
                     $ref_info->{type} = 'unknown';
                     $ref_info->{name_base} = $name_base;
                 }
-
+                
+                next if defined $filter_type && $filter_type ne $ref_info->{type};
                 $refs->{ $tag_name } = $ref_info;
             
             } else {

@@ -107,9 +107,7 @@ unless ( -d $work_tree ) {
 print "\n";
 
 
-my $log_obj = Git::Repository::LogRaw->new( $repo, $ver );
-my $log = $log_obj->get_log();
-#print Dumper( $log );
+my $gitrepo_obj = Git::Repository::LogRaw->new( $repo, $ver );
 
 
 sub find_or_create_rep {
@@ -144,90 +142,105 @@ $schema->storage->txn_begin;
 my $rep_id = find_or_create_rep( $schema, $project_name, $repo_url );
 print "rep_id $rep_id\n";
 
-my $rcommit_rs = $schema->resultset('rcommit')->search(
-    {},
-    {
-        join => 'sha_id',
-        'select' => [ 'me.rcommit_id', 'sha_id.sha' ],
-    }
-);
-
-
-my $rcommits_sha_list = {};
-foreach my $rcommit_row ( $rcommit_rs->cursor->all ) {
-    my $rcommit_id = $rcommit_row->[0];
-    my $sha = $rcommit_row->[1];
-    $rcommits_sha_list->{ $sha } = $rcommit_id;
-}
-
-$rcommit_rs = $schema->resultset('rcommit');
-my $sha_rs = $schema->resultset('sha');
-my $rauthor_rs = $schema->resultset('rauthor');
 my $all_ok = 1;
-LOG_COMMIT: foreach my $log_num ( 0..$#$log ) {
-    my $log_commit = $log->[ $log_num ];
-    #last if $log_num > $#$log / 2; # debug
 
-    my $rcommit_sha = $log_commit->{commit};
-    next if exists $rcommits_sha_list->{ $rcommit_sha };
-    
-    
-    print "log msg '$log_commit->{msg}'\n";
-    
-    my $first_parent_sha = undef;
-    my $first_parent_sha_id = undef;
-    if ( defined $log_commit->{parents}->[0] ) {
-       $first_parent_sha = $log_commit->{parents}->[0];
-       unless ( exists $rcommits_sha_list->{$first_parent_sha} ) {
-          $all_ok = 0; 
-          last LOG_COMMIT;
-       }
-       $first_parent_sha_id = $rcommits_sha_list->{ $first_parent_sha };
+if ( 1 ) {
+    my $log = $gitrepo_obj->get_log();
+    #print Dumper( $log );
+
+    my $rcommit_rs = $schema->resultset('rcommit')->search(
+        {},
+        {
+            join => 'sha_id',
+            'select' => [ 'me.rcommit_id', 'sha_id.sha' ],
+        }
+    );
+
+
+    my $rcommits_sha_list = {};
+    foreach my $rcommit_row ( $rcommit_rs->cursor->all ) {
+        my $rcommit_id = $rcommit_row->[0];
+        my $sha = $rcommit_row->[1];
+        $rcommits_sha_list->{ $sha } = $rcommit_id;
     }
-    
-    my $rcommit_sha_id = $sha_rs->create({
-        sha => $rcommit_sha,
-    })->id;
-    #my $rcommit_sha_id = $rcommit_sha_row->get_column('sha_id');
-    $rcommits_sha_list->{ $rcommit_sha } = $rcommit_sha_id;
 
-    my $tree_sha_id = $sha_rs->find_or_create({
-        sha => $log_commit->{tree},
-    })->id;
+    $rcommit_rs = $schema->resultset('rcommit');
+    my $sha_rs = $schema->resultset('sha');
+    my $rauthor_rs = $schema->resultset('rauthor');
+    LOG_COMMIT: foreach my $log_num ( 0..$#$log ) {
+        my $log_commit = $log->[ $log_num ];
+        #last if $log_num > $#$log / 2; # debug
 
-    my $author_id = $rauthor_rs->find_or_create({
-        rep_login => $log_commit->{author}->{name},
-        email => $log_commit->{author}->{email},
-        rep_id => $rep_id,
-    })->id;
+        my $rcommit_sha = $log_commit->{commit};
+        next if exists $rcommits_sha_list->{ $rcommit_sha };
+        
+        
+        print "log msg '$log_commit->{msg}'\n";
+        
+        my $first_parent_sha = undef;
+        my $first_parent_sha_id = undef;
+        if ( defined $log_commit->{parents}->[0] ) {
+           $first_parent_sha = $log_commit->{parents}->[0];
+           unless ( exists $rcommits_sha_list->{$first_parent_sha} ) {
+              $all_ok = 0; 
+              last LOG_COMMIT;
+           }
+           $first_parent_sha_id = $rcommits_sha_list->{ $first_parent_sha };
+        }
+        
+        my $rcommit_sha_id = $sha_rs->create({
+            sha => $rcommit_sha,
+        })->id;
+        #my $rcommit_sha_id = $rcommit_sha_row->get_column('sha_id');
+        $rcommits_sha_list->{ $rcommit_sha } = $rcommit_sha_id;
 
-    my $committer_id = $rauthor_rs->find_or_create({
-        rep_login => $log_commit->{committer}->{name},
-        email => $log_commit->{committer}->{email},
-        rep_id => $rep_id,
-    })->id;
-    
-    
-    $rcommit_rs->create({
-        rep_id => $rep_id,
-        msg => $log_commit->{msg},
-        sha_id => $rcommit_sha_id,
-        tree_id => $tree_sha_id,
-        parents_num => scalar @{$log_commit->{parents}},
-        parent_id => $first_parent_sha_id,
-        author_id => $author_id,
-        author_time => DateTime->from_epoch( 
-            epoch => $log_commit->{author}->{gmtime},
-            time_zone => 'GMT',
-        ),
-        committer_id => $committer_id,
-        committer_time => DateTime->from_epoch( 
-            epoch => $log_commit->{committer}->{gmtime},
-            time_zone => 'GMT',
-        ),
-    });
-    
+        my $tree_sha_id = $sha_rs->find_or_create({
+            sha => $log_commit->{tree},
+        })->id;
+
+        my $author_id = $rauthor_rs->find_or_create({
+            rep_login => $log_commit->{author}->{name},
+            email => $log_commit->{author}->{email},
+            rep_id => $rep_id,
+        })->id;
+
+        my $committer_id = $rauthor_rs->find_or_create({
+            rep_login => $log_commit->{committer}->{name},
+            email => $log_commit->{committer}->{email},
+            rep_id => $rep_id,
+        })->id;
+        
+        
+        $rcommit_rs->create({
+            rep_id => $rep_id,
+            msg => $log_commit->{msg},
+            sha_id => $rcommit_sha_id,
+            tree_id => $tree_sha_id,
+            parents_num => scalar @{$log_commit->{parents}},
+            parent_id => $first_parent_sha_id,
+            author_id => $author_id,
+            author_time => DateTime->from_epoch( 
+                epoch => $log_commit->{author}->{gmtime},
+                time_zone => 'GMT',
+            ),
+            committer_id => $committer_id,
+            committer_time => DateTime->from_epoch( 
+                epoch => $log_commit->{committer}->{gmtime},
+                time_zone => 'GMT',
+            ),
+        });
+    }
+
+} # end if
+
+
+if ( 1 ) {
+    my $refs = $gitrepo_obj->get_refs( 'remote_ref' );
+    print Dumper( $refs );
+
+
 }
+
 
 if ( $all_ok ) {
     print "Doing commit.\n";
