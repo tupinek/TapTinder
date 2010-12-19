@@ -77,7 +77,7 @@ CREATE TABLE rep (
     rep_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     project_id      INT UNSIGNED NOT NULL,
     name            VARCHAR(255) NOT NULL,
-    path            VARCHAR(255) NOT NULL,
+    repo_url        VARCHAR(255) NOT NULL,
     descr           TEXT DEFAULT NULL COMMENT 'Description.',
     active          BOOLEAN NOT NULL DEFAULT 1 COMMENT '1 .. repository is active, 0 .. old (deprecated) repository',
     CONSTRAINT fk_rep_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),
@@ -100,6 +100,7 @@ CREATE TABLE rauthor (
     rauthor_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     rep_id          INT UNSIGNED NOT NULL,
     rep_login       VARCHAR(255) DEFAULT NULL COMMENT 'Can be null (see Parrot rev 1346 created by cvs2svn).',
+    email           VARCHAR(255) DEFAULT NULL,
     user_id         INT UNSIGNED DEFAULT NULL COMMENT 'Some authors has TapTinder user_id too.',
     INDEX i_rep_id (rep_id),
     INDEX i_rep_login (rep_login),
@@ -117,22 +118,24 @@ CREATE TABLE rcommit (
     sha_id          INT UNSIGNED NOT NULL,
     tree_id	        INT UNSIGNED NOT NULL,
     parents_num	    INT UNSIGNED NOT NULL,
-    parent_id       INT UNSIGNED NOT NULL,
+    parent_id       INT UNSIGNED DEFAULT NULL,
     author_id       INT UNSIGNED NOT NULL,
     author_time     DATETIME NOT NULL,
     committer_id    INT UNSIGNED NOT NULL,
-    commiter_time   DATETIME NOT NULL,
+    committer_time  DATETIME NOT NULL,
     msg             TEXT,
     INDEX i_rep_id (rep_id),
     INDEX i_sha_id (sha_id),
     CONSTRAINT fk_rcommit_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
     CONSTRAINT fk_rcommit_sha_id FOREIGN KEY (sha_id) REFERENCES sha (sha_id),
     CONSTRAINT fk_rcommit_tree_id FOREIGN KEY (tree_id) REFERENCES sha (sha_id),
-    CONSTRAINT fk_rcommit_parent_id FOREIGN KEY (parent_id) REFERENCES rcommit (rcommit_id),
     CONSTRAINT fk_rcommit_author_id FOREIGN KEY (author_id) REFERENCES rauthor (rauthor_id),
     CONSTRAINT fk_rcommit_committer_id FOREIGN KEY (committer_id) REFERENCES rauthor (rauthor_id)
 ) TYPE=InnoDB COMMENT='Commit info. Tag: project.';
 </source>
+
+    CONSTRAINT fk_rcommit_parent_id FOREIGN KEY (parent_id) REFERENCES rcommit (rcommit_id),
+
 
 ==== Table rcparent ====
 <source lang=sql>
@@ -152,6 +155,7 @@ CREATE TABLE rref (
     rep_id          INT UNSIGNED NOT NULL,
     name            VARCHAR(1000) NOT NULL,
     rcommit_id      INT UNSIGNED NOT NULL,
+    active          BOOLEAN NOT NULL DEFAULT 1,
     INDEX i_rep_id (rep_id),
     INDEX i_name (name),
     CONSTRAINT fk_rref_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),

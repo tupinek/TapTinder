@@ -38,6 +38,7 @@ my $conf = load_conf_multi( undef, 'db' );
 croak "Configuration for database is empty.\n" unless $conf->{db};
 
 my $schema = get_connected_schema( $conf->{db} );
+croak "Connection to DB failed." unless $schema;
 
 if ( $opt_save ) {
     my $ddl_dir = catdir( $RealBin, '..', 'temp', 'deploy-ddl' );

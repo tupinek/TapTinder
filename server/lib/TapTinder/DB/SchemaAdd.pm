@@ -238,6 +238,7 @@ package TapTinder::DB::Schema::rauthor;
 __PACKAGE__->cwm_conf( {
     col_type => {
         'rep_login' => 'S',
+        'email' => 'S',
     },
 } );
 

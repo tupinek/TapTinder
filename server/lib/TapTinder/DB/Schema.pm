@@ -100,6 +100,15 @@ __PACKAGE__->add_columns(
       'is_nullable' => 1,
       'size' => '255'
     },
+    'email' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'email',
+      'is_nullable' => 1,
+      'size' => '255'
+    },
     'user_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
@@ -211,6 +220,15 @@ __PACKAGE__->add_columns(
       'name' => 'rcommit_id',
       'is_nullable' => 0,
       'size' => '11'
+    },
+    'active' => {
+      'data_type' => 'BOOLEAN',
+      'is_auto_increment' => 0,
+      'default_value' => '1',
+      'is_foreign_key' => 0,
+      'name' => 'active',
+      'is_nullable' => 0,
+      'size' => 0
     },
 );
 __PACKAGE__->set_primary_key('rref_id');
@@ -363,10 +381,10 @@ __PACKAGE__->add_columns(
     'parent_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
       'name' => 'parent_id',
-      'is_nullable' => 0,
+      'is_nullable' => 1,
       'size' => '11'
     },
     'author_id' => {
@@ -396,12 +414,12 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'commiter_time' => {
+    'committer_time' => {
       'data_type' => 'DATETIME',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'commiter_time',
+      'name' => 'committer_time',
       'is_nullable' => 0,
       'size' => 0
     },
@@ -2786,12 +2804,12 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '255'
     },
-    'path' => {
+    'repo_url' => {
       'data_type' => 'VARCHAR',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'path',
+      'name' => 'repo_url',
       'is_nullable' => 0,
       'size' => '255'
     },
@@ -2875,9 +2893,6 @@ __PACKAGE__->belongs_to('sha_id','TapTinder::DB::Schema::sha','sha_id');
 
 __PACKAGE__->belongs_to('tree_id','TapTinder::DB::Schema::sha','tree_id');
 
-__PACKAGE__->belongs_to('parent_id','TapTinder::DB::Schema::rcommit','parent_id');
-
-__PACKAGE__->has_many('get_rcommit', 'TapTinder::DB::Schema::rcommit', 'parent_id');
 __PACKAGE__->belongs_to('author_id','TapTinder::DB::Schema::rauthor','author_id');
 
 __PACKAGE__->belongs_to('committer_id','TapTinder::DB::Schema::rauthor','committer_id');
