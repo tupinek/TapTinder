@@ -143,6 +143,7 @@ CREATE TABLE rcommit (
 CREATE TABLE rcparent (
     child_id    INT UNSIGNED NOT NULL,
     parent_id   INT UNSIGNED NOT NULL,
+    num         INT UNSIGNED NOT NULL,
     UNIQUE KEY unique_child_id_parent_id (child_id, parent_id),
     CONSTRAINT fk_rcparent_child_id FOREIGN KEY (child_id) REFERENCES rcommit (rcommit_id),
     CONSTRAINT fk_rcparent_parent_id FOREIGN KEY (parent_id) REFERENCES rcommit (rcommit_id)

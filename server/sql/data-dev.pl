@@ -45,9 +45,9 @@ return sub {
     $schema->resultset('rep')->delete_all() if $delete_all;
     $schema->resultset('rep')->populate([
         [ qw/ rep_id project_id active name repo_url descr / ],
-        [ 1, 1, 1, 'default', 'tt-tr1', 'Defautl repository', ],
-        [ 2, 2, 1, 'default', 'tt-tr2', 'Defautl repository', ],
-        [ 3, 3, 1, 'default', 'tt-tr3', 'Defautl repository', ],
+        [ 1, 1, 1, 'default', 'tt-tr1', 'Default repository', ],
+        [ 2, 2, 1, 'default', 'tt-tr2', 'Default repository', ],
+        [ 3, 3, 1, 'default', 'tt-tr3', 'Default repository', ],
     ]);
 
 =pod

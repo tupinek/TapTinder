@@ -1,5 +1,3 @@
-#! perl
-
 use strict;
 use warnings;
 use Carp qw(carp croak verbose);
@@ -167,6 +165,7 @@ if ( 1 ) {
     $rcommit_rs = $schema->resultset('rcommit');
     my $sha_rs = $schema->resultset('sha');
     my $rauthor_rs = $schema->resultset('rauthor');
+    my $rcparent_rs = $schema->resultset('rcparent');
     LOG_COMMIT: foreach my $log_num ( 0..$#$log ) {
         my $log_commit = $log->[ $log_num ];
         #last if $log_num > $#$log / 2; # debug
@@ -178,21 +177,19 @@ if ( 1 ) {
         print "log msg '$log_commit->{msg}'\n";
         
         my $first_parent_sha = undef;
-        my $first_parent_sha_id = undef;
+        my $first_parent_rcommit_id = undef;
         if ( defined $log_commit->{parents}->[0] ) {
            $first_parent_sha = $log_commit->{parents}->[0];
            unless ( exists $rcommits_sha_list->{$first_parent_sha} ) {
               $all_ok = 0; 
               last LOG_COMMIT;
            }
-           $first_parent_sha_id = $rcommits_sha_list->{ $first_parent_sha };
+           $first_parent_rcommit_id = $rcommits_sha_list->{ $first_parent_sha };
         }
         
         my $rcommit_sha_id = $sha_rs->create({
             sha => $rcommit_sha,
         })->id;
-        #my $rcommit_sha_id = $rcommit_sha_row->get_column('sha_id');
-        $rcommits_sha_list->{ $rcommit_sha } = $rcommit_sha_id;
 
         my $tree_sha_id = $sha_rs->find_or_create({
             sha => $log_commit->{tree},
@@ -210,14 +207,15 @@ if ( 1 ) {
             rep_id => $rep_id,
         })->id;
         
-        
-        $rcommit_rs->create({
+        my $parents = $log_commit->{parents};
+        my $num_of_parents = scalar @$parents;
+        my $rcommit_row = $rcommit_rs->create({
             rep_id => $rep_id,
             msg => $log_commit->{msg},
             sha_id => $rcommit_sha_id,
             tree_id => $tree_sha_id,
-            parents_num => scalar @{$log_commit->{parents}},
-            parent_id => $first_parent_sha_id,
+            parents_num => $num_of_parents,
+            parent_id => $first_parent_rcommit_id,
             author_id => $author_id,
             author_time => DateTime->from_epoch( 
                 epoch => $log_commit->{author}->{gmtime},
@@ -229,7 +227,30 @@ if ( 1 ) {
                 time_zone => 'GMT',
             ),
         });
-    }
+        my $rcommit_id = $rcommit_row->id;
+        $rcommits_sha_list->{ $rcommit_sha } = $rcommit_id;
+        
+        if ( $num_of_parents >= 2 ) {
+            #print "rcommit_id $rcommit_id\n";
+            # skipping first one
+            foreach my $parent_num ( 1..$#$parents ) {
+                my $parent_sha = $parents->[ $parent_num ];
+                unless ( exists $rcommits_sha_list->{ $parent_sha } ) {
+                    $all_ok = 0; 
+                    last LOG_COMMIT;
+                }
+                my $parent_rcommit_id = $rcommits_sha_list->{ $parent_sha };
+                
+                $rcparent_rs->create({
+                    child_id => $rcommit_id,
+                    parent_id => $parent_rcommit_id,
+                    num => $parent_num,
+                });
+            }
+        }
+
+
+    } # end foreach
 
 } # end if
 
