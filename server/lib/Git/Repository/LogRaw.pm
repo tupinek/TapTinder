@@ -97,8 +97,7 @@ sub parse_item_log_line {
 sub parse_person_log_line_part {
     my ( $self, $line_part ) = @_;
 
-    if ( my ($name, $email, $lc_time, $timezone, $ts_mark, $ts_hour_offset, $ts_min_offset) = $line_part =~ /(.*) <(.*)> ([0-9]+) (([-+])([0-9]{2})([0-9]{2}))/ ) {
-        my $gmtime = $lc_time + ( $ts_mark eq '-' ? -1 : 1 ) * ( $ts_hour_offset * 3600 + $ts_min_offset * 60 );
+    if ( my ($name, $email, $gm_time, $timezone, $ts_mark, $ts_hour_offset, $ts_min_offset) = $line_part =~ /(.*) <(.*)> ([0-9]+) (([-+])([0-9]{2})([0-9]{2}))/ ) {
         return ( 1, $name, $email, $timezone, $gmtime );
     }
 
@@ -107,7 +106,7 @@ sub parse_person_log_line_part {
 
 
 sub get_log {
-    my ( $self ) = @_;
+    my ( $self, $ssh_skip_list ) = @_;
     
     my $cmd = $self->{repo}->command( 'log' => '--reverse', '--all', '--pretty=raw', '--raw', '-c', '-t', '--root', '--abbrev=40', '--raw' );
     print "LogRaw cmdline: '" . join(' ', $cmd->cmdline() ) . "'\n" if $self->{ver} >= 3;
@@ -129,7 +128,9 @@ sub get_log {
         if ( my ( $commit_hash ) = $line =~ /^commit ([0-9a-f]{40})$/ ) {
             if ( defined $commit ) {
                 print Dumper( $commit ) if $self->{ver} >= 4;
-                push @$log, $commit;
+                if ( (not defined $ssh_skip_list) || (not exists $ssh_skip_list->{$commit->{commit}}) ) {
+                    push @$log, $commit;
+                }
             }
 
 
@@ -292,7 +293,9 @@ sub get_log {
     }
 
     print Dumper( $commit ) if $self->{ver} >= 4;
-    push @$log, $commit;
+    if ( (not defined $ssh_skip_list) || (not exists $ssh_skip_list->{$commit->{commit}}) ) {
+        push @$log, $commit;
+    }
 
     $cmd->close;
     return $log;

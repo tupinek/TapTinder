@@ -1,3 +1,5 @@
+#!perl
+
 use strict;
 use warnings;
 use Carp qw(carp croak verbose);
@@ -142,25 +144,28 @@ print "rep_id $rep_id\n";
 
 my $all_ok = 1;
 
+my $rcommit_rs = $schema->resultset('rcommit')->search(
+    {},
+    {
+        join => 'sha_id',
+        'select' => [ 'me.rcommit_id', 'sha_id.sha' ],
+    }
+);
+my $rcommits_sha_list = {};
+foreach my $rcommit_row ( $rcommit_rs->cursor->all ) {
+    my $rcommit_id = $rcommit_row->[0];
+    my $sha = $rcommit_row->[1];
+    $rcommits_sha_list->{ $sha } = $rcommit_id;
+}
+
+my $err = [];
 if ( 1 ) {
-    my $log = $gitrepo_obj->get_log();
+    my $log = $gitrepo_obj->get_log(
+        $rcommits_sha_list  # $ssh_skip_list
+    );
     #print Dumper( $log );
 
-    my $rcommit_rs = $schema->resultset('rcommit')->search(
-        {},
-        {
-            join => 'sha_id',
-            'select' => [ 'me.rcommit_id', 'sha_id.sha' ],
-        }
-    );
-
-
-    my $rcommits_sha_list = {};
-    foreach my $rcommit_row ( $rcommit_rs->cursor->all ) {
-        my $rcommit_id = $rcommit_row->[0];
-        my $sha = $rcommit_row->[1];
-        $rcommits_sha_list->{ $sha } = $rcommit_id;
-    }
+    @$log = sort { $a->{committer}->{gmtime} <=> $b->{committer}->{gmtime} } @$log;
 
     $rcommit_rs = $schema->resultset('rcommit');
     my $sha_rs = $schema->resultset('sha');
@@ -174,13 +179,14 @@ if ( 1 ) {
         next if exists $rcommits_sha_list->{ $rcommit_sha };
         
         
-        print "log msg '$log_commit->{msg}'\n";
+        print "log msg '$log_commit->{msg}'\n" if $ver >= 3;
         
         my $first_parent_sha = undef;
         my $first_parent_rcommit_id = undef;
         if ( defined $log_commit->{parents}->[0] ) {
            $first_parent_sha = $log_commit->{parents}->[0];
            unless ( exists $rcommits_sha_list->{$first_parent_sha} ) {
+              push @$err, "First parent rcommit_id not found in sha_lit for sha '{$first_parent_sha}'.";
               $all_ok = 0; 
               last LOG_COMMIT;
            }
@@ -236,6 +242,7 @@ if ( 1 ) {
             foreach my $parent_num ( 1..$#$parents ) {
                 my $parent_sha = $parents->[ $parent_num ];
                 unless ( exists $rcommits_sha_list->{ $parent_sha } ) {
+                    push @$err, "Parent rcommit_id not found in sha_lit for sha '$parent_sha'.";
                     $all_ok = 0; 
                     last LOG_COMMIT;
                 }
@@ -255,11 +262,36 @@ if ( 1 ) {
 } # end if
 
 
-if ( 1 ) {
+if ( 0 ) {
+    my $all_rref_rs = $schema->resultset('rcommit')->search({
+        rep_id => $rep_id,
+    });
+    while ( my $row = $all_rref_rs->next ) {
+        #print Dumper( $row->get_columns );
+    }
+
     my $refs = $gitrepo_obj->get_refs( 'remote_ref' );
-    print Dumper( $refs );
+    #print Dumper( $refs );
 
-
+    my $rcommit_rs = $schema->resultset('rcommit');
+    my $rref_rs = $schema->resultset('rref');
+    REF_LIST: foreach my $ref_key ( keys %$refs ) {
+        my $ref_info = $refs->{ $ref_key };
+        my $ref_sha = $ref_info->{sha};
+        unless ( exists $rcommits_sha_list->{ $ref_sha } ) {
+            push @$err, "Can't find rcommit_id for sha '$ref_sha' in sha_list.";
+            $all_ok = 0; 
+            last REF_LIST;
+        }
+        my $rcommit_id = $rcommits_sha_list->{ $ref_sha };
+        $rref_rs->update_or_create({
+            rep_id => $rep_id,
+            name => $ref_info->{branch_name},
+            fullname => $ref_key,
+            rcommit_id => $rcommit_id,
+            active => 1,
+        });
+    }
 }
 
 
@@ -268,6 +300,9 @@ if ( $all_ok ) {
     $schema->storage->txn_commit;
 } else {
     print "Doing rollback.\n";
+    print "Error mesages:\n";
+    print join("\n", @$err );
+    print "\n";
     $schema->storage->txn_rollback;
 }
 
