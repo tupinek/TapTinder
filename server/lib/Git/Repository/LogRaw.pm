@@ -97,7 +97,7 @@ sub parse_item_log_line {
 sub parse_person_log_line_part {
     my ( $self, $line_part ) = @_;
 
-    if ( my ($name, $email, $gm_time, $timezone, $ts_mark, $ts_hour_offset, $ts_min_offset) = $line_part =~ /(.*) <(.*)> ([0-9]+) (([-+])([0-9]{2})([0-9]{2}))/ ) {
+    if ( my ($name, $email, $gmtime, $timezone, $ts_mark, $ts_hour_offset, $ts_min_offset) = $line_part =~ /(.*) <(.*)> ([0-9]+) (([-+])([0-9]{2})([0-9]{2}))/ ) {
         return ( 1, $name, $email, $timezone, $gmtime );
     }
 
@@ -108,7 +108,7 @@ sub parse_person_log_line_part {
 sub get_log {
     my ( $self, $ssh_skip_list ) = @_;
     
-    my $cmd = $self->{repo}->command( 'log' => '--reverse', '--all', '--pretty=raw', '--raw', '-c', '-t', '--root', '--abbrev=40', '--raw' );
+    my $cmd = $self->{repo}->command( 'log' => '--date-order', '--reverse', '--all', '--pretty=raw', '--raw', '-c', '-t', '--root', '--abbrev=40', '--raw' );
     print "LogRaw cmdline: '" . join(' ', $cmd->cmdline() ) . "'\n" if $self->{ver} >= 3;
 
     

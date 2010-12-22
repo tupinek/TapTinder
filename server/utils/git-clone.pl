@@ -88,8 +88,6 @@ my $repo_obj = Git::Repository::LogRaw->new( $repo, $ver );
 if ( 1 ) {
     my $log = $repo_obj->get_log();
 
-    @$log = sort { $a->{committer}->{gmtime} <=> $b->{committer}->{gmtime} } @$log;
-    
     my $fh;
     open( $fh, '>temp/out-'.$repo_name.'.txt' ) || croak;
     print $fh Dumper( $log );

@@ -165,8 +165,6 @@ if ( 1 ) {
     );
     #print Dumper( $log );
 
-    @$log = sort { $a->{committer}->{gmtime} <=> $b->{committer}->{gmtime} } @$log;
-
     $rcommit_rs = $schema->resultset('rcommit');
     my $sha_rs = $schema->resultset('sha');
     my $rauthor_rs = $schema->resultset('rauthor');
