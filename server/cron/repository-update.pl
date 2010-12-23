@@ -202,7 +202,7 @@ foreach my $rcommit_row ( $rcommit_rs->cursor->all ) {
     $rcommits_sha_list->{ $sha } = $rcommit_id;
 }
 
-my $added_num = 0;
+my $commits_added_num = 0;
 my $err = [];
 if ( $steps->{commits} ) {
     print "Adding new commits.\n" if $ver >= 2;
@@ -301,28 +301,40 @@ if ( $steps->{commits} ) {
             }
         }
         
-        $added_num++;
+        $commits_added_num++;
     } # end foreach
     
-    print "Added $added_num new commits.\n" if $ver >= 3;
+    print "Added $commits_added_num new commits.\n" if $ver >= 3;
 
 } # end if
 
 
-my $updated_num = 0;
-if ( $steps->{refs} ) {
-    print "Doing refs update.\n" if $ver >= 2;
-    my $db_refs = {};
+sub get_db_refs {
+    my ( $schema, $rep_id ) = @_;
+    
     my $all_rref_rs = $schema->resultset('rref')->search({
-        rep_id => $rep_id,
+        'rcommit_id.rep_id' => $rep_id,
     }, {
         join => { 'rcommit_id' => 'sha_id', },
-        select => [ 'me.fullname', 'sha_id.sha', ],
-        as => [ 'fullname', 'sha', ],
+        select => [ 'me.rref_id', 'me.active', 'me.fullname', 'sha_id.sha', ],
+        as => [ 'rref_id', 'active', 'fullname', 'sha', ],
     });
+    my $db_refs = {};
     while ( my $row = $all_rref_rs->next ) {
-        $db_refs->{ $row->get_column('fullname') } = $row->get_column('sha');
+        $db_refs->{ $row->get_column('fullname') } = { $row->get_columns };
     }
+    return $db_refs;
+}
+
+
+my $rref_updated_num = 0;
+my $rref_removed_num = 0;
+if ( $steps->{refs} ) {
+    print "Doing refs update.\n" if $ver >= 2;
+    # Hash $db_refs is used to cache DB values. Used keys are removed during processiong
+    # repository refs. Then remainning keys are used to deactivate refs in db.
+    my $db_refs = get_db_refs( $schema, $rep_id );
+    print Dumper( $db_refs ) if $ver >= 5;
 
     my $repo_refs = $gitrepo_obj->get_refs( 'remote_ref' );
     my $rcommit_rs = $schema->resultset('rcommit');
@@ -333,8 +345,21 @@ if ( $steps->{refs} ) {
         my $ref_fullname = $ref_info->{fullname};
         
         # Not changed.
-        if ( exists $db_refs->{$ref_key} && $db_refs->{$ref_key} eq $ref_sha ) {
-            print "Ref '$ref_key' not changed.\n" if $ver >= 4;
+        if ( exists $db_refs->{$ref_key} ) {
+            if ( ! $db_refs->{$ref_key}->{active} ) {
+                my $rref_id = $db_refs->{$ref_key}->{rref_id};
+                my $row = $rref_rs->find( $rref_id );
+                my $rcommit_id = $rcommits_sha_list->{ $ref_sha };
+                $row->update({
+                    active => 1,
+                    rcommit_id => $rcommit_id,
+                });
+                print "Activating a probably also updating '$ref_key'.\n" if $ver >= 3;
+                $rref_updated_num++;
+            } elsif ( $db_refs->{$ref_key} eq $ref_sha ) {
+                print "Ref '$ref_key' not changed.\n" if $ver >= 4;
+            }
+            delete $db_refs->{$ref_key};
             next REF_LIST;
         }
         
@@ -344,19 +369,37 @@ if ( $steps->{refs} ) {
             last REF_LIST;
         }
         my $rcommit_id = $rcommits_sha_list->{ $ref_sha };
-        $rref_rs->update_or_create({
-            name => $ref_info->{branch_name},
-            fullname => $ref_key,
-            rcommit_id => $rcommit_id,
-            active => 1,
-        });
+        $rref_rs->update_or_create(
+            {
+                fullname => $ref_key,
+                name => $ref_info->{branch_name},
+                rcommit_id => $rcommit_id,
+                active => 1,
+            }, {
+                fullname => $ref_key,
+            }
+        );
         print "Updating '$ref_key'.\n" if $ver >= 3;
-        $updated_num++;
+        $rref_updated_num++;
     }
-    print "Updated $updated_num refs.\n" if $ver >= 3;
+    print "Updated $rref_updated_num refs.\n" if $ver >= 3;
+
+    #print Dumper( $db_refs );
+    foreach my $ref_key ( keys %$db_refs ) {
+        next unless $db_refs->{ $ref_key }->{active};
+        my $rref_id = $db_refs->{ $ref_key }->{rref_id};
+        my $row = $rref_rs->find( $rref_id );
+        $row->update({active => 0});
+        $rref_removed_num++;
+    }
+    print "Deactivated $rref_removed_num refs.\n" if $ver >= 3;
+ 
+    $db_refs = get_db_refs( $schema, $rep_id );
+    print Dumper( $db_refs ) if $ver >= 5;
+   
 }
 
-if ( $ver >= 2 && ($added_num > 0 || $updated_num) ) {
+if ( $ver >= 2 && ($commits_added_num == 0 && $rref_updated_num == 0 && $rref_removed_num == 0) ) {
     print "Nothing to do.\n";
 }
 
