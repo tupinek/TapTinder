@@ -203,15 +203,6 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'rep_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'rep_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
     'name' => {
       'data_type' => 'VARCHAR',
       'is_auto_increment' => 0,
@@ -2889,8 +2880,6 @@ __PACKAGE__->has_many('get_ichannel_conf', 'TapTinder::DB::Schema::ichannel_conf
 
 package TapTinder::DB::Schema::rref;
 
-__PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id');
-
 __PACKAGE__->belongs_to('rcommit_id','TapTinder::DB::Schema::rcommit','rcommit_id');
 
 __PACKAGE__->has_many('get_jobp', 'TapTinder::DB::Schema::jobp', 'rref_id');
@@ -3217,7 +3206,6 @@ __PACKAGE__->belongs_to('project_id','TapTinder::DB::Schema::project','project_i
 
 __PACKAGE__->has_many('get_rauthor', 'TapTinder::DB::Schema::rauthor', 'rep_id');
 __PACKAGE__->has_many('get_rcommit', 'TapTinder::DB::Schema::rcommit', 'rep_id');
-__PACKAGE__->has_many('get_rref', 'TapTinder::DB::Schema::rref', 'rep_id');
 __PACKAGE__->has_many('get_machine_job_conf', 'TapTinder::DB::Schema::machine_job_conf', 'rep_id');
 __PACKAGE__->has_many('get_fspath_select', 'TapTinder::DB::Schema::fspath_select', 'rep_id');
 

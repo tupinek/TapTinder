@@ -109,7 +109,7 @@ sub get_log {
     my ( $self, $ssh_skip_list ) = @_;
     
     my $cmd = $self->{repo}->command( 'log' => '--date-order', '--reverse', '--all', '--pretty=raw', '--raw', '-c', '-t', '--root', '--abbrev=40', '--raw' );
-    print "LogRaw cmdline: '" . join(' ', $cmd->cmdline() ) . "'\n" if $self->{ver} >= 3;
+    print "LogRaw cmdline: '" . join(' ', $cmd->cmdline() ) . "'\n" if $self->{ver} >= 4;
 
     
     my $line_num = 0;
@@ -122,12 +122,12 @@ sub get_log {
     PARSE_LOG: while ( my $line = <$out_fh> ) {
         $line_num++;
         chomp $line;
-        printf( "%3d (prev %10s): '%s'\n", $line_num, $ac_state, $line ) if $self->{ver} >= 3;
+        printf( "%3d (prev %10s): '%s'\n", $line_num, $ac_state, $line ) if $self->{ver} >= 5;
 
         # commit 1x
         if ( my ( $commit_hash ) = $line =~ /^commit ([0-9a-f]{40})$/ ) {
             if ( defined $commit ) {
-                print Dumper( $commit ) if $self->{ver} >= 4;
+                print Dumper( $commit ) if $self->{ver} >= 5;
                 if ( (not defined $ssh_skip_list) || (not exists $ssh_skip_list->{$commit->{commit}}) ) {
                     push @$log, $commit;
                 }
@@ -283,16 +283,16 @@ sub get_log {
     my $err_out = do { local $/; <$err> };
     if ( $err_out ) {
         $self->{err_msg} = "Error:\n  $err_out\n" . $err_msg;
-        print $self->{err_msg} if $self->{ver} >= 2;
+        print $self->{err_msg} if $self->{ver} >= 1;
         return undef;
     }
     if ( $err_msg ) {
         $self->{err_msg} = $err_msg;
-        print $self->{err_msg} if $self->{ver} >= 2;
+        print $self->{err_msg} if $self->{ver} >= 1;
         return undef;
     }
 
-    print Dumper( $commit ) if $self->{ver} >= 4;
+    print Dumper( $commit ) if $self->{ver} >= 6;
     if ( (not defined $ssh_skip_list) || (not exists $ssh_skip_list->{$commit->{commit}}) ) {
         push @$log, $commit;
     }
@@ -313,7 +313,7 @@ sub get_refs {
     my ( $self, $filter_type ) = @_;
     
     my $cmd = $self->{repo}->command( 'for-each-ref' );
-    print "LogRaw cmdline: '" . join(' ', $cmd->cmdline() ) . "'\n" if $self->{ver} >= 3;
+    print "LogRaw cmdline: '" . join(' ', $cmd->cmdline() ) . "'\n" if $self->{ver} >= 4;
     
     my $line_num = 0;
     my $refs = {};
@@ -323,7 +323,7 @@ sub get_refs {
     PARSE_REF: while ( my $line = <$out_fh> ) {
         $line_num++;
         chomp $line;
-        printf( "%3d: '%s'\n", $line_num, $line ) if $self->{ver} >= 3;
+        printf( "%3d: '%s'\n", $line_num, $line ) if $self->{ver} >= 4;
 
         if ( my ( $sha, $sha_type, $tag_name ) = $line =~ /^([0-9a-f]{40})\ (commit|tag)\t(.*)$/ ) {
             if ( my ( $name_prefix, $name_base ) = $tag_name =~ /^([^\/]+\/[^\/]+)\/(.*)$/ ) {
@@ -377,12 +377,12 @@ sub get_refs {
     my $err_out = do { local $/; <$err> };
     if ( $err_out ) {
         $self->{err_msg} = "Error:\n  $err_out\n" . $err_msg;
-        print $self->{err_msg} if $self->{ver} >= 2;
+        print $self->{err_msg} if $self->{ver} >= 1;
         return undef;
     }
     if ( $err_msg ) {
         $self->{err_msg} = $err_msg;
-        print $self->{err_msg} if $self->{ver} >= 2;
+        print $self->{err_msg} if $self->{ver} >= 1;
         return undef;
     }
 

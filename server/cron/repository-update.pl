@@ -1,5 +1,17 @@
 #!perl
 
+=pod
+
+ToDo
+* refactor to package/objects
+* add tests
+** https://github.com/mj41/TapTinder/issues#issue/25
+* speed up 
+** initil parrot to DB takes 15 minutes
+** commit transaction each 1000 commits?
+
+=cut
+
 use strict;
 use warnings;
 use Carp qw(carp croak verbose);
@@ -24,18 +36,23 @@ my $help = 0;
 my $project_name = undef;
 my $ver = 2;
 my $debug_logpart = 0;
+my $steps_str = undef;
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
     'project|p=s' => \$project_name,
     'ver|v=i' => \$ver,
+    'steps=s' => \$steps_str,
 );
 pod2usage(1) if $help || !$options_ok;
 
-unless ( $project_name ) {
-    print "Project name not found.\n\n";
+sub option_fatal_err {
+    my ( $msg ) = @_;
+    print $msg . "\n\n"  if $ver >= 1;
     pod2usage(1);
     exit 0;
 }
+
+option_fatal_err("Project name not found.") unless $project_name;
 
 my $cm_dir = catfile( $FindBin::Bin , '..', 'conf' );
 my $conf = load_conf_multi( $cm_dir, 'db', 'project' );
@@ -47,6 +64,26 @@ unless ( $conf->{project}->{ $project_name } ) {
     croak "Configuration for project '$project_name' not found.";
 }
 
+my $steps = {
+    pull => 1,
+    commits => 1,
+    refs => 1,
+};
+if ( defined $steps_str ) {
+    my @steps_opt = split( /\s*,\s*/, $steps_str );
+    option_fatal_err("Error in --step value '$steps_str'.") unless scalar @steps_opt;
+    foreach my $step_key ( keys %$steps ) {
+        $steps->{$step_key} = 0 ;
+    }
+    foreach my $step_key ( @steps_opt ) {
+        option_fatal_err("Unknown step '$step_key' name.") unless exists $steps->{ $step_key };
+        $steps->{ $step_key } = 1;
+    }
+}
+
+
+print "Starting repository update for project '$project_name'.\n" if $ver >= 2;
+
 my $conf_rep = $conf->{project}->{$project_name};
 
 my $base_dir = catdir( $FindBin::RealBin, '..', '..' );
@@ -56,6 +93,7 @@ my $state_fn = catfile( $base_dir, 'server-repos', $project_name . '-state.pl' )
 
 my $repo_url = $conf_rep->{repository};
 
+print "Connecting to DB.\n" if $ver >= 3;
 my $schema = get_connected_schema( $conf->{db} );
 croak "Connection to DB failed." unless $schema;
 
@@ -73,7 +111,7 @@ sub dmp {
 my $state;
 
 sub save_state {
-    open SFH, ">", $state_fn or croak;
+    open SFH, ">", $state_fn or croak $!;
     print SFH dmp($state)."\n";
     close SFH;
 }
@@ -81,31 +119,36 @@ sub save_state {
 if ( -e $state_fn ) {
     $state = require $state_fn;
     if ( $project_name ne $state->{project_name} ) {
-        print "Loaded state conf for project '$state->{project_name}', but your project name is '$project_name'";
+        print "Loaded state conf for project '$state->{project_name}', but your project name is '$project_name'" if $ver >= 3;;
     }
+    print "State file loaded.\n" if $ver >= 3;
+
 } else {
     $state = {};
     $state->{project_name} = $project_name;
     $state->{create_time} = time();
     save_state();
+    print "State file created.\n" if $ver >= 3;
 }
 
 
 my $repo = undef;
 unless ( -d $work_tree ) {
-    print "Cloning '$repo_url' to '$work_tree'.\n";
+    print "Cloning '$repo_url' to '$work_tree'.\n" if $ver >= 3;
     $repo = Git::Repository->create( 
         clone => $repo_url => $work_tree,
     );
 
 } else {
-    print "Initializing from '$work_tree'.\n";
+    print "Initializing from '$work_tree'.\n" if $ver >= 3;
     $repo = Git::Repository->new( 
         work_tree => $work_tree,
     );
+    if ( $steps->{pull} ) {
+        print "Running 'git pull'.\n" if $ver >= 2;
+        $repo->command( 'pull' );
+    }
 }
-print "\n";
-
 
 my $gitrepo_obj = Git::Repository::LogRaw->new( $repo, $ver );
 
@@ -137,10 +180,11 @@ sub find_or_create_rep {
     return $rep_id;
 }
   
-$schema->storage->txn_begin;
-
 my $rep_id = find_or_create_rep( $schema, $project_name, $repo_url );
-print "rep_id $rep_id\n";
+print "Repository for '$project_name' and '$repo_url' has rep_id=$rep_id.\n" if $ver >= 3;
+
+print "Starting transaction.\n" if $ver >= 3;
+$schema->storage->txn_begin;
 
 my $all_ok = 1;
 
@@ -158,14 +202,19 @@ foreach my $rcommit_row ( $rcommit_rs->cursor->all ) {
     $rcommits_sha_list->{ $sha } = $rcommit_id;
 }
 
+my $added_num = 0;
 my $err = [];
-if ( 1 ) {
+if ( $steps->{commits} ) {
+    print "Adding new commits.\n" if $ver >= 2;
+
+    print "Loading log.\n" if $ver >= 3;
     my $log = $gitrepo_obj->get_log(
         $rcommits_sha_list  # $ssh_skip_list
     );
+    print "Found " . (scalar @$log) . " new log items.\n" if $ver >= 3;
     #print Dumper( $log );
-
-    $rcommit_rs = $schema->resultset('rcommit');
+    
+    my $rcommit_rs = $schema->resultset('rcommit');
     my $sha_rs = $schema->resultset('sha');
     my $rauthor_rs = $schema->resultset('rauthor');
     my $rcparent_rs = $schema->resultset('rcparent');
@@ -176,8 +225,7 @@ if ( 1 ) {
         my $rcommit_sha = $log_commit->{commit};
         next if exists $rcommits_sha_list->{ $rcommit_sha };
         
-        
-        print "log msg '$log_commit->{msg}'\n" if $ver >= 3;
+        print "Log msg '$log_commit->{msg}'\n" if $ver >= 5;
         
         my $first_parent_sha = undef;
         my $first_parent_rcommit_id = undef;
@@ -235,7 +283,6 @@ if ( 1 ) {
         $rcommits_sha_list->{ $rcommit_sha } = $rcommit_id;
         
         if ( $num_of_parents >= 2 ) {
-            #print "rcommit_id $rcommit_id\n";
             # skipping first one
             foreach my $parent_num ( 1..$#$parents ) {
                 my $parent_sha = $parents->[ $parent_num ];
@@ -253,29 +300,44 @@ if ( 1 ) {
                 });
             }
         }
-
-
+        
+        $added_num++;
     } # end foreach
+    
+    print "Added $added_num new commits.\n" if $ver >= 3;
 
 } # end if
 
 
-if ( 0 ) {
-    my $all_rref_rs = $schema->resultset('rcommit')->search({
+my $updated_num = 0;
+if ( $steps->{refs} ) {
+    print "Doing refs update.\n" if $ver >= 2;
+    my $db_refs = {};
+    my $all_rref_rs = $schema->resultset('rref')->search({
         rep_id => $rep_id,
+    }, {
+        join => { 'rcommit_id' => 'sha_id', },
+        select => [ 'me.fullname', 'sha_id.sha', ],
+        as => [ 'fullname', 'sha', ],
     });
     while ( my $row = $all_rref_rs->next ) {
-        #print Dumper( $row->get_columns );
+        $db_refs->{ $row->get_column('fullname') } = $row->get_column('sha');
     }
 
-    my $refs = $gitrepo_obj->get_refs( 'remote_ref' );
-    #print Dumper( $refs );
-
+    my $repo_refs = $gitrepo_obj->get_refs( 'remote_ref' );
     my $rcommit_rs = $schema->resultset('rcommit');
     my $rref_rs = $schema->resultset('rref');
-    REF_LIST: foreach my $ref_key ( keys %$refs ) {
-        my $ref_info = $refs->{ $ref_key };
+    REF_LIST: foreach my $ref_key ( keys %$repo_refs ) {
+        my $ref_info = $repo_refs->{ $ref_key };
         my $ref_sha = $ref_info->{sha};
+        my $ref_fullname = $ref_info->{fullname};
+        
+        # Not changed.
+        if ( exists $db_refs->{$ref_key} && $db_refs->{$ref_key} eq $ref_sha ) {
+            print "Ref '$ref_key' not changed.\n" if $ver >= 4;
+            next REF_LIST;
+        }
+        
         unless ( exists $rcommits_sha_list->{ $ref_sha } ) {
             push @$err, "Can't find rcommit_id for sha '$ref_sha' in sha_list.";
             $all_ok = 0; 
@@ -283,30 +345,40 @@ if ( 0 ) {
         }
         my $rcommit_id = $rcommits_sha_list->{ $ref_sha };
         $rref_rs->update_or_create({
-            rep_id => $rep_id,
             name => $ref_info->{branch_name},
             fullname => $ref_key,
             rcommit_id => $rcommit_id,
             active => 1,
         });
+        print "Updating '$ref_key'.\n" if $ver >= 3;
+        $updated_num++;
     }
+    print "Updated $updated_num refs.\n" if $ver >= 3;
 }
 
+if ( $ver >= 2 && ($added_num > 0 || $updated_num) ) {
+    print "Nothing to do.\n";
+}
 
 if ( $all_ok ) {
-    print "Doing commit.\n";
+    print "Doing commit.\n" if $ver >= 3;
     $schema->storage->txn_commit;
 } else {
-    print "Doing rollback.\n";
-    print "Error mesages:\n";
-    print join("\n", @$err );
-    print "\n";
+    print "Doing rollback.\n" if $ver >= 2;
+    if ( $ver >= 1 ) {
+        print "Error mesages:\n";
+        print join("\n", @$err );
+        print "\n";
+    }
     $schema->storage->txn_rollback;
 }
 
+save_state();
+
+
 =head1 NAME
 
-repository-update - Save new revisions to database
+repository-update - Update copy of project repository and related project database tables.
 
 =head1 SYNOPSIS
 
@@ -314,9 +386,12 @@ repository-update.pl -p project_name [options]
 
  Options:
    --help
+   --ver=%d .. Verbose level (default 2).
+   --project=%s .. Project name.
+   --steps=%s .. Steps to run (default --step=pull,commits,refs).
 
 =head1 DESCRIPTION
 
-B<This program> will save ...
+B<This program> will clone/pull reposioty and fill/update related database tables.
 
 =cut

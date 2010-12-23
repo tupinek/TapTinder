@@ -116,7 +116,7 @@ CREATE TABLE rcommit (
     rcommit_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     rep_id          INT UNSIGNED NOT NULL,
     sha_id          INT UNSIGNED NOT NULL,
-    tree_id	        INT UNSIGNED NOT NULL,
+    tree_id	    INT UNSIGNED NOT NULL,
     parents_num	    INT UNSIGNED NOT NULL,
     parent_id       INT UNSIGNED DEFAULT NULL,
     author_id       INT UNSIGNED NOT NULL,
@@ -154,14 +154,12 @@ CREATE TABLE rcparent (
 <source lang=sql>
 CREATE TABLE rref (
     rref_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    rep_id          INT UNSIGNED NOT NULL,
     name            VARCHAR(500) NOT NULL,
     fullname        VARCHAR(500) NOT NULL,
     rcommit_id      INT UNSIGNED NOT NULL,
     active          BOOLEAN NOT NULL DEFAULT 1,
     INDEX i_rep_id (rep_id),
     INDEX i_name (name),
-    CONSTRAINT fk_rref_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
     CONSTRAINT fk_rref_rcommit_id FOREIGN KEY (rcommit_id) REFERENCES rcommit (rcommit_id)
 ) TYPE=InnoDB COMMENT='Repository referencies. Tag: project.';
 </source>
