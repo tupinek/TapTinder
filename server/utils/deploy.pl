@@ -59,22 +59,6 @@ if ( $opt_save ) {
 }
 
 
-sub run_perl_sql_file {
-    my $req_fname = shift;
-    # Others from @_ used below.
-    
-    my $req_fpath = catdir( $RealBin, '..', 'sql', $req_fname );
-    carp "File '$req_fpath' doesn't exists." unless -f $req_fpath;
-    my $do_sub = require $req_fpath;
-    if ( ref $do_sub ne 'CODE' ) {
-        carp "No code reference returned from '$req_fpath'.";
-        return 0;
-    }
-    return $do_sub->( @_ );
-}
-
-
-
 if ( $db_work ) {
     $schema->storage->txn_begin;
 }
@@ -92,16 +76,19 @@ if ( $opt_data ) {
 
     my $base_data = {};
     $base_data->{db_version} = '0.5';
-    run_perl_sql_file(
-        'data-base.pl', # $req_fname
+    my $req_fname = 'data-base.pl';
+    my $req_fpath = catdir( $RealBin, '..', 'sql', $req_fname );
+    TapTinder::Utils::DB::run_perl_sql_file(
+        $req_fpath,     # $req_fpath
         $schema,        # $schema
         1,              # $delete_old
         $base_data      # data
     );
 
-    my $req_fname = 'data-' . $opt_data . '.pl';
-    run_perl_sql_file(
-        $req_fname,     # $req_fname
+    $req_fname = 'data-' . $opt_data . '.pl';
+    $req_fpath = catdir( $RealBin, '..', 'sql', $req_fname );
+    TapTinder::Utils::DB::run_perl_sql_file(
+        $req_fpath,     # $req_fpath
         $schema,        # $schema
         1,              # $delete_old
         undef           # data

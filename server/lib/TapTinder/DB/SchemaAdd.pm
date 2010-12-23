@@ -243,6 +243,14 @@ __PACKAGE__->cwm_conf( {
 } );
 
 
+package TapTinder::DB::Schema::sha;
+__PACKAGE__->cwm_conf( {
+    col_type => {
+        'sha' => 'S',
+    },
+} );
+
+
 package TapTinder::DB::Schema::rfile;
 __PACKAGE__->cwm_conf( {
     col_type => {

@@ -8,8 +8,9 @@ Usage:
   c ... create fresh
   l ... load data from temp/ttdev-dump.sql
 
+  n ... do not update schema files
   u ... update schema files
-  uu ... update schema files, upgrade schema
+  uu ... update schema files, update dbdoc
   
   ld ... load default repositories
   
@@ -87,10 +88,6 @@ if [ "$1" = "c" ]; then
     perl ./utils/deploy.pl --drop --deploy --data=dev
     echo ""
 
-    echo "Copying temp/schema-raw-create.sql to temp/schema-raw-create-dump.sql"
-    cp ./temp/schema-raw-create.sql ./temp/schema-raw-create-dump.sql
-    echo ""
-
     echo "Executing utils/set_client_passwd.pl --client_conf_fpath (perl):"
     perl ./utils/set_client_passwd.pl --client_conf_fpath
     echo ""
@@ -104,14 +101,18 @@ if [ "$1" = "c" ]; then
     echo ""
 
     if [ "$3" = "ld" ]; then
-        echo "Executing cron/repository-update.pl -p TapTinder-tr1 (perl):"
-        perl ./cron/repository-update.pl --project=TapTinder-tr1
+        echo "Executing cron/repository-update.pl -p tt-tr1 (perl):"
+        perl ./cron/repository-update.pl --project=tt-tr1
         echo ""
-        echo "Executing cron/repository-update.pl -p TapTinder-tr3 (perl):"
-        perl ./cron/repository-update.pl --project=TapTinder-tr2
+        echo "Executing cron/repository-update.pl -p tt-tr3 (perl):"
+        perl ./cron/repository-update.pl --project=tt-tr2
         echo ""
-        echo "Executing cron/repository-update.pl -p TapTinder-tr3 (perl):"
-        perl ./cron/repository-update.pl --project=TapTinder-tr3
+        echo "Executing cron/repository-update.pl -p tt-tr3 (perl):"
+        perl ./cron/repository-update.pl --project=tt-tr3
+        echo "";
+
+        echo "Executing utils/db-fill-sqldata.pl sql/data-dev-jobs.pl
+        perl ./utils/db-fill-sqldata.pl ./sql/data-dev-jobs.pl
         echo "";
     fi
 fi

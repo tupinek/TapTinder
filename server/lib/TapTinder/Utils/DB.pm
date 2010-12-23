@@ -84,4 +84,23 @@ sub do_drop_all_existing_tables {
 }
 
 
+=head2 run_perl_sql_file
+
+Run script to fill data to database (sql/data-*.pl).
+
+=cut
+
+sub run_perl_sql_file {
+    my $req_fpath = shift;
+    # Others from @_ used below.
+
+    carp "File '$req_fpath' doesn't exists." unless -f $req_fpath;
+    my $do_sub = require $req_fpath;
+    if ( ref $do_sub ne 'CODE' ) {
+        carp "No code reference returned from '$req_fpath'.";
+        return 0;
+    }
+    return $do_sub->( @_ );
+}
+
 1;

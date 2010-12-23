@@ -257,7 +257,6 @@ sub check_client_rev {
 }
 
 
-
 =head2 create_mslog
 
 Create new machine session log (mslog) entry.

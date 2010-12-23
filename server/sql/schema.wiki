@@ -7,7 +7,7 @@
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 
--- Tags_order: project, rfile, machine, user, patch, mjconf, fspath_select, jobs, machine_sessions, test_runs, benchmark_runs, files_paths, irc_robot, config.
+-- Tags_order: project, rfile, machine, user, patch, mconf, fspath_select, jobs, machine_sessions, test_runs, benchmark_runs, files_paths, irc_robot, config.
 </source>
 
 === Tables ===
@@ -194,7 +194,7 @@ CREATE TABLE rpath (
 <source lang=sql>
 CREATE TABLE job (
     job_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    client_min_rev  INT UNSIGNED DEFAULT 1 COMMENT 'Minimal client revision number to run this job.',
+    client_min_ver  VARCHAR(40),
     priority        INT UNSIGNED NOT NULL DEFAULT 1,
     name            VARCHAR(25),
     descr           TEXT DEFAULT NULL COMMENT 'Description.'
@@ -247,21 +247,35 @@ CREATE TABLE jobp_cmd (
 ) TYPE=InnoDB COMMENT='Job part command. Tag: jobs.';
 </source>
 
-==== Table machine_job_conf ====
+==== Table mconf_session ====
 <source lang=sql>
-CREATE TABLE machine_job_conf (
-    machine_job_conf_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE mconf_session (
+    mconf_session_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     machine_id          INT UNSIGNED NOT NULL,
+    processes_num       INT UNSIGNED NOT NULL,
+    INDEX i_machine_id (machine_id),
+    CONSTRAINT fk_mconf_session_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id)
+) TYPE=InnoDB COMMENT='Machine job configuration. Tag: mconf.';
+</source>
+
+==== Table mconf_job ====
+<source lang=sql>
+CREATE TABLE mconf_job (
+    mconf_job_id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    mconf_session_id    INT UNSIGNED NOT NULL,
+    project_id          INT UNSIGNED DEFAULT NULL,
     rep_id              INT UNSIGNED DEFAULT NULL,
-    rref_id         INT UNSIGNED DEFAULT NULL,
+    rref_id             INT UNSIGNED DEFAULT NULL,
     job_id              INT UNSIGNED DEFAULT NULL,
     priority            INT UNSIGNED NOT NULL DEFAULT 1,
     INDEX i_machine_id (machine_id),
-    CONSTRAINT fk_machine_job_conf_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id),
-    CONSTRAINT fk_machine_job_conf_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
-    CONSTRAINT fk_machine_job_conf_rref_id FOREIGN KEY (rref_id) REFERENCES rref (rref_id),
-    CONSTRAINT fk_machine_job_conf_job_id FOREIGN KEY (job_id) REFERENCES job (job_id)
-) TYPE=InnoDB COMMENT='Machine job configuration. Tag: mjconf.';
+    CONSTRAINT fk_mconf_job_mconf_session_id FOREIGN KEY (mconf_session_id) REFERENCES mconf_session (mconf_session_id),
+    CONSTRAINT fk_mconf_job_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),
+    CONSTRAINT fk_mconf_job_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
+    CONSTRAINT fk_mconf_job_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
+    CONSTRAINT fk_mconf_job_rref_id FOREIGN KEY (rref_id) REFERENCES rref (rref_id),
+    CONSTRAINT fk_mconf_job_job_id FOREIGN KEY (job_id) REFERENCES job (job_id)
+) TYPE=InnoDB COMMENT='Machine job configuration. Tag: mconf.';
 </source>
 
 Defined rep_id is the most general config. Defined job_id the most specific config.
@@ -270,17 +284,17 @@ Defined rep_id is the most general config. Defined job_id the most specific conf
 <source lang=sql>
 CREATE TABLE msession (
     msession_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    machine_id          INT UNSIGNED NOT NULL,
-    client_rev          VARCHAR(21) NOT NULL COMMENT 'Client revision (11, 10:12M, ...).',
+    mconf_session_id    INT UNSIGNED NOT NULL,
+    client_rev          VARCHAR(21) NOT NULL COMMENT 'Client revision.',
     pid                 INT UNSIGNED DEFAULT NULL COMMENT 'System process id on machine.',
     watchdog_pid        INT UNSIGNED DEFAULT NULL COMMENT 'Watchdog process id on machine.',
     start_time          DATETIME NOT NULL COMMENT 'Time when machine session was started.',
     end_time            DATETIME DEFAULT NULL COMMENT 'Time when machine session ended.',
     abort_reason_id     INT UNSIGNED DEFAULT NULL COMMENT 'FK to msession_abort_reason if exists.',
-    INDEX i_machine_id (machine_id),
-    CONSTRAINT fk_msession_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id),
+    INDEX i_mconf_session_id (mconf_session_id),
+    CONSTRAINT fk_msession_mconf_session_id FOREIGN KEY (mconf_session_id) REFERENCES mconf_session (mconf_session_id),
     CONSTRAINT fk_msession_abort_reason_id FOREIGN KEY (abort_reason_id) REFERENCES msabort_reason (msabort_reason_id)
-) TYPE=InnoDB COMMENT='Machine session. Each machine can run more than one processes at a time. Tag: machine_sessions.';
+) TYPE=InnoDB COMMENT='Machine session. Each machine should run obly one session at a time. Tag: machine_sessions.';
 </source>
 
 ==== Table msproc ====
@@ -291,8 +305,10 @@ CREATE TABLE msproc (
     start_time          DATETIME NOT NULL COMMENT 'Time when machine job was created.',
     end_time            DATETIME DEFAULT NULL COMMENT 'Time when machine job ended.',
     pid                 INT UNSIGNED DEFAULT NULL,
+    abort_reason_id     INT UNSIGNED DEFAULT NULL COMMENT 'FK to msproc_abort_reason if exists.',
     INDEX i_msession_id (msession_id),
-    CONSTRAINT fk_msjob_msession_id FOREIGN KEY (msession_id) REFERENCES msession (msession_id)
+    CONSTRAINT fk_msjob_msession_id FOREIGN KEY (msession_id) REFERENCES msession (msession_id),
+    CONSTRAINT fk_msproc_abort_reason_id FOREIGN KEY (abort_reason_id) REFERENCES msproc_abort_reason (msproc_abort_reason_id)
 ) TYPE=InnoDB COMMENT='Machine session process. Tag: machine_sessions.';
 </source>
 
@@ -401,13 +417,12 @@ CREATE TABLE msstatus (
 Values:
 * 1 .. unknown status
 * 2 .. msession just created
-* 3 .. waiting for new job
-* 4 .. command preparation
-* 5 .. running command
-* 6 .. paused by user
-* 7 .. stop by user
-* 8 .. stop by web server -- see also msabort_reason table
-* 9 .. stop by anything else
+* 3 .. msession running
+* 4 .. paused by user
+* 5 .. stop by user
+* 6 .. paused by user - refresh
+* 7 .. stop by web server -- see also msabort_reason table
+* 8 .. stop by anything else
 
 ==== Table msabort_reason ====
 <source lang=sql>
@@ -415,7 +430,7 @@ CREATE TABLE msabort_reason (
     msabort_reason_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name                VARCHAR(25),
     descr               TEXT DEFAULT NULL COMMENT 'Description.'
-) TYPE=InnoDB COMMENT='Machine session status messages. Tag: machine_sessions.';
+) TYPE=InnoDB COMMENT='Machine session abort reason. Tag: machine_sessions.';
 </source>
 
 Values:
@@ -436,6 +451,50 @@ CREATE TABLE mswatch_log (
     CONSTRAINT fk_mswatch_log_msession_id FOREIGN KEY (msession_id) REFERENCES msession (msession_id)
 ) TYPE=InnoDB COMMENT='Machine session watchdog log. Tag: machine_sessions.';
 </source>
+
+==== Table msproc_log ====
+<source lang=sql>
+CREATE TABLE msproc_log (
+    msproc_log_id           INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msproc_id               INT UNSIGNED NOT NULL,
+    msproc_status_id        INT UNSIGNED NOT NULL,
+    attempt_number          INT UNSIGNED DEFAULT 1,
+    change_time             DATETIME NOT NULL COMMENT 'Time when machine process change state to this status_id.',
+    estimated_finish_time   DATETIME DEFAULT NULL COMMENT 'Time when machine process will probably change status again.',
+    INDEX i_msproc_id (msproc_id),
+    CONSTRAINT fk_mslog_msproc_id FOREIGN KEY (msproc_id) REFERENCES msproc (msproc_id),
+    CONSTRAINT fk_mslog_msproc_status_id FOREIGN KEY (msproc_status_id) REFERENCES msproc_status (msproc_status_id)
+) TYPE=InnoDB COMMENT='Machine session log. Tag: machine_sessions.';
+</source>
+
+==== Table msproc_status ====
+<source lang=sql>
+CREATE TABLE msproc_status (
+    msproc_status_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(25),
+    descr               TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Machine session process status messages. Tag: machine_sessions.';
+</source>
+
+Values:
+* 1 .. unknown status
+* 2 .. waiting for new job
+* 3 .. command preparation
+* 4 .. running command
+
+==== Table msproc_abort_reason ====
+<source lang=sql>
+CREATE TABLE msproc_abort_reason (
+    msproc_abort_reason_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                        VARCHAR(25),
+    descr                       TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Machine session process abort reason. Tag: machine_sessions.';
+</source>
+
+Values:
+* 1 .. unknown reason
+* 2 .. killed by watchdog
+* 3 .. session ended
 
 ==== Table trun_status ====
 <source lang=sql>

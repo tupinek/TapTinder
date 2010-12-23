@@ -54,14 +54,12 @@ return sub {
         [ qw/ msstatus_id name descr / ],
         [  1, 'unknown status',            undef ],
         [  2, 'msession just created',     undef ],
-        [  3, 'waiting for new job',       undef ],
-        [  4, 'command preparation',       undef ],
-        [  5, 'running command',           undef ],
-        [  6, 'paused by user',            undef ],
-        [  7, 'stop by user',              undef ],
-        [  8, 'stop by web server',        undef ],
-        [  9, 'stop by anything else',     undef ],
-        [ 10, 'paused by user - refresh',  undef ],
+        [  3, 'msession running',          undef ],
+        [  4, 'paused by user',            undef ],
+        [  5, 'paused by user - refresh',  undef ],
+        [  6, 'stop by user',              undef ],
+        [  7, 'stop by web server',        undef ],
+        [  8, 'stop by anything else',     undef ],
     ]);
 
 
@@ -74,6 +72,27 @@ return sub {
         [ 3, 'machine was disabled',          undef ],
         [ 4, 'bad client behavior',           undef ],
         [ 5, 'iterrupted by user',            undef ],
+    ]);
+
+
+    # table: msproc_status
+    $schema->resultset('msproc_status')->delete_all() if $delete_all;
+    $schema->resultset('msproc_status')->populate([
+        [ qw/ msproc_status_id name descr / ],
+        [  1, 'unknown status',         undef ],
+        [  2, 'waiting for new job',    undef ],
+        [  3, 'command preparation',    undef ],
+        [  4, 'running command',        undef ],
+    ]);
+
+
+    # table: msproc_abort_reason
+    $schema->resultset('msproc_abort_reason')->delete_all() if $delete_all;
+    $schema->resultset('msproc_abort_reason')->populate([
+        [ qw/ msproc_abort_reason_id name descr / ],
+        [ 1, 'unknown reason',          undef ],
+        [ 2, 'killed by watchdog',      undef ],
+        [ 3, 'session ended',           undef ],
     ]);
 
 
