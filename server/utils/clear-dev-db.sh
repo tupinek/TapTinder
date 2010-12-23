@@ -111,7 +111,7 @@ if [ "$1" = "c" ]; then
         perl ./cron/repository-update.pl --project=tt-tr3
         echo "";
 
-        echo "Executing utils/db-fill-sqldata.pl sql/data-dev-jobs.pl
+        echo "Executing utils/db-fill-sqldata.pl sql/data-dev-jobs.pl"
         perl ./utils/db-fill-sqldata.pl ./sql/data-dev-jobs.pl
         echo "";
     fi

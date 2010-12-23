@@ -631,12 +631,12 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'mconf_session_id' => {
+    'wconf_session_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 1,
-      'name' => 'mconf_session_id',
+      'name' => 'wconf_session_id',
       'is_nullable' => 0,
       'size' => '11'
     },
@@ -696,6 +696,44 @@ __PACKAGE__->add_columns(
     },
 );
 __PACKAGE__->set_primary_key('msession_id');
+
+
+package TapTinder::DB::Schema::wconf_rref;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('wconf_rref');
+
+
+__PACKAGE__->add_columns(
+    'wconf_rref_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'wconf_rref_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'rref_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'rref_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'priority' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'priority',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+);
+__PACKAGE__->set_primary_key('wconf_rref_id');
 
 
 package TapTinder::DB::Schema::msabort_reason;
@@ -1141,6 +1179,44 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('rtest_id');
 
 
+package TapTinder::DB::Schema::wconf_session;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('wconf_session');
+
+
+__PACKAGE__->add_columns(
+    'wconf_session_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'wconf_session_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'machine_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'machine_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'processes_num' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'processes_num',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+);
+__PACKAGE__->set_primary_key('wconf_session_id');
+
+
 package TapTinder::DB::Schema::cmd_status;
 use base 'TapTinder::DB::DBIxClassBase';
 
@@ -1336,12 +1412,12 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'rref_id' => {
+    'project_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => 'NULL',
       'is_foreign_key' => 1,
-      'name' => 'rref_id',
+      'name' => 'project_id',
       'is_nullable' => 1,
       'size' => '11'
     },
@@ -1869,6 +1945,80 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('msjobp_id');
 
 
+package TapTinder::DB::Schema::wconf_job;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('wconf_job');
+
+
+__PACKAGE__->add_columns(
+    'wconf_job_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'wconf_job_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'wconf_session_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'wconf_session_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'project_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 1,
+      'name' => 'project_id',
+      'is_nullable' => 1,
+      'size' => '11'
+    },
+    'rep_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 1,
+      'name' => 'rep_id',
+      'is_nullable' => 1,
+      'size' => '11'
+    },
+    'rref_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 1,
+      'name' => 'rref_id',
+      'is_nullable' => 1,
+      'size' => '11'
+    },
+    'job_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 1,
+      'name' => 'job_id',
+      'is_nullable' => 1,
+      'size' => '11'
+    },
+    'priority' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => '1',
+      'is_foreign_key' => 0,
+      'name' => 'priority',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+);
+__PACKAGE__->set_primary_key('wconf_job_id');
+
+
 package TapTinder::DB::Schema::msstatus;
 use base 'TapTinder::DB::DBIxClassBase';
 
@@ -1905,44 +2055,6 @@ __PACKAGE__->add_columns(
     },
 );
 __PACKAGE__->set_primary_key('msstatus_id');
-
-
-package TapTinder::DB::Schema::mconf_session;
-use base 'TapTinder::DB::DBIxClassBase';
-
-__PACKAGE__->table('mconf_session');
-
-
-__PACKAGE__->add_columns(
-    'mconf_session_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 1,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'mconf_session_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'machine_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'machine_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'processes_num' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'processes_num',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-);
-__PACKAGE__->set_primary_key('mconf_session_id');
 
 
 package TapTinder::DB::Schema::tskipall_msg;
@@ -2342,80 +2454,6 @@ __PACKAGE__->add_columns(
     },
 );
 __PACKAGE__->set_primary_key('ttest_id');
-
-
-package TapTinder::DB::Schema::mconf_job;
-use base 'TapTinder::DB::DBIxClassBase';
-
-__PACKAGE__->table('mconf_job');
-
-
-__PACKAGE__->add_columns(
-    'mconf_job_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 1,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'mconf_job_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'mconf_session_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'mconf_session_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'project_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 1,
-      'name' => 'project_id',
-      'is_nullable' => 1,
-      'size' => '11'
-    },
-    'rep_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 1,
-      'name' => 'rep_id',
-      'is_nullable' => 1,
-      'size' => '11'
-    },
-    'rref_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 1,
-      'name' => 'rref_id',
-      'is_nullable' => 1,
-      'size' => '11'
-    },
-    'job_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 1,
-      'name' => 'job_id',
-      'is_nullable' => 1,
-      'size' => '11'
-    },
-    'priority' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => '1',
-      'is_foreign_key' => 0,
-      'name' => 'priority',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-);
-__PACKAGE__->set_primary_key('mconf_job_id');
 
 
 package TapTinder::DB::Schema::tdiag_msg;
@@ -3083,8 +3121,8 @@ package TapTinder::DB::Schema::rref;
 
 __PACKAGE__->belongs_to('rcommit_id','TapTinder::DB::Schema::rcommit','rcommit_id');
 
-__PACKAGE__->has_many('get_jobp', 'TapTinder::DB::Schema::jobp', 'rref_id');
-__PACKAGE__->has_many('get_mconf_job', 'TapTinder::DB::Schema::mconf_job', 'rref_id');
+__PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'rref_id');
+__PACKAGE__->has_many('get_wconf_rref', 'TapTinder::DB::Schema::wconf_rref', 'rref_id');
 __PACKAGE__->has_many('get_ibot_log', 'TapTinder::DB::Schema::ibot_log', 'rref_id');
 
 package TapTinder::DB::Schema::user;
@@ -3130,13 +3168,18 @@ __PACKAGE__->belongs_to('param_type_id','TapTinder::DB::Schema::param_type','par
 
 package TapTinder::DB::Schema::msession;
 
-__PACKAGE__->belongs_to('mconf_session_id','TapTinder::DB::Schema::mconf_session','mconf_session_id');
+__PACKAGE__->belongs_to('wconf_session_id','TapTinder::DB::Schema::wconf_session','wconf_session_id');
 
 __PACKAGE__->belongs_to('abort_reason_id','TapTinder::DB::Schema::msabort_reason','abort_reason_id',{join_type => 'left'});
 
 __PACKAGE__->has_many('get_msproc', 'TapTinder::DB::Schema::msproc', 'msession_id');
 __PACKAGE__->has_many('get_mslog', 'TapTinder::DB::Schema::mslog', 'msession_id');
 __PACKAGE__->has_many('get_mswatch_log', 'TapTinder::DB::Schema::mswatch_log', 'msession_id');
+
+package TapTinder::DB::Schema::wconf_rref;
+
+__PACKAGE__->belongs_to('rref_id','TapTinder::DB::Schema::rref','rref_id');
+
 
 package TapTinder::DB::Schema::msjob;
 
@@ -3191,6 +3234,13 @@ __PACKAGE__->belongs_to('rfile_id','TapTinder::DB::Schema::rfile','rfile_id');
 
 __PACKAGE__->has_many('get_ttest', 'TapTinder::DB::Schema::ttest', 'rtest_id');
 
+package TapTinder::DB::Schema::wconf_session;
+
+__PACKAGE__->belongs_to('machine_id','TapTinder::DB::Schema::machine','machine_id');
+
+__PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'wconf_session_id');
+__PACKAGE__->has_many('get_msession', 'TapTinder::DB::Schema::msession', 'wconf_session_id');
+
 package TapTinder::DB::Schema::cmd_status;
 
 __PACKAGE__->has_many('get_msjobp_cmd', 'TapTinder::DB::Schema::msjobp_cmd', 'status_id');
@@ -3214,7 +3264,7 @@ __PACKAGE__->belongs_to('job_id','TapTinder::DB::Schema::job','job_id');
 __PACKAGE__->belongs_to('depends_on_id','TapTinder::DB::Schema::jobp','depends_on_id',{join_type => 'left'});
 
 __PACKAGE__->has_many('get_jobp', 'TapTinder::DB::Schema::jobp', 'depends_on_id');
-__PACKAGE__->belongs_to('rref_id','TapTinder::DB::Schema::rref','rref_id',{join_type => 'left'});
+__PACKAGE__->belongs_to('project_id','TapTinder::DB::Schema::project','project_id',{join_type => 'left'});
 
 __PACKAGE__->has_many('get_jobp_cmd', 'TapTinder::DB::Schema::jobp_cmd', 'jobp_id');
 __PACKAGE__->has_many('get_msjobp', 'TapTinder::DB::Schema::msjobp', 'jobp_id');
@@ -3260,7 +3310,8 @@ __PACKAGE__->has_many('get_param', 'TapTinder::DB::Schema::param', 'param_type_i
 package TapTinder::DB::Schema::project;
 
 __PACKAGE__->has_many('get_rep', 'TapTinder::DB::Schema::rep', 'project_id');
-__PACKAGE__->has_many('get_mconf_job', 'TapTinder::DB::Schema::mconf_job', 'project_id');
+__PACKAGE__->has_many('get_jobp', 'TapTinder::DB::Schema::jobp', 'project_id');
+__PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'project_id');
 
 package TapTinder::DB::Schema::msjobp;
 
@@ -3272,16 +3323,24 @@ __PACKAGE__->belongs_to('rcommit_id','TapTinder::DB::Schema::rcommit','rcommit_i
 
 __PACKAGE__->has_many('get_msjobp_cmd', 'TapTinder::DB::Schema::msjobp_cmd', 'msjobp_id');
 
+package TapTinder::DB::Schema::wconf_job;
+
+__PACKAGE__->belongs_to('wconf_session_id','TapTinder::DB::Schema::wconf_session','wconf_session_id');
+
+__PACKAGE__->belongs_to('project_id','TapTinder::DB::Schema::project','project_id',{join_type => 'left'});
+
+__PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id',{join_type => 'left'});
+
+__PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id',{join_type => 'left'});
+
+__PACKAGE__->belongs_to('rref_id','TapTinder::DB::Schema::rref','rref_id',{join_type => 'left'});
+
+__PACKAGE__->belongs_to('job_id','TapTinder::DB::Schema::job','job_id',{join_type => 'left'});
+
+
 package TapTinder::DB::Schema::msstatus;
 
 __PACKAGE__->has_many('get_mslog', 'TapTinder::DB::Schema::mslog', 'msstatus_id');
-
-package TapTinder::DB::Schema::mconf_session;
-
-__PACKAGE__->belongs_to('machine_id','TapTinder::DB::Schema::machine','machine_id');
-
-__PACKAGE__->has_many('get_mconf_job', 'TapTinder::DB::Schema::mconf_job', 'mconf_session_id');
-__PACKAGE__->has_many('get_msession', 'TapTinder::DB::Schema::msession', 'mconf_session_id');
 
 package TapTinder::DB::Schema::tskipall_msg;
 
@@ -3330,7 +3389,7 @@ __PACKAGE__->belongs_to('prev_machine_id','TapTinder::DB::Schema::machine','prev
 __PACKAGE__->has_many('get_machine', 'TapTinder::DB::Schema::machine', 'prev_machine_id');
 __PACKAGE__->belongs_to('farm_id','TapTinder::DB::Schema::farm','farm_id',{join_type => 'left'});
 
-__PACKAGE__->has_many('get_mconf_session', 'TapTinder::DB::Schema::mconf_session', 'machine_id');
+__PACKAGE__->has_many('get_wconf_session', 'TapTinder::DB::Schema::wconf_session', 'machine_id');
 
 package TapTinder::DB::Schema::ttest;
 
@@ -3341,21 +3400,6 @@ __PACKAGE__->belongs_to('rtest_id','TapTinder::DB::Schema::rtest','rtest_id');
 __PACKAGE__->belongs_to('trest_id','TapTinder::DB::Schema::trest','trest_id');
 
 __PACKAGE__->has_many('get_tdiag_msg', 'TapTinder::DB::Schema::tdiag_msg', 'ttest_id');
-
-package TapTinder::DB::Schema::mconf_job;
-
-__PACKAGE__->belongs_to('mconf_session_id','TapTinder::DB::Schema::mconf_session','mconf_session_id');
-
-__PACKAGE__->belongs_to('project_id','TapTinder::DB::Schema::project','project_id',{join_type => 'left'});
-
-__PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id',{join_type => 'left'});
-
-__PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id',{join_type => 'left'});
-
-__PACKAGE__->belongs_to('rref_id','TapTinder::DB::Schema::rref','rref_id',{join_type => 'left'});
-
-__PACKAGE__->belongs_to('job_id','TapTinder::DB::Schema::job','job_id',{join_type => 'left'});
-
 
 package TapTinder::DB::Schema::tdiag_msg;
 
@@ -3377,7 +3421,7 @@ __PACKAGE__->belongs_to('msession_id','TapTinder::DB::Schema::msession','msessio
 package TapTinder::DB::Schema::job;
 
 __PACKAGE__->has_many('get_jobp', 'TapTinder::DB::Schema::jobp', 'job_id');
-__PACKAGE__->has_many('get_mconf_job', 'TapTinder::DB::Schema::mconf_job', 'job_id');
+__PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'job_id');
 __PACKAGE__->has_many('get_msjob', 'TapTinder::DB::Schema::msjob', 'job_id');
 
 package TapTinder::DB::Schema::trun;
@@ -3432,8 +3476,8 @@ __PACKAGE__->belongs_to('project_id','TapTinder::DB::Schema::project','project_i
 
 __PACKAGE__->has_many('get_rauthor', 'TapTinder::DB::Schema::rauthor', 'rep_id');
 __PACKAGE__->has_many('get_rcommit', 'TapTinder::DB::Schema::rcommit', 'rep_id');
-__PACKAGE__->has_many('get_mconf_job', 'TapTinder::DB::Schema::mconf_job', 'rep_id');
-__PACKAGE__->has_many('get_mconf_job', 'TapTinder::DB::Schema::mconf_job', 'rep_id');
+__PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'rep_id');
+__PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'rep_id');
 __PACKAGE__->has_many('get_fspath_select', 'TapTinder::DB::Schema::fspath_select', 'rep_id');
 
 
@@ -3467,6 +3511,8 @@ __PACKAGE__->register_class('param', 'TapTinder::DB::Schema::param');
 
 __PACKAGE__->register_class('msession', 'TapTinder::DB::Schema::msession');
 
+__PACKAGE__->register_class('wconf_rref', 'TapTinder::DB::Schema::wconf_rref');
+
 __PACKAGE__->register_class('msabort_reason', 'TapTinder::DB::Schema::msabort_reason');
 
 __PACKAGE__->register_class('msjob', 'TapTinder::DB::Schema::msjob');
@@ -3486,6 +3532,8 @@ __PACKAGE__->register_class('rpath', 'TapTinder::DB::Schema::rpath');
 __PACKAGE__->register_class('bfile', 'TapTinder::DB::Schema::bfile');
 
 __PACKAGE__->register_class('rtest', 'TapTinder::DB::Schema::rtest');
+
+__PACKAGE__->register_class('wconf_session', 'TapTinder::DB::Schema::wconf_session');
 
 __PACKAGE__->register_class('cmd_status', 'TapTinder::DB::Schema::cmd_status');
 
@@ -3513,9 +3561,9 @@ __PACKAGE__->register_class('project', 'TapTinder::DB::Schema::project');
 
 __PACKAGE__->register_class('msjobp', 'TapTinder::DB::Schema::msjobp');
 
-__PACKAGE__->register_class('msstatus', 'TapTinder::DB::Schema::msstatus');
+__PACKAGE__->register_class('wconf_job', 'TapTinder::DB::Schema::wconf_job');
 
-__PACKAGE__->register_class('mconf_session', 'TapTinder::DB::Schema::mconf_session');
+__PACKAGE__->register_class('msstatus', 'TapTinder::DB::Schema::msstatus');
 
 __PACKAGE__->register_class('tskipall_msg', 'TapTinder::DB::Schema::tskipall_msg');
 
@@ -3528,8 +3576,6 @@ __PACKAGE__->register_class('msjobp_cmd', 'TapTinder::DB::Schema::msjobp_cmd');
 __PACKAGE__->register_class('machine', 'TapTinder::DB::Schema::machine');
 
 __PACKAGE__->register_class('ttest', 'TapTinder::DB::Schema::ttest');
-
-__PACKAGE__->register_class('mconf_job', 'TapTinder::DB::Schema::mconf_job');
 
 __PACKAGE__->register_class('tdiag_msg', 'TapTinder::DB::Schema::tdiag_msg');
 

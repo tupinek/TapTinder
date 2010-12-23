@@ -10,6 +10,8 @@ use TapTinder::DB;
 use TapTinder::Utils::Conf qw(load_conf_multi);
 use TapTinder::Utils::DB qw(get_connected_schema);
 
+my $ver = 3;
+
 my $conf = load_conf_multi( undef, 'db' );
 croak "Configuration for database is empty.\n" unless $conf->{db};
 
@@ -19,12 +21,18 @@ croak "Connection to DB failed." unless $schema;
 $schema->storage->txn_begin;
 
 my $req_fpath = $ARGV[0];
-TapTinder::Utils::DB::run_perl_sql_file(
+my $rc = TapTinder::Utils::DB::run_perl_sql_file(
     $req_fpath,     # $req_fpath
     $schema,        # $schema
     1,              # $delete_old
     undef           # data
 );
 
-$schema->storage->txn_commit;
 
+if ( $rc ) {
+    print "Finished ok. Doing commit.\n" if $ver >= 3;
+    $schema->storage->txn_commit;
+} else {
+    print "Error. Doing rollback.\n" if $ver >= 2;
+    $schema->storage->txn_rollback;
+}

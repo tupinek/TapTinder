@@ -38,7 +38,7 @@ return sub {
     )->id;
     return 0 unless $master_tr3_rref_id;
     
-
+    
     # table: job
     $schema->resultset('job')->delete_all() if $delete_all;
     $schema->resultset('job')->populate([
@@ -53,13 +53,13 @@ return sub {
     # table: jobp
     $schema->resultset('jobp')->delete_all() if $delete_all;
     $schema->resultset('jobp')->populate([
-        [ qw/ jobp_id job_id rref_id `order` name descr max_age depends_on_id extends / ],
-        [ 1, 1, $master_tr1_rref_id, 1, 'sole',           undef,     3*30*24, undef, 0    ],
-        [ 2, 2, $master_tr1_rref_id, 1, 'base',           undef,     3*30*24, undef, 0    ],
-        [ 3, 2, $master_tr2_rref_id, 2, 'external tests', undef,     5*30*24,     2, 1    ],
-        [ 4, 3, $master_tr1_rref_id, 1, 'base',           undef,       10*24, undef, 0    ],
-        [ 5, 3, $master_tr3_rref_id, 2, 'related part',   undef,    12*30*24,     4, 0    ],
-        [ 6, 4, $master_tr1_rref_id, 1, 'sole',           undef,       undef, undef, 0    ],
+        [ qw/ jobp_id job_id project_id `order` name descr max_age depends_on_id extends / ],
+        [ 1, 1, 1, 1, 'sole',           undef,     3*30*24, undef, 0    ],
+        [ 2, 2, 1, 1, 'base',           undef,     3*30*24, undef, 0    ],
+        [ 3, 2, 2, 2, 'external tests', undef,     5*30*24,     2, 1    ],
+        [ 4, 3, 1, 1, 'base',           undef,       10*24, undef, 0    ],
+        [ 5, 3, 3, 2, 'related part',   undef,    12*30*24,     4, 0    ],
+        [ 6, 4, 1, 1, 'sole',           undef,       undef, undef, 0    ],
     ]);
 
  
@@ -103,23 +103,34 @@ return sub {
         [ 27, 6, 4, 5 ],
     ]);
 
-=pod
 
-    # table: machine_job_conf
-    $schema->resultset('machine_job_conf')->delete_all() if $delete_all;
-    $schema->resultset('machine_job_conf')->populate([
-        [ qw/ machine_job_conf_id machine_id rep_id rref_id job_id priority / ],
-        [ 1, 5, undef, undef, 1,    1   ],
-
-        [ 2, 6, 1,    undef, undef, 1   ],
-        [ 3, 6, undef, undef, 2,    2   ],
-
-        [ 4, 7, 1,    undef, undef, 1   ],
-        [ 5, 7, 1,    undef, undef, 2   ],
-        [ 6, 7, undef, undef, undef, 3  ],
+    # table: wconf_session
+    $schema->resultset('wconf_session')->delete_all() if $delete_all;
+    $schema->resultset('wconf_session')->populate([
+        [ qw/ wconf_session_id machine_id processes_num / ],
+        [ 1, 5, 2  ], # pc-jurosz2
+        [ 2, 6, 1  ], # tapir1
+        [ 3, 7, 3  ], # tapir2
     ]);
 
-=cut
+
+
+    # table: wconf_job
+    $schema->resultset('wconf_job')->delete_all() if $delete_all;
+    $schema->resultset('wconf_job')->populate([
+        [ qw/ wconf_job_id wconf_session_id project_id rep_id rref_id               job_id priority / ],
+        [     1,           1,               1,         1,     $master_tr1_rref_id,  1,     6          ], # tapir1
+    ]);
+
+
+    # table: wconf_rref
+    $schema->resultset('wconf_rref')->delete_all() if $delete_all;
+    $schema->resultset('wconf_rref')->populate([
+        [ qw/ wconf_rref_id rref_id               priority / ],
+        [     1,            $master_tr1_rref_id,  1,         ],
+        [     2,            $master_tr2_rref_id,  1,         ],
+        [     3,            $master_tr3_rref_id,  1,         ],
+    ]);
 
     return 1;
 };
