@@ -143,8 +143,24 @@ sub msdestroy {
 }
 
 
+sub mspcreate {
+    my ( $self, $msession_id ) = @_;
+
+    my $action = 'mspcreate';
+    my $request = {
+        ot => 'json',
+        mid => $self->{machine_id},
+        pass => $self->{machine_passwd},
+        msid => $msession_id,
+        pid => $$,
+    };
+    my $data = $self->run_action( $action, $request );
+    return $data;
+}
+
+
 sub cget {
-    my ( $self, $msession_id, $attempt_number, $estimated_finish_time,
+    my ( $self, $msession_id, $msproc_id, $attempt_number, $estimated_finish_time,
          $prev_msjobp_cmd_id ) = @_;
 
     my $action = 'cget';
@@ -153,6 +169,7 @@ sub cget {
         mid =>  $self->{machine_id},
         pass => $self->{machine_passwd},
         msid => $msession_id,
+        mspid => $msproc_id,
         an => $attempt_number,
         eftime => $estimated_finish_time,
         pmcid => $prev_msjobp_cmd_id,
@@ -163,7 +180,7 @@ sub cget {
 
 
 sub sset {
-    my ( $self, $msession_id, $msjobp_cmd_id, $cmd_status_id,
+    my ( $self, $msession_id, $msproc_id, $msjobp_cmd_id, $cmd_status_id,
          $end_time, $output_fpath, $outdata_fpath
     ) = @_;
 
@@ -174,6 +191,7 @@ sub sset {
         mid =>  $self->{machine_id},
         pass => $self->{machine_passwd},
         msid => $msession_id,
+        mspid => $msproc_id,
         mcid => $msjobp_cmd_id,
         csid => $cmd_status_id,
     };
@@ -194,17 +212,17 @@ sub sset {
 }
 
 
-sub rriget {
-    my ( $self, $msession_id, $rep_path_id, $rev_id ) = @_;
+sub rciget {
+    my ( $self, $msession_id, $msproc_id, $rcommit_id ) = @_;
 
-    my $action = 'rriget';
+    my $action = 'rciget';
     my $request = {
         ot =>   'json',
         mid =>  $self->{machine_id},
         pass => $self->{machine_passwd},
         msid => $msession_id,
-        rpid => $rep_path_id,
-        revid => $rev_id,
+        mspid => $msproc_id,
+        rcid => $rcommit_id,
     };
     my $data = $self->run_action( $action, $request );
     return $data;

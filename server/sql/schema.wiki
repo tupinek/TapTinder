@@ -293,15 +293,15 @@ CREATE TABLE wconf_rref (
 <source lang=sql>
 CREATE TABLE msession (
     msession_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    wconf_session_id    INT UNSIGNED NOT NULL,
+    machine_id          INT UNSIGNED NOT NULL,
     client_rev          VARCHAR(21) NOT NULL COMMENT 'Client revision.',
     pid                 INT UNSIGNED DEFAULT NULL COMMENT 'System process id on machine.',
     watchdog_pid        INT UNSIGNED DEFAULT NULL COMMENT 'Watchdog process id on machine.',
     start_time          DATETIME NOT NULL COMMENT 'Time when machine session was started.',
     end_time            DATETIME DEFAULT NULL COMMENT 'Time when machine session ended.',
     abort_reason_id     INT UNSIGNED DEFAULT NULL COMMENT 'FK to msession_abort_reason if exists.',
-    INDEX i_wconf_session_id (wconf_session_id),
-    CONSTRAINT fk_msession_wconf_session_id FOREIGN KEY (wconf_session_id) REFERENCES wconf_session (wconf_session_id),
+    INDEX i_machine_id (machine_id),
+    CONSTRAINT fk_msession_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id),
     CONSTRAINT fk_msession_abort_reason_id FOREIGN KEY (abort_reason_id) REFERENCES msabort_reason (msabort_reason_id)
 ) TYPE=InnoDB COMMENT='Machine session. Each machine should run obly one session at a time. Tag: machine_sessions.';
 </source>
@@ -487,9 +487,12 @@ CREATE TABLE msproc_status (
 
 Values:
 * 1 .. unknown status
-* 2 .. waiting for new job
-* 3 .. command preparation
-* 4 .. running command
+* 2 .. msproc just created
+* 3 .. waiting for new job
+* 4 .. command preparation
+* 5 .. running command
+* 6 .. killed by watchdog
+* 7 .. see msession status
 
 ==== Table msproc_abort_reason ====
 <source lang=sql>

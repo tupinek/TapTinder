@@ -91,10 +91,13 @@ return sub {
     $schema->resultset('msproc_abort_reason')->populate([
         [ qw/ msproc_abort_reason_id name descr / ],
         [ 1, 'unknown reason',          undef ],
-        [ 2, 'killed by watchdog',      undef ],
-        [ 3, 'session ended',           undef ],
+        [ 2, 'msproc just created',     undef ],
+        [ 3, 'waiting for new job',     undef ],
+        [ 4, 'command preparation',     undef ],
+        [ 5, 'running command',         undef ],
+        [ 6, 'killed by watchdog',      undef ],
+        [ 7, 'see msession status',     undef ],
     ]);
-
 
     # table: fsfile_type
     $schema->resultset('fsfile_type')->delete_all() if $delete_all;

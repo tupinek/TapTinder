@@ -62,6 +62,7 @@ sub new {
 
     $self->{agent} = undef;
     $self->{msession_id} = undef;
+    $self->{msproc_id} = undef;
     $self->{msjobp_cmd_id} = undef;
 
     $self->{params} = $params;
@@ -219,6 +220,10 @@ Initialize WebAgent object.
 
 sub init_repmanager {
     my ( $self ) = @_;
+    
+    unless ( -d $self->{data_dir} ) {
+        mkdir $self->{data_dir} or croak $!;
+    }
 
     print "Starting RepManager.\n" if $ver >= 3;
     my $repman = TapTinder::Client::RepManager->new(
@@ -256,25 +261,23 @@ sub ccmd_get_src {
     my ( $self, $cmd_name, $cmd_env ) = @_;
 
     my $data; # many different uses
-    $data = $self->{agent}->rriget(
-        $self->{msession_id}, $cmd_env->{rep_path_id}, $cmd_env->{rev_id}
+    $data = $self->{agent}->rciget(
+        $self->{msession_id}, $self->{msproc_id}, $cmd_env->{rcommit_id}
     );
-    return 0 if $self->process_agent_errors_get_err_num( 'rriget', $data );
+    return 0 if $self->process_agent_errors_get_err_num( 'rciget', $data );
 
-    my $rep_rev_info = { %$data };
+    my $rcommit_info = { %$data };
     $cmd_env->{project_name} = $data->{project_name};
-    $cmd_env->{rep_path} = $data->{rep_path};
-    $cmd_env->{rep_path_path} = $data->{rep_path_path};
-    $cmd_env->{rev_num} = $data->{rev_num};
-    #print Dumper( [ $rep_rev_info, $cmd_env ] );
+    $cmd_env->{repo_name} = $data->{repo_name};
+    $cmd_env->{repo_url} = $data->{repo_url};
+    $cmd_env->{sha} = $data->{sha};
 
-    my $rep_full_path = $rep_rev_info->{rep_path} . $rep_rev_info->{rep_path_path};
-    print "Getting revision $data->{rev_num} from $rep_full_path.\n" if $ver >= 2;
+    print "Checkout $cmd_env->{project_name} $cmd_env->{sha}.\n" if $ver >= 2;
 
-    $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 2 ); # running, $cmd_status_id
+    $data = $self->{agent}->sset( $self->{msession_id}, $self->{msproc_id}, $self->{msjobp_cmd_id}, 2 ); # running, $cmd_status_id
     return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
 
-    my $dirs = $self->{repman}->prepare_temp_copy( $rep_rev_info );
+    my $dirs = $self->{repman}->prepare_temp_copy( $rcommit_info );
     unless ( $dirs ) {
         $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 6 ); # error, $cmd_status_id
         return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
@@ -568,8 +571,13 @@ sub run {
         $data = $self->{agent}->mscreate();
     } while ( $self->process_agent_errors_get_err_num( 'mscreate', $data ) );
     $self->{msession_id} = $data->{msid};
-
+    
     $self->{keypress}->process_keypress();
+    
+    # ToDo - fork, errors
+    my $proc_data = $self->{agent}->mspcreate( $self->{msession_id} );
+    $self->process_agent_errors_get_err_num( 'mspcreate', $proc_data );
+    $self->{msproc_id} = $proc_data->{mspid};
 
     # current (or last successful) ids
     my $msjob_id = undef;
@@ -602,6 +610,7 @@ sub run {
         # try to get command from server
         my $data = $self->{agent}->cget(
             $self->{msession_id},
+            $self->{msproc_id},
             $next_attempt_number, # $attemnt_number
             $estimated_finish_time,
             $self->{msjobp_cmd_id} # use actual id to get new one
@@ -660,8 +669,7 @@ sub run {
 
             my $cmd_name = $data->{cmd_name};
             if ( $cmd_name eq 'get_src' ) {
-                $cmd_env->{rep_path_id} = $data->{rep_path_id};
-                $cmd_env->{rev_id} = $data->{rev_id};
+                $cmd_env->{rcommit_id} = $data->{rcommit_id};
                 # will set another keys to $cmd_env
                 $ret_code = $self->ccmd_get_src( $cmd_name, $cmd_env );
                 return $self->cleanup_and_return_zero() unless $ret_code;

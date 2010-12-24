@@ -631,12 +631,12 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'wconf_session_id' => {
+    'machine_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 1,
-      'name' => 'wconf_session_id',
+      'name' => 'machine_id',
       'is_nullable' => 0,
       'size' => '11'
     },
@@ -3168,7 +3168,7 @@ __PACKAGE__->belongs_to('param_type_id','TapTinder::DB::Schema::param_type','par
 
 package TapTinder::DB::Schema::msession;
 
-__PACKAGE__->belongs_to('wconf_session_id','TapTinder::DB::Schema::wconf_session','wconf_session_id');
+__PACKAGE__->belongs_to('machine_id','TapTinder::DB::Schema::machine','machine_id');
 
 __PACKAGE__->belongs_to('abort_reason_id','TapTinder::DB::Schema::msabort_reason','abort_reason_id',{join_type => 'left'});
 
@@ -3239,7 +3239,6 @@ package TapTinder::DB::Schema::wconf_session;
 __PACKAGE__->belongs_to('machine_id','TapTinder::DB::Schema::machine','machine_id');
 
 __PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'wconf_session_id');
-__PACKAGE__->has_many('get_msession', 'TapTinder::DB::Schema::msession', 'wconf_session_id');
 
 package TapTinder::DB::Schema::cmd_status;
 
@@ -3390,6 +3389,7 @@ __PACKAGE__->has_many('get_machine', 'TapTinder::DB::Schema::machine', 'prev_mac
 __PACKAGE__->belongs_to('farm_id','TapTinder::DB::Schema::farm','farm_id',{join_type => 'left'});
 
 __PACKAGE__->has_many('get_wconf_session', 'TapTinder::DB::Schema::wconf_session', 'machine_id');
+__PACKAGE__->has_many('get_msession', 'TapTinder::DB::Schema::msession', 'machine_id');
 
 package TapTinder::DB::Schema::ttest;
 

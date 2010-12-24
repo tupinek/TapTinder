@@ -9,7 +9,7 @@ use DateTime;
 use File::Spec;
 use File::Copy;
 
-use constant SUPPORRTED_REVISION => 331; # ToDo
+use constant SUPPORTED_REVISION => 331; # ToDo
 
 
 =head1 NAME
@@ -248,9 +248,9 @@ Check if client revision is supported by server.
 sub check_client_rev {
     my ( $self, $c, $data, $client_rev ) = @_;
 
-    if ( $client_rev < SUPPORRTED_REVISION ) {
+    if ( $client_rev < SUPPORTED_REVISION ) {
         $data->{ag_err} = 102; # special ag_err def
-        $data->{ag_err_msg} = "Error: Your client (revision $client_rev) is not supported. Revision >= " . SUPPORRTED_REVISION . " required.";
+        $data->{ag_err_msg} = "Error: Your client (revision $client_rev) is not supported. Revision >= " . SUPPORTED_REVISION . " required.";
         return 0;
     }
     return 1;
@@ -380,6 +380,77 @@ sub cmd_msdestroy {
 }
 
 
+=head2 create_msproc_log
+
+Create new machine session process log (msproc_log) entry.
+
+=cut
+
+sub create_msproc_log {
+    my (
+        $self, $c, $data, $action_name,
+        $msproc_id, $msproc_status_id,
+        $attempt_number, $change_time, $estimated_finish_time
+    ) = @_;
+
+    my $rs = $c->model('WebDB::msproc_log')->create({
+        msproc_id               => $msproc_id,
+        msproc_status_id        => $msproc_status_id,
+        attempt_number          => $attempt_number,
+        change_time             => $change_time,
+        estimated_finish_time   => $estimated_finish_time,
+    });
+    unless ( $rs ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: Create msproc_log entry failed (action=$action_name)."; # TODO
+        return 0;
+    }
+    return 1;
+}
+
+
+=head2 cmd_mspcreate
+
+Create new machine session process (msproc).
+
+=cut
+
+sub cmd_mspcreate {
+    my ( $self, $c, $data, $params ) = @_;
+
+    # $params->{msid} - already checked
+    my $msession_id = $params->{msid};
+
+    $self->check_param( $c, $data, $params, 'pid', 'client process ID' ) || return 0;
+    my $pid = $params->{pid};
+
+    my $msproc_rs = $c->model('WebDB::msproc')->create({
+        msession_id => $msession_id,
+        pid         => $pid,
+        start_time  => DateTime->now,
+    });
+    if ( ! $msproc_rs ) {
+        $data->{err} = 1;
+        $data->{err_msg} = "Error: xxx"; # TODO
+        return 0;
+    }
+    my $msproc_id = $msproc_rs->get_column('msproc_id');
+
+    # create mslog
+    my $ret_code = $self->create_msproc_log(
+        $c, $data, 'mspcreate',
+        $msproc_id,
+        2, # $msproc_status_id, 2 .. msproc just created
+        1, # $attempt_number
+        DateTime->now, # $change_time
+        undef # $estimated_finish_time
+    ) || return 0;
+
+    $data->{mspid} = $msproc_id;
+    return 1;
+}
+
+
 =head2 get_new_job
 
 Return new job description for client.
@@ -390,80 +461,39 @@ sub get_new_job {
     my ( $self, $c, $data, $machine_id, $msession_id ) = @_;
 
     my $cols = [ qw/ 
-        a_r.job_id
-        a_r.jobp_id
-        a_r.rep_path_id
-        a_r.rev_id
-        a_r.rev_num
-        a_r.mjc_priority
-        a_r.jpriority
+        wcj.job_id
+        rc.rcommit_id
     / ];
 
+    # ToDo - this is really simple version:
+    # * wconf_job.rref_id and wconf_job.job_id must be filled
+    # * returns only last commit to which rref_id points if not tested yet
     my $sql = "
-          from (
-                select a_jp.job_id,
-                       a_jp.jobp_id,
-                       a_jp.rep_path_id,
-                       r.rev_id,
-                       r.rev_num,
-                       a_jp.mjc_priority,
-                       j.priority as jpriority
-                  from (
-                        select distinct sa_jp.*
-                          from (
-                                -- ToDo, empty mjc.rep_id
-                                ( select jp.jobp_id, mjc.priority as mjc_priority, jp.rep_path_id, jp.job_id, jp.max_age
-                                    from machine_job_conf mjc,
-                                         rep_path rp,
-                                         jobp jp
-                                   where mjc.machine_id = ?
-                                     and rp.rep_id = mjc.rep_id
-                                     and jp.rep_path_id = rp.rep_path_id
-                                )
-                                union all
-                                ( select jp.jobp_id, mjc.priority as mjc_priority, jp.rep_path_id, jp.job_id, jp.max_age
-                                    from machine_job_conf mjc,
-                                         jobp jp
-                                   where mjc.machine_id = ?
-                                     and mjc.rep_path_id is not null
-                                     and jp.rep_path_id = mjc.rep_path_id
-                                )
-                                union all
-                                ( select jp.jobp_id, mjc.priority as mjc_priority, jp.rep_path_id, jp.job_id, jp.max_age
-                                    from machine_job_conf mjc,
-                                         jobp jp
-                                   where mjc.machine_id = ?
-                                     and mjc.job_id is not null
-                                     and jp.job_id = mjc.job_id
-                                )
-                               ) sa_jp
-                      ) a_jp,
-                      rev_rep_path rrp,
-                      rev r,
-                      job j
-                where rrp.rep_path_id = a_jp.rep_path_id
-                  and r.rev_id = rrp.rev_id
-                  and ( a_jp.max_age is null or DATE_SUB(CURDATE(), INTERVAL a_jp.max_age HOUR) <= r.date )
-                  and j.job_id = a_jp.job_id
-                order by a_jp.mjc_priority, j.priority, r.rev_num desc, a_jp.jobp_id
-              ) a_r
-        where not exists (
-                select 1
-                  from msession ms,
-                       msjob msj,
-                       msjobp msjp,
-                       jobp jp
-                 where ms.machine_id = ?
-                   and msj.msession_id = ms.msession_id
-                   and msjp.msjob_id = msj.msjob_id
-                   and jp.jobp_id = msjp.jobp_id
-                   and msjp.jobp_id = a_r.jobp_id
-                   and jp.rep_path_id = a_r.rep_path_id
-                   and msjp.rev_id = a_r.rev_id
-              )
-    "; # end sql
+        from wconf_session wcs,
+             wconf_job wcj,
+             rref rr,
+             rcommit rc
+       where wcs.machine_id = ?
+         and wcj.wconf_session_id = wcs.wconf_session_id
+         and rr.rref_id = wcj.rref_id
+         and rc.rcommit_id = rr.rcommit_id
+         and not exists (
+            select 1
+              from msession ms,
+                   msproc msp,
+                   msjob msj,
+                   msjobp msjp,
+                   jobp jp
+             where ms.machine_id = ?
+               and msp.msession_id = ms.msession_id
+               and msj.msproc_id = msp.msproc_id
+               and msjp.msjob_id = msj.msjob_id
+               and msj.job_id = wcj.job_id
+               and msjp.rcommit_id = rc.rcommit_id
+         )
+   "; # end sql
 
-    my $ba = [ $machine_id, $machine_id, $machine_id, $machine_id ];
+    my $ba = [ $machine_id, $machine_id ];
     my $row_data = $self->edbi_selectrow_hashref( $c, $cols, $sql, $ba );
 
     # TODO - new job not found
@@ -478,10 +508,10 @@ Insert new row to msjob table.
 =cut
 
 sub create_msjob {
-    my ( $self, $c, $data, $msession_id, $job_id ) = @_;
+    my ( $self, $c, $data, $msproc_id, $job_id ) = @_;
 
     my $new_rs = $c->model('WebDB::msjob')->create({
-        msession_id => $msession_id,
+        msproc_id   => $msproc_id,
         job_id      => $job_id,
         start_time  => DateTime->now,
         end_time    => undef,
@@ -504,13 +534,12 @@ Insert new row to msjobp table.
 =cut
 
 sub create_msjobp {
-    my ( $self, $c, $data, $msjob_id, $jobp_id, $rev_id, $patch_id ) = @_;
+    my ( $self, $c, $data, $msjob_id, $jobp_id, $rcommit_id ) = @_;
 
     my $new_rs = $c->model('WebDB::msjobp')->create({
         msjob_id    => $msjob_id,
         jobp_id     => $jobp_id,
-        rev_id      => $rev_id,
-        patch_id    => $patch_id,
+        rcommit_id  => $rcommit_id,
         start_time  => DateTime->now,
         end_time    => undef,
     });
@@ -560,7 +589,7 @@ Get next cmd info.
 =cut
 
 sub get_next_cmd {
-    my ( $self, $c, $data, $job_id, $rep_path_id, $jobp_order, $jobp_cmd_order ) = @_;
+    my ( $self, $c, $data, $job_id, $jobp_order, $jobp_cmd_order ) = @_;
 
     my $sql = "
         select jp.jobp_id,
@@ -570,7 +599,6 @@ sub get_next_cmd {
                jobp_cmd jpc,
                cmd c
          where jp.job_id = ?
-           and jp.rep_path_id = ?
            and jpc.jobp_id = jp.jobp_id
            and (    ( ? is null or jpc.order > ? )
                  or ( ? is null or jp.order > ? )
@@ -581,7 +609,6 @@ sub get_next_cmd {
 
     my $ba = [
         $job_id,
-        $rep_path_id,
         $jobp_cmd_order, $jobp_cmd_order,
         $jobp_order, $jobp_order,
     ];
@@ -600,14 +627,14 @@ Get next cmd info for previous $msjobp_cmd_id.
 =cut
 
 sub get_next_cmd_pmcid {
-    my ( $self, $c, $data, $msession_id, $msjobp_cmd_id ) = @_;
+    my ( $self, $c, $data, $msproc_id, $msjobp_cmd_id ) = @_;
 
     my $rs = $c->model('WebDB::msjobp_cmd')->search( {
         'msjobp_cmd_id' => $msjobp_cmd_id,
-        'msjob_id.msession_id' => $msession_id,
+        'msjob_id.proc_id' => $msproc_id,
     }, {
-        select => [ 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.jobp_id', 'jobp_id.rep_path_id', 'jobp_id.order', 'jobp_cmd_id.order', ],
-        as => [ 'msjobp_id', 'job_id', 'jobp_id', 'rep_path_id', 'jobp_order', 'jobp_cmd_order', ],
+        select => [ 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.jobp_id', 'jobp_id.rcommit_id', 'jobp_id.order', 'jobp_cmd_id.order', ],
+        as => [ 'msjobp_id', 'job_id', 'jobp_id', 'rcommit_id', 'jobp_order', 'jobp_cmd_order', ],
         join => [ { 'msjobp_id' => [ 'msjob_id', 'jobp_id', ] }, 'jobp_cmd_id', ],
     } );
     #$self->dump_rs( $c, $rs );
@@ -623,7 +650,10 @@ sub get_next_cmd_pmcid {
 
     my $next_cmd = $self->get_next_cmd(
         $c, $data,
-        $prev_data->{job_id}, $prev_data->{rep_path_id}, $prev_data->{jobp_order}, $prev_data->{jobp_cmd_order}
+        $prev_data->{job_id},
+        $prev_data->{rcommit_id},
+        $prev_data->{jobp_order},
+        $prev_data->{jobp_cmd_order}
     );
     # TODO, get rev_id, ...
 
@@ -641,44 +671,39 @@ Get new job and insert new rows to apropriate tables.
 =cut
 
 sub start_new_job {
-    my ( $self, $c, $data, $machine_id, $msession_id ) = @_;
+    my ( $self, $c, $data, $machine_id, $msession_id, $msproc_id ) = @_;
 
     my $new_job = $self->get_new_job( $c, $data, $machine_id, $msession_id );
     return $new_job unless $new_job; # undef isn't error
 
     my $job_id = $new_job->{job_id};
-    my $rep_path_id = $new_job->{rep_path_id};
-    my $rev_id = $new_job->{rev_id};
-    my $patch_id = undef; # TODO, patch testing not implemented yet
+    my $rcommit_id = $new_job->{rcommit_id};
 
     # TODO, use SQL with jobp.order=1, jobp_cmd.order=1
-    my $next_cmd = $self->get_next_cmd( $c, $data, $job_id, $rep_path_id, undef, undef );
+    my $next_cmd = $self->get_next_cmd( $c, $data, $job_id, undef, undef );
     return $next_cmd unless $next_cmd; # undef isn't error
 
     my $jobp_id = $next_cmd->{jobp_id};
     my $jobp_cmd_id = $next_cmd->{jobp_cmd_id};
     my $cmd_name = $next_cmd->{cmd_name};
 
-    my $msjob_id = $self->create_msjob( $c, $data, $msession_id, $job_id );
+    my $msjob_id = $self->create_msjob( $c, $data, $msproc_id, $job_id );
     return 0 unless defined $msjob_id;
 
-    my $msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rev_id, $patch_id );
+    my $msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rcommit_id );
     return 0 unless defined $msjobp_id;
 
     my $msjobp_cmd_id = $self->create_msjobp_cmd( $c, $data, $msjobp_id, $jobp_cmd_id );
     return 0 unless defined $msjobp_cmd_id;
 
-    my $str_patch_id = ( defined $patch_id ) ? $patch_id : '';
-    $self->dumper( $c, "job_id: $job_id, rev_id: $rev_id, patch_id: $str_patch_id");
+    $self->dumper( $c, "job_id: $job_id, rcommit_id: $rcommit_id");
     $self->dumper( $c, "jobp_id: $jobp_id, jobp_cmd_id: $jobp_cmd_id");
     $self->dumper( $c, "msjob_id: $msjob_id, msjobp_id: $msjobp_id, msjobp_cmd_id: $msjobp_cmd_id" );
 
     # need to be in sync with cmd_cget
     $data->{msjob_id} = $msjob_id;
-    $data->{rep_path_id} = $rep_path_id;
-    $data->{patch_id} = $patch_id;
+    $data->{rcommit_id} = $rcommit_id;
     $data->{msjobp_id} = $msjobp_id;
-    $data->{rev_id} = $rev_id;
     $data->{msjobp_cmd_id} = $msjobp_cmd_id;
     $data->{cmd_name} = $cmd_name;
     return 1;
@@ -728,17 +753,19 @@ sub cmd_cget {
     my $machine_id = $params->{mid};
     # $params->{msid} - already checked
     my $msession_id = $params->{msid};
+    # $params->{mspid} - already checked
+    my $msproc_id = $params->{mspid};
     # TODO - is_numeric?
     my $attempt_number = $params->{an};
 
     my $start_new_job = 0;
     if ( ! $params->{pmcid} ) {
-         $start_new_job = 1;
+        $start_new_job = 1;
     } else {
         # check if previous command wasn't last one in job
         # pmcid - previous msjobp_cmd_id
         $self->txn_begin( $c );
-        my $cmds_data = $self->get_next_cmd_pmcid( $c, $data, $msession_id, $params->{pmcid} );
+        my $cmds_data = $self->get_next_cmd_pmcid( $c, $data, $msproc_id, $params->{pmcid} );
         # next command in job found (in same jop part or new job part)
         if ( $cmds_data && $cmds_data->{new}->{jobp_cmd_id} ) {
             my $jobp_cmd_id = $cmds_data->{new}->{jobp_cmd_id};
@@ -754,19 +781,17 @@ sub cmd_cget {
             # if job part id is new, than we shoul create new msjobp_id
             } else {
                 my $msjob_id = $cmds_data->{prev}->{msjob_id};
-                my $patch_id = undef; # TODO
 
                 # find new rev_id
-                my $rep_path_id = $cmds_data->{prev}->{rep_path_id};
-                my $rev_id = $self->get_rep_path_newest_rev_id( $c, $data, $rep_path_id );
+                my $rcommit_id = $cmds_data->{prev}->{rcommit_id};
+                my $rev_id = $self->get_rep_path_newest_rev_id( $c, $data, $rcommit_id );
 
-                $msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rev_id, $patch_id );
+                $msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rcommit_id );
                 return $self->txn_end( $c, $data, 0 ) unless defined $msjobp_id;
 
                 # need to be in sync with start_new_job
                 $data->{msjob_id} = $msjob_id;
-                $data->{rep_path_id} = $rep_path_id;
-                $data->{patch_id} = $patch_id;
+                $data->{rcommit_id} = $rcommit_id;
                 $data->{msjobp_id} = $msjobp_id;
                 $data->{rev_id} = $rev_id;
             }
@@ -792,7 +817,7 @@ sub cmd_cget {
             return 0;
         }
         $self->txn_begin( $c );
-        my $ret_val = $self->start_new_job( $c, $data, $machine_id, $msession_id );
+        my $ret_val = $self->start_new_job( $c, $data, $machine_id, $msession_id, $msproc_id );
         $self->txn_end( $c, $data, 1 ); # without return
         $self->release_lock_for_machine_action( $c, $machine_id, 'get_new_job' );
         unless ( defined $ret_val ) {
@@ -830,26 +855,26 @@ sub cmd_cget {
 
 =head2 get_msjobp_cmd_info
 
-Return row with msjobp_id and msjob_id for $msession_id and $msjobp_cmd_id.
+Return row with msjobp_id and msjob_id for $msproc_id and $msjobp_cmd_id.
 
 =cut
 
 sub get_msjobp_cmd_info {
-    my ( $self, $c, $data, $msession_id, $msjobp_cmd_id ) = @_;
+    my ( $self, $c, $data, $msproc_id, $msjobp_cmd_id ) = @_;
 
     my $rs = $c->model('WebDB::msjobp_cmd')->search( {
         'me.msjobp_cmd_id' => $msjobp_cmd_id,
-        'msjob_id.msession_id' => $msession_id,
+        'msjob_id.msproc_id' => $msproc_id,
     }, {
-        select => [ 'msjobp_id.msjobp_id', 'msjob_id.msjob_id', 'jobp_id.rep_path_id', ],
-        as => [ 'msjobp_id', 'msjob_id', 'rep_path_id', ],
+        select => [ 'msjobp_id.msjobp_id', 'msjob_id.msjob_id', 'msjobp_id.rcommit_id', ],
+        as => [ 'msjobp_id', 'msjob_id', 'rcommit_id', ],
         join => { 'msjobp_id' => [ 'msjob_id', 'jobp_id', ] },
     } );
 
     my $row = $rs->next;
     if ( !$row ) {
         $data->{err} = 1;
-        $data->{err_msg} = "Error: Machine session job part command id (msession_id=$msession_id, msjobp_cmd_id=$msjobp_cmd_id) not found.";
+        $data->{err_msg} = "Error: Machine session job part command id (msproc_id=$msproc_id, msjobp_cmd_id=$msjobp_cmd_id) not found.";
         return 0;
     }
     my $row_data = { $row->get_columns() };
@@ -1003,14 +1028,14 @@ sub cmd_sset {
 
     # $params->{mid} - already checked
     my $machine_id = $params->{mid};
-    # $params->{msid} - already checked
-    my $msession_id = $params->{msid};
+    # $params->{mspid} - already checked
+    my $msproc_id = $params->{msid};
     # TODO - is_numeric?
     my $msjobp_cmd_id = $params->{mcid};
     # TODO is valid status_id?
     my $cmd_status_id = $params->{csid};
 
-    my $msjob_info = $self->get_msjobp_cmd_info( $c, $data, $msession_id, $msjobp_cmd_id );
+    my $msjob_info = $self->get_msjobp_cmd_info( $c, $data, $msproc_id, $msjobp_cmd_id );
     return 0 unless $msjob_info;
 
     my $to_set = {
@@ -1046,30 +1071,26 @@ sub cmd_sset {
 }
 
 
+=head2 get_rcommit_info
 
-
-=head2 get_rr_info
-
-Select rep_path info and rev info for rep_path_id and rev_id.
+Select rep info and rcommit info for given rcommit_id.
 
 =cut
 
-sub get_rr_info {
-    my ( $self, $c, $data, $rep_path_id, $rev_id ) = @_;
+sub get_rcommit_info {
+    my ( $self, $c, $data, $rcommit_id ) = @_;
 
-    # select from rev_rep_path will validate rep_path_id and rev_id relationship
-    my $rs = $c->model('WebDB::rev_rep_path')->search( {
-        'me.rep_path_id' => $rep_path_id,
-        'me.rev_id' => $rev_id,
+    my $rs = $c->model('WebDB::rcommit')->search( {
+        'me.rcommit_id' => $rcommit_id,
     }, {
-        select => [ 'rep_id.path', 'project_id.name', 'rep_path_id.path', 'rev_id.rev_num', ],
-        as => [ 'rep_path', 'project_name', 'rep_path_path', 'rev_num', ],
-        join => [ { 'rep_path_id' => { 'rep_id' => 'project_id' } }, 'rev_id' ],
+        select => [ 'project_id.name', 'rep_id.name', 'rep_id.repo_url', 'sha_id.sha', ],
+        as => [ 'project_name', 'repo_name', 'repo_url', 'sha', ],
+        join => [ { 'rep_id' => 'project_id' }, 'sha_id' ],
     } );
     my $row = $rs->next;
     if ( !$row ) {
         $data->{err} = 1;
-        $data->{err_msg} = "Error: Rev_rep_path id (rep_path_id=$rep_path_id, rev_id=$rev_id) not found (get_rr_info).";
+        $data->{err_msg} = "Error: Rcommit_id id (rcommit_id=$rcommit_id) not found (get_rcommit_info).";
         return 0;
     }
     my $row_data = { $row->get_columns() };
@@ -1079,7 +1100,7 @@ sub get_rr_info {
 
 =head2 rh_copy_kv_to
 
-Copy/rewrite input hash ref keys/values to output hash ref.
+Copy (rewrite/add) input hash ref keys/values to output hash ref.
 
 =cut
 
@@ -1094,33 +1115,34 @@ sub rh_copy_kv_to {
 }
 
 
-=head2 cmd_rriget
+=head2 cmd_rciget
 
 Get info for rep_path_id an rev_id.
 
 =cut
 
-sub cmd_rriget {
+sub cmd_rciget {
     my ( $self, $c, $data, $params, $upload ) = @_;
 
     # $params->{mid} - already checked
     my $machine_id = $params->{mid};
     # $params->{msid} - already checked
     my $msession_id = $params->{msid};
+    # $params->{mspid} - already checked
+    my $msproc_id = $params->{mspid};
 
-    my $rep_path_id = $params->{rpid};
-    my $rev_id = $params->{revid};
+    my $rcommit_id = $params->{rcid};
 
-    my $rr_info = $self->get_rr_info( $c, $data, $rep_path_id, $rev_id );
-    return 0 unless $rr_info;
+    my $rcommit_info = $self->get_rcommit_info( $c, $data, $rcommit_id );
+    return 0 unless $rcommit_info;
 
-    $self->rh_copy_kv_to( $rr_info, $data );
+    $self->rh_copy_kv_to( $rcommit_info, $data );
 
     # create mslog
-    my $ret_code = $self->create_mslog(
-        $c, $data, 'rriget',
-        $msession_id,
-        4, # $msstatus_id, 4 .. command preparation
+    my $ret_code = $self->create_msproc_log(
+        $c, $data, 'rciget',
+        $msproc_id,
+        4, # $msproc_status_id, 4 .. command preparation
         1,
         DateTime->now, # $change_time
         undef # $estimated_finish_time
@@ -1224,9 +1246,10 @@ sub process_action {
     my $param_msid_checks;
          if ( $action eq 'mscreate' )   { $param_msid_checks = 0;   # msession create
     } elsif ( $action eq 'msdestroy' )  { $param_msid_checks = 1;   # msession destroy
+    } elsif ( $action eq 'mspcreate' )  { $param_msid_checks = 1;   # msproc create
     } elsif ( $action eq 'cget' )       { $param_msid_checks = 1;   # get command
     } elsif ( $action eq 'sset' )       { $param_msid_checks = 1;   # set status
-    } elsif ( $action eq 'rriget' )     { $param_msid_checks = 1;   # rep rev info get
+    } elsif ( $action eq 'rciget' )     { $param_msid_checks = 1;   # rep rev info get
     } elsif ( $action eq 'mevent' )     { $param_msid_checks = 1;   # machine event occured
     # debug commands
     } elsif ( $action eq 'login' )      { $param_msid_checks = 0;   # login
@@ -1243,6 +1266,9 @@ sub process_action {
         if ( $action eq 'mscreate' ) {
             $cmd_ret_code = $self->cmd_mscreate( $c, $data, $params );
 
+        } elsif ( $action eq 'mspcreate' ) {
+            $cmd_ret_code = $self->cmd_mspcreate( $c, $data, $params );
+
         } elsif ( $action eq 'msdestroy' ) {
             $cmd_ret_code = $self->cmd_msdestroy( $c, $data, $params );
 
@@ -1252,8 +1278,8 @@ sub process_action {
         } elsif ( $action eq 'sset' ) {
             $cmd_ret_code = $self->cmd_sset( $c, $data, $params, $c->request->upload );
 
-        } elsif ( $action eq 'rriget' ) {
-            $cmd_ret_code = $self->cmd_rriget( $c, $data, $params );
+        } elsif ( $action eq 'rciget' ) {
+            $cmd_ret_code = $self->cmd_rciget( $c, $data, $params );
 
         } elsif ( $action eq 'mevent' ) {
             $cmd_ret_code = $self->cmd_mevent( $c, $data, $params );

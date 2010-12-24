@@ -5,6 +5,18 @@ use utf8;
 return sub {
     my ( $schema, $delete_all, $data ) = @_;
 
+    if ( $delete_all ) {
+        $schema->resultset('msjobp_cmd')->delete_all();
+        $schema->resultset('msjobp')->delete_all();
+        $schema->resultset('msjob')->delete_all();
+        $schema->resultset('msproc_log')->delete_all();
+        $schema->resultset('msproc')->delete_all();
+        $schema->resultset('mswatch_log')->delete_all();
+        $schema->resultset('mslog')->delete_all();
+        $schema->resultset('msession')->delete_all();
+    }
+
+
     my $master_tr1_rref_id = $schema->resultset('rref')->find(
         {
             'me.name' => 'master',
@@ -108,9 +120,9 @@ return sub {
     $schema->resultset('wconf_session')->delete_all() if $delete_all;
     $schema->resultset('wconf_session')->populate([
         [ qw/ wconf_session_id machine_id processes_num / ],
-        [ 1, 5, 2  ], # pc-jurosz2
-        [ 2, 6, 1  ], # tapir1
-        [ 3, 7, 3  ], # tapir2
+        [ 1, 6, 1  ], # tapir1
+        [ 2, 7, 3  ], # tapir2
+        [ 3, 5, 2  ], # pc-jurosz2
     ]);
 
 
