@@ -7,3 +7,4 @@
 /server/conf/*-state.pl
 /server-repos/*
 /server/root/dbdoc/*
+/client-data/*

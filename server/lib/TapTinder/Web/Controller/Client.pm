@@ -614,7 +614,7 @@ sub get_next_cmd {
     ];
     my $row_data = $self->edbi_selectrow_hashref( $c, undef, $sql, $ba );
 
-    #$self->dumper( $c, $row_data );
+    $self->dumper( $c, $row_data );
     #TODO, if jobp_cmd_id changed, then
     return $row_data;
 }
@@ -631,10 +631,10 @@ sub get_next_cmd_pmcid {
 
     my $rs = $c->model('WebDB::msjobp_cmd')->search( {
         'msjobp_cmd_id' => $msjobp_cmd_id,
-        'msjob_id.proc_id' => $msproc_id,
+        'msjob_id.msproc_id' => $msproc_id,
     }, {
-        select => [ 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.jobp_id', 'jobp_id.rcommit_id', 'jobp_id.order', 'jobp_cmd_id.order', ],
-        as => [ 'msjobp_id', 'job_id', 'jobp_id', 'rcommit_id', 'jobp_order', 'jobp_cmd_order', ],
+        select => [ 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.jobp_id', 'msjobp_id.rcommit_id', 'jobp_id.order', 'jobp_cmd_id.order', ],
+        as =>     [ 'msjobp_id',           'job_id',         'jobp_id',         'rcommit_id',           'jobp_order',    'jobp_cmd_order',    ],
         join => [ { 'msjobp_id' => [ 'msjob_id', 'jobp_id', ] }, 'jobp_cmd_id', ],
     } );
     #$self->dump_rs( $c, $rs );
@@ -651,7 +651,6 @@ sub get_next_cmd_pmcid {
     my $next_cmd = $self->get_next_cmd(
         $c, $data,
         $prev_data->{job_id},
-        $prev_data->{rcommit_id},
         $prev_data->{jobp_order},
         $prev_data->{jobp_cmd_order}
     );
@@ -710,28 +709,23 @@ sub start_new_job {
 }
 
 
-=head2 get_rep_path_newest_rev_id
+=head2 get_jobp_master_ref_rcommit_id
 
-Return newest rev_id for rep_path_id found.
+Return master ref rcommit_id for jobp_id.project_id.
 
 =cut
 
-sub get_rep_path_newest_rev_id {
-    my ( $self, $c, $data, $rep_path_id ) = @_;
+sub get_jobp_master_ref_rcommit_id {
+    my ( $self, $c, $data, $jobp_id ) = @_;
 
-    # TODO - optimize to limit 1
-    my $rs = $c->model('WebDB::rev_rep_path')->search( {
-        'me.rep_path_id' => $rep_path_id,
-    }, {
-        select => [ 'rev_id' ],
-        as => [ 'rev_id.rev_id',  ],
-        join => [ 'rev_id' ],
-        order_by => [ 'rev_num' ],
+    my $job = $c->model('WebDB::jobp')->single( { jobp_id => $jobp_id, } );
+
+    my $rs = $c->model('WebDB::rref')->search( {
     } );
     my $row = $rs->next;
     if ( !$row ) {
         $data->{err} = 1;
-        $data->{err_msg} = "Error: Rev_rep_path id (rep_path_id=$rep_path_id) not found.";
+        $data->{err_msg} = "Error: Master ref rcommit_id for jobp_id $jobp_id not found.";
         return 0;
     }
     my $row_data = { $row->get_columns() };
@@ -778,13 +772,12 @@ sub cmd_cget {
             if ( $jobp_id == $cmds_data->{prev}->{jobp_id} ) {
                 $msjobp_id = $cmds_data->{prev}->{msjobp_id};
 
-            # if job part id is new, than we shoul create new msjobp_id
+            # if job part id is new, then we should create new msjobp_id
             } else {
                 my $msjob_id = $cmds_data->{prev}->{msjob_id};
 
                 # find new rev_id
-                my $rcommit_id = $cmds_data->{prev}->{rcommit_id};
-                my $rev_id = $self->get_rep_path_newest_rev_id( $c, $data, $rcommit_id );
+                my $rcommit_id = $self->get_jobp_master_ref_rcommit_id( $c, $data, $jobp_id );
 
                 $msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rcommit_id );
                 return $self->txn_end( $c, $data, 0 ) unless defined $msjobp_id;
@@ -793,7 +786,6 @@ sub cmd_cget {
                 $data->{msjob_id} = $msjob_id;
                 $data->{rcommit_id} = $rcommit_id;
                 $data->{msjobp_id} = $msjobp_id;
-                $data->{rev_id} = $rev_id;
             }
 
             my $msjobp_cmd_id = $self->create_msjobp_cmd( $c, $data, $msjobp_id, $jobp_cmd_id );
@@ -855,7 +847,7 @@ sub cmd_cget {
 
 =head2 get_msjobp_cmd_info
 
-Return row with msjobp_id and msjob_id for $msproc_id and $msjobp_cmd_id.
+Return info for $msproc_id and $msjobp_cmd_id.
 
 =cut
 
@@ -867,8 +859,8 @@ sub get_msjobp_cmd_info {
         'msjob_id.msproc_id' => $msproc_id,
     }, {
         select => [ 'msjobp_id.msjobp_id', 'msjob_id.msjob_id', 'msjobp_id.rcommit_id', ],
-        as => [ 'msjobp_id', 'msjob_id', 'rcommit_id', ],
-        join => { 'msjobp_id' => [ 'msjob_id', 'jobp_id', ] },
+        as =>     [ 'msjobp_id',           'msjob_id',          'rcommit_id',           ],
+        join =>   { 'msjobp_id' => [ 'msjob_id', 'jobp_id', ] },
     } );
 
     my $row = $rs->next;

@@ -12,9 +12,8 @@ use File::Path;
 use File::Copy;
 
 use Watchdog qw(sys sys_for_watchdog);
-use SVNShell qw(svnversion svnup svndiff);
-use SVN::PropBug qw(diff_contains_real_change);
-$SVN::PropBug::ver = 0;
+use GitShell qw(git_clone git_checkout);
+
 
 =head1 NAME
 
@@ -56,6 +55,20 @@ sub new {
 }
 
 
+=head2 get_base_dir_name
+
+Return dir name for $rp_dir_base_name and $suffix.
+
+=cut
+
+sub get_base_dir_name {
+    my ( $self, $rp_dir_base_name, $suffix ) = @_;
+
+    my $rp_dir_name = $rp_dir_base_name . '-' . $suffix;
+    return $rp_dir_name;
+}
+
+
 =head2 get_dir_path
 
 Return dir_path for $rp_dir_base_name and $suffix.
@@ -65,22 +78,23 @@ Return dir_path for $rp_dir_base_name and $suffix.
 sub get_dir_path {
     my ( $self, $rp_dir_base_name, $suffix ) = @_;
 
-    my $rp_dir_name = $rp_dir_base_name . '-' . $suffix;
+    my $rp_dir_name = $self->get_base_dir_name( $rp_dir_base_name, $suffix );
     my $dir_path = catdir( $self->{dir}, $rp_dir_name );
     return $dir_path;
 }
 
 
-=head2 prepare_rep_path_dirs
+=head2 prepare_repo_dirs
 
-Will create all rep_path dirs if needed.
+Will create all directories for give repository testing.
 
 =cut
 
-sub prepare_rep_path_dirs {
+sub prepare_repo_dirs {
     my ( $self, $rp_dir_base_name ) = @_;
 
-    my @suffixes = ( 'src', 'temp', 'results' );
+    #my @suffixes = ( 'src', 'temp', 'results' );
+    my @suffixes = ( 'temp', 'results' );
     foreach my $suffix ( @suffixes ) {
         my $dir_path = $self->get_dir_path( $rp_dir_base_name, $suffix );
         unless ( -d $dir_path ) {
@@ -92,24 +106,24 @@ sub prepare_rep_path_dirs {
 }
 
 
-=head2 get_rp_dir_base_name
+=head2 get_repo_dir_base_name
 
-Returns filesystem valid directory base name for $project_name, $rep_path_path combination.
+Returns filesystem valid directory base name for $project_name, $rep_name combination.
 
 =cut
 
-sub get_rp_dir_base_name {
-    my ( $self, $project_name, $rep_path_path ) = @_;
+sub get_repo_dir_base_name {
+    my ( $self, $project_name, $repo_name ) = @_;
 
     my $fs_valid_project_name = $project_name;
     $fs_valid_project_name =~ s{[^a-zA-Z0-9\-]}{}g;
     $fs_valid_project_name =~ s{^\-+}{};
 
-    my $fs_valid_rep_path_path = $rep_path_path;
-    $fs_valid_rep_path_path =~ s{[^a-zA-Z0-9\-_]}{}g;
+    my $fs_valid_repo_name = $repo_name;
+    $fs_valid_repo_name =~ s{[^a-zA-Z0-9\-_]}{}g;
 
     my $rp_dir_base_name = $fs_valid_project_name;
-    $rp_dir_base_name .= '-' . $fs_valid_rep_path_path if $fs_valid_rep_path_path;
+    $rp_dir_base_name .= '-' . $fs_valid_repo_name if $fs_valid_repo_name;
     return $rp_dir_base_name;
 }
 
@@ -134,60 +148,50 @@ sub dir_is_empty {
 }
 
 
-=head2 run_svn_co
+=head2 run_git_clone
 
-Will run svn checkout command.
-
-=cut
-
-sub run_svn_co {
-    my ( $self, $rep_full_path, $src_dir_path, $cmd_output_dir_path, $rev_num ) = @_;
-
-    my $cmd = 'svn co';
-    $cmd .= " -r $rev_num" if defined $rev_num;
-    $cmd .= ' "' . $rep_full_path . '" "' . $src_dir_path . '"';
-
-    my $cmd_output_file_path = catfile( $cmd_output_dir_path, 'svn_co.txt' );
-    my ( $cmd_rc, $out ) = sys_for_watchdog(
-        $cmd,
-        $cmd_output_file_path,
-        10*60,
-        undef,
-        $self->{watchdog_dir}
-    );
-    if ( $cmd_rc ) {
-        # TODO
-        carp "svn co failed, return code: $cmd_rc\n";
-        carp "svn co output: '$out'\n";
-        croak;
-        return 0; # not needed
-    }
-
-    return 1;
-}
-
-
-=head2 run_svn_up
-
-Will run svn update command.
+Will run git clone command.
 
 =cut
 
-sub run_svn_up {
-    my ( $self, $src_dir_path, $cmd_output_dir_path, $rev_num ) = @_;
+sub run_git_clone {
+    my ( $self, $base_dir, $repo_dir_name, $repo_url ) = @_;
 
-    my $to_rev_str = $rev_num;
-    my ( $up_ok, $o_log, $tmp_new_rev ) = svnup(
-        $src_dir_path,
-        $to_rev_str
+    my ( $ok, $o_log, $tmp_new_rev ) = git_clone(
+        $base_dir,
+        $repo_dir_name,
+        $repo_url
     );
 
     # TODO
-    unless ( $up_ok ) {
+    unless ( $ok ) {
         croak $o_log;
     }
 
-    return $up_ok;
+    return $ok;
+}
+
+
+=head2 run_git_checkout
+
+Will run git checkout command.
+
+=cut
+
+sub run_git_checkout {
+    my ( $self, $src_dir_path, $cmd_output_dir_path, $commit_sha ) = @_;
+
+    my ( $ok, $o_log, $tmp_new_rev ) = git_checkout(
+        $src_dir_path,
+        $commit_sha
+    );
+
+    # TODO
+    unless ( $ok ) {
+        croak $o_log;
+    }
+
+    return $ok;
 }
 
 
@@ -250,29 +254,7 @@ Check if directory is in clean (not modified) state.
 sub check_not_modified {
     my ( $self, $dir_path, $bypase_svnbug ) = @_;
 
-    my ( $o_rev, $o_log ) = svnversion( $dir_path );
-    croak "svn svnversion failed: $o_log" unless defined $o_rev;
-    print "Revision number of dir '$dir_path': $o_rev\n" if $self->{ver} >= 4;
-    if ( $o_rev =~ /^(\d+)$/ ) {
-        return 1;
-
-    } elsif ( !$bypase_svnbug || $o_rev !~ /^(\d+)M$/ ) {
-        carp "Bad revision number '$o_rev' on '$dir_path'. Run cleanup dir.\n";
-        return 0;
-    }
-
-    # bypass Subversion bug, see [perl #49788]
-    my ( $diff, $err ) = svndiff( $dir_path );
-    croak "SVN diff error on dir '$dir_path': $err\n" unless defined $diff;
-
-    my $is_real_modification = diff_contains_real_change( $diff );
-    unless ( defined $is_real_modification ) {
-        croak "SVN::PropBug error on dir '$dir_path': $@.";
-    }
-    if ( $is_real_modification ) {
-        croak "Found modifications in temp directory.\n" . "Diff: $diff\n";
-    }
-    print "Subversion bug bypassed on '$dir_path'.\n" if $self->{ver} >= 3;
+    # ToDo
     return 1;
 }
 
@@ -293,26 +275,28 @@ sub prepare_temp_copy {
     my ( $self, $rr_info ) = @_;
 
     # use Data::Dumper; print Dumper( $rr_info ); exit;
-    my $rp_dir_base_name = $self->get_rp_dir_base_name(
-        $rr_info->{project_name}, $rr_info->{rep_path_path}
+    my $rp_dir_base_name = $self->get_repo_dir_base_name(
+        $rr_info->{project_name}, $rr_info->{repo_name}
     );
-    $self->prepare_rep_path_dirs( $rp_dir_base_name );
+    $self->prepare_repo_dirs( $rp_dir_base_name );
 
     my $src_dir_path = $self->get_dir_path( $rp_dir_base_name, 'src' );
 
     # update or checkout src dir
-    my $svn_co_needed = $self->dir_is_empty( $src_dir_path );
+    #my $git_clone_needed = $self->dir_is_empty( $src_dir_path );
+    my $git_clone_needed = ( ! -d $src_dir_path );
     my $results_dir_path = $self->get_dir_path( $rp_dir_base_name, 'results' );
     my $ret_code;
+    
     # checkout
-    if ( $svn_co_needed ) {
-        my $rep_full_path = $rr_info->{rep_path} . $rr_info->{rep_path_path};
-        $ret_code = $self->run_svn_co( $rep_full_path, $src_dir_path, $results_dir_path, $rr_info->{rev_num} );
+    if ( $git_clone_needed ) {
+        my $rp_dir_name = $self->get_base_dir_name( $rp_dir_base_name, 'src' );
+        print "Repository not found. Doing git clone to '$src_dir_path'.\n" if $self->{ver} >= 4;
+        $ret_code = $self->run_git_clone( $self->{dir}, $rp_dir_name, $rr_info->{repo_url} );
+    }
 
     # update
-    } else {
-        $ret_code = $self->run_svn_up( $src_dir_path, $results_dir_path, $rr_info->{rev_num} );
-    }
+    $ret_code = $self->run_git_checkout( $src_dir_path, $results_dir_path, $rr_info->{sha} );
     return undef unless $self->check_not_modified( $src_dir_path, 0 );
 
     return undef unless $ret_code;

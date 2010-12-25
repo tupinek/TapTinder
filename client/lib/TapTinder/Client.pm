@@ -279,13 +279,13 @@ sub ccmd_get_src {
 
     my $dirs = $self->{repman}->prepare_temp_copy( $rcommit_info );
     unless ( $dirs ) {
-        $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 6 ); # error, $cmd_status_id
+        $data = $self->{agent}->sset( $self->{msession_id}, $self->{msproc_id}, $self->{msjobp_cmd_id}, 6 ); # error, $cmd_status_id
         return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
     }
     $cmd_env->{temp_dir} = $dirs->{temp_dir};
     $cmd_env->{results_dir} = $dirs->{results_dir};
 
-    $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 4 ); # ok, $cmd_status_id
+    $data = $self->{agent}->sset( $self->{msession_id}, $self->{msproc_id}, $self->{msjobp_cmd_id}, 4 ); # ok, $cmd_status_id
     return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
 
     return 1;
@@ -301,13 +301,13 @@ Run prepare client command. Prepare project dir for TapTinder run.
 sub ccmd_prepare {
     my ( $self, $cmd_name, $cmd_env ) = @_;
 
-    my $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 2 ); # running, $cmd_status_id
+    my $data = $self->{agent}->sset( $self->{msession_id}, $self->{msproc_id}, $self->{msjobp_cmd_id}, 2 ); # running, $cmd_status_id
     return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
 
     my $src_add_project_dir = catdir( $self->{src_add_dir}, $cmd_env->{project_name} );
     $self->{repman}->add_merge_copy( $src_add_project_dir, $cmd_env->{temp_dir} );
 
-    $data = $self->{agent}->sset( $self->{msession_id}, $self->{msjobp_cmd_id}, 4 ); # ok, $cmd_status_id
+    $data = $self->{agent}->sset( $self->{msession_id}, $self->{msproc_id}, $self->{msjobp_cmd_id}, 4 ); # ok, $cmd_status_id
     return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
 
     return 1;
@@ -353,6 +353,7 @@ sub run_cmd {
 
     my $data = $self->{agent}->sset(
         $self->{msession_id},
+        $self->{msproc_id},
         $self->{msjobp_cmd_id}, # $msjobp_cmd_id
         2, # running
         undef, # $end_time
@@ -390,6 +391,7 @@ sub run_cmd {
     }
     $data = $self->{agent}->sset(
         $self->{msession_id},
+        $self->{msproc_id},
         $self->{msjobp_cmd_id}, # $msjobp_cmd_id
         $status,
         time(), # $end_time, TODO - is GMT?
