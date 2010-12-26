@@ -228,9 +228,29 @@ __PACKAGE__->cwm_conf( {
 } );
 
 
+package TapTinder::DB::Schema::msjob;
+__PACKAGE__->cwm_conf( {
+     max_deep => 2,
+} );
+
+
+package TapTinder::DB::Schema::msjobp;
+__PACKAGE__->cwm_conf( {
+     max_deep => 2,
+} );
+
+
 package TapTinder::DB::Schema::mslog;
 __PACKAGE__->cwm_conf( {
      max_deep => 1,
+} );
+
+
+package TapTinder::DB::Schema::msstatus;
+__PACKAGE__->cwm_conf( {
+    col_type => {
+        'name' => 'G',
+    },
 } );
 
 

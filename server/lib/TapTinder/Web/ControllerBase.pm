@@ -284,16 +284,16 @@ sub get_pager_html {
 
 =head2 get_fspath_select_row
 
-Return fspath_select columns hash for fsfile_type_id and rep_path_id.
+Return fspath_select columns hash for fsfile_type_id and rep_id.
 
 =cut
 
 sub get_fspath_select_row {
-    my ( $self, $c, $fsfile_type_id, $rep_path_id ) = @_;
+    my ( $self, $c, $fsfile_type_id, $rep_id ) = @_;
 
     my $rs = $c->model('WebDB::fspath_select')->search( {
         'me.fsfile_type_id' => $fsfile_type_id,
-        'me.rep_path_id'    => $rep_path_id,
+        'me.rep_id' => $rep_id,
     }, {
         select => [ 'fspath_id.fspath_id', 'fspath_id.path', 'fspath_id.name',  ],
         as => [ 'fspath_id', 'path', 'name',  ],

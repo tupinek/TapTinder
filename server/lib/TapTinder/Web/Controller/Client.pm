@@ -721,6 +721,7 @@ sub get_jobp_master_ref_rcommit_id {
     my $job = $c->model('WebDB::jobp')->single( { jobp_id => $jobp_id, } );
 
     my $rs = $c->model('WebDB::rref')->search( {
+        
     } );
     my $row = $rs->next;
     if ( !$row ) {
@@ -813,11 +814,11 @@ sub cmd_cget {
         $self->txn_end( $c, $data, 1 ); # without return
         $self->release_lock_for_machine_action( $c, $machine_id, 'get_new_job' );
         unless ( defined $ret_val ) {
-            # create mslog
-            my $ret_code = $self->create_mslog(
+            # create msproc_log
+            my $ret_code = $self->create_msproc_log(
                 $c, $data, 'cget',
-                $msession_id,
-                3, # $msstatus_id, 3 .. waiting for new job
+                $msproc_id,
+                2, # $msproc_status_id, 2 .. waiting for new job
                 $attempt_number,
                 DateTime->now, # $change_time
                 undef # $estimated_finish_time
@@ -831,11 +832,11 @@ sub cmd_cget {
         }
     }
 
-    # create mslog
-    my $ret_code = $self->create_mslog(
+    # create msproc_log
+    my $ret_code = $self->create_msproc_log(
         $c, $data, 'cget',
-        $msession_id,
-        5, # $msstatus_id, 5 .. running command
+        $msproc_id,
+        4, # $msstatus_id, 4 .. running command
         $attempt_number,
         DateTime->now, # $change_time
         undef # $estimated_finish_time
@@ -858,9 +859,9 @@ sub get_msjobp_cmd_info {
         'me.msjobp_cmd_id' => $msjobp_cmd_id,
         'msjob_id.msproc_id' => $msproc_id,
     }, {
-        select => [ 'msjobp_id.msjobp_id', 'msjob_id.msjob_id', 'msjobp_id.rcommit_id', ],
-        as =>     [ 'msjobp_id',           'msjob_id',          'rcommit_id',           ],
-        join =>   { 'msjobp_id' => [ 'msjob_id', 'jobp_id', ] },
+        select => [ 'msjobp_id.msjobp_id', 'msjob_id.msjob_id', 'msjobp_id.rcommit_id', 'rcommit_id.rep_id' ],
+        as =>     [ 'msjobp_id',           'msjob_id',          'rcommit_id',           'rep_id'            ],
+        join =>   { 'msjobp_id' => [ 'msjob_id', 'jobp_id', 'rcommit_id', ] },
     } );
 
     my $row = $rs->next;
@@ -876,18 +877,18 @@ sub get_msjobp_cmd_info {
 
 =head2 get_fspath_info
 
-Select fspath info for fsfile_type_id and rep_path_id.
+Select fspath info for fsfile_type_id and rep_id.
 
 =cut
 
 
 sub get_fspath_info {
-    my ( $self, $c, $data, $fsfile_type_id, $rep_path_id ) = @_;
+    my ( $self, $c, $data, $fsfile_type_id, $rep_id ) = @_;
 
-    my $row_data = $self->get_fspath_select_row( $c, $fsfile_type_id, $rep_path_id );
+    my $row_data = $self->get_fspath_select_row( $c, $fsfile_type_id, $rep_id );
     if ( !$row_data ) {
         $data->{err} = 1;
-        $data->{err_msg} = "Error: Fspath id (fsfile_type_id=$fsfile_type_id, rep_path_id=$rep_path_id) not found.";
+        $data->{err_msg} = "Error: Fspath id (fsfile_type_id=$fsfile_type_id, rep_id=$rep_id) not found.";
         return 0;
     }
     return $row_data;
@@ -938,7 +939,7 @@ Do all around file uploading.
 =cut
 
 sub uploaded_file_found {
-    my ( $self, $c, $data, $input_name, $rep_path_id, $msjobp_cmd_id ) = @_;
+    my ( $self, $c, $data, $input_name, $rep_id, $msjobp_cmd_id ) = @_;
 
     # TODO validate params
 
@@ -966,7 +967,7 @@ sub uploaded_file_found {
         return 0;
     }
 
-    my $fspath_info = $self->get_fspath_info( $c, $data, $fsfile_type_id, $rep_path_id );
+    my $fspath_info = $self->get_fspath_info( $c, $data, $fsfile_type_id, $rep_id );
     return 0 unless $fspath_info;
     #$self->dumper( $c, $fspath_info );
 
@@ -1041,7 +1042,7 @@ sub cmd_sset {
         my $fsfile_id = $self->uploaded_file_found(
             $c, $data,
             'output_file', # $input_name
-            $msjob_info->{rep_path_id}, # rep_path_id
+            $msjob_info->{rep_id}, # rep_id
             $msjobp_cmd_id
         );
         return 0 unless $fsfile_id;
@@ -1052,7 +1053,7 @@ sub cmd_sset {
         my $fsfile_id = $self->uploaded_file_found(
             $c, $data,
             'outdata_file', # $input_name
-            $msjob_info->{rep_path_id}, # rep_path_id
+            $msjob_info->{rep_id}, # rep_id
             $msjobp_cmd_id
         );
         return 0 unless $fsfile_id;
@@ -1168,16 +1169,16 @@ sub cmd_mevent {
     my $new_cmd_status_id = undef;
 
     if ( $event_name eq 'pause' ) {
-        $new_msstatus_id = 6; # paused by user
-        $new_cmd_status_id = 6; # paused by user
+        $new_msstatus_id = 4; # paused by user
+        $new_cmd_status_id = 4; # paused by user
 
     } elsif ( $event_name eq 'pause refresh' ) {
-        $new_msstatus_id = 10; # paused by user - refresh
+        $new_msstatus_id = 5; # paused by user - refresh
 
     } elsif ( $event_name eq 'continue' ) {
         # TODO - try to restore msstatus_id from before pause
         $new_msstatus_id = 1; # unknown status
-        $new_cmd_status_id = 2; # running
+        $new_cmd_status_id = 3; # running
 
     } else {
         $data->{err} = 1;
