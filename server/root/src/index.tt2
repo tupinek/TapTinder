@@ -1,8 +1,8 @@
 <h2>Bookmarks:</h2>
 <ul class=menu>
-<li><a href="/buildstatus/pr-Parrot/rp-trunk">Parrot build status</a></li>
-<li><a href="/report/pr-Parrot/rp-trunk">Parrot trunk test reports</a></li>
-<li><a href="/report/pr-Parrot/">Parrot branches list</a></li>
+<li><a href="/buildstatus/pr-tt-tr1">tt-tr1 build status</a></li>
+<li><a href="/buildstatus/pr-tt-tr2">tt-tr2 build status</a></li>
+<li><a href="/buildstatus/pr-tt-tr3">tt-tr3 build status</a></li>
 </ul>
 
 

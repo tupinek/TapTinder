@@ -19,75 +19,129 @@ Catalyst controller for TapTinder. Shows build status.
 =cut
 
 sub index : Path  {
-    my ( $self, $c, $params, @args ) = @_;
+    my ( $self, $c, $p_project, $par1, $par2, @args ) = @_;
 
+    my ( $is_index, $project_name, $params ) = $self->get_projname_params( $c, $p_project, $par1, $par2 );
+    my $ref_name = undef; # ToDo
+    $ref_name = 'master' unless $ref_name;
     my $pr = $self->get_page_params( $params );
 
-    # TODO
-    my $rep_path_id = 1;
-    my $rev_num_from = 0;
+    my $search = { 
+        
+        'me.name' => $ref_name,
+        'rep_id.active' => 1,
+        'project_id.name' => $project_name,
+    };
+    my $project_rs = $c->model('WebDB::rref')->search( $search,
+        {
+            join => { 'rcommit_id' => { 'rep_id' => 'project_id', }, },
+            'select' => [qw/ me.rref_id rcommit_id.rline_id rep_id.rep_id project_id.name project_id.url /],
+            'as' =>     [qw/ rref_id    rline_id            rep_id        project_name    project_url    /],
+        }
+    );
+    my $project_row = $project_rs->next;
+    #$self->dumper( $c, { $project_row->get_columns } );
 
-    # load revision info
-    my $rs_revs = $c->model('WebDB::rev_rep_path')->search( {
-        'rep_path_id' => $rep_path_id,
+    my $rline_id = $project_row->get_column('rline_id');
+
+
+    my $rs_rcommits = $c->model('WebDB::rcommit')->search( {
+        'get_rline_hier.super_rline_id' => $rline_id,
     }, {
         select => [ qw/
-            rev_id.rev_id rev_id.rev_num rev_id.date rev_id.msg
-            author_id.rep_author_id author_id.rep_login
+            me.rcommit_id me.committer_time me.msg
+            author_id.rauthor_id author_id.rep_login
         / ],
         as => [ qw/
-            rev_id rev_num date msg
+            rcommit_id date msg
             rep_author_id rep_login
         / ],
-        join => [ { 'rev_id' => 'author_id' } ],
-        order_by => [ 'rev_id.rev_num DESC' ],
+        join => [ { 'rline_id' => 'get_rline_hier' }, 'author_id', ],
+        order_by => [ 'me.committer_time DESC' ],
         page => 1,
         rows => 100,
         #offset => 0,
     } );
 
-    my @revs = ();
-    while (my $row_obj = $rs_revs->next) {
-        my %row = ( $row_obj->get_columns() );
-        push @revs, \%row;
+    my @rcommits = ();
+    while ( my $row_obj = $rs_rcommits->next ) {
+        push @rcommits, { $row_obj->get_columns() };
     }
-    $c->stash->{revs} = \@revs;
+    #$self->dumper( $c, \@rcommits );
 
-    # Set rev_num_from to speed up next query.
-    $rev_num_from = $revs[-1]->{rev_num};
+    my $cols = [ qw/ 
+        machine_id
+        rcommit_id
+        status_id
+        status_name
+        web_fpath
+    / ];
 
-    # load make results
-    my $plus_rows = [ qw/ machine_id rev_id status_id status_name web_fpath /];
-    my $search_conf = {
-        'select' => $plus_rows,
-        'as'     => $plus_rows,
-        bind   => [
-            $rep_path_id, # rep_path_id
-            $rev_num_from, # rev_num
-        ],
-        result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-    };
+    my $sql = "
+    from (
+       select ms.machine_id,
+              rc.rcommit_id,
+              mjpc.status_id,
+              cs.name as status_name,
+              concat(fsp.web_path, '/', fsf.name) as web_fpath
+         from rline_hier rlh,
+              rcommit rc,
+              jobp jp,
+              jobp_cmd jpc,
+              msjobp mjp,
+              msjobp_cmd mjpc,
+              cmd_status cs,
+              msjob mj,
+              msproc msp,
+              msession ms,
+              fsfile fsf,
+              fspath fsp
+        where rlh.super_rline_id = ?
+          and rc.rline_id = rlh.rline_id
+          and jp.job_id = ? -- only this job
+          and jp.order = 1 -- only first part
+          and jpc.jobp_id = jp.jobp_id
+          and jpc.cmd_id = 5 -- only make
+          and mjp.rcommit_id = rc.rcommit_id
+          and mjp.jobp_id = jp.jobp_id
+          and mjpc.jobp_cmd_id = jpc.jobp_cmd_id
+          and mjpc.msjobp_id = mjp.msjobp_id
+          and cs.cmd_status_id = mjpc.status_id
+          and fsf.fsfile_id = mjpc.output_id
+          and fsp.fspath_id = fsf.fspath_id
+          and mj.msjob_id = mjp.msjobp_id
+          and msp.msproc_id = mj.msproc_id
+          and ms.msession_id = msp.msession_id
+    ) a_f
+   "; # end sql
 
-
-    my $rs = $c->model('WebDB')->schema->resultset( 'BuildStatus' )->search( {}, $search_conf );
+    my $ba = [ 
+        $rline_id,  # rlh.super_rline_id
+        1, # jp.job_id - todo
+    ];
+    my $all_rows = $self->edbi_selectall_arrayref_slice( $c, $cols, $sql, $ba );
+    #$self->dumper( $c, $all_rows );
 
     my %ress = ();
     my %machines = ();
-    my @all_rows = $rs->all;
-    foreach my $row ( @all_rows ) {
+    foreach my $row ( @$all_rows ) {
         my $machine_id = $row->{machine_id};
-        $ress{ $row->{rev_id} }->{ $machine_id } = $row;
+        $ress{ $row->{rcommit_id} }->{ $machine_id } = $row;
         $machines{ $machine_id }++;
     }
 
+    $c->stash->{rcommits} = \@rcommits;
     $c->stash->{ress} = \%ress;
     $c->stash->{machines} = \%machines;
 
-    #$self->dumper( $c, \%machines );
-    #$self->dumper( $c, \@revs );
-    #$self->dumper( $c, $rev_num_from );
-    #$self->dumper( $c, \%ress );
 
+    if ( 1 ) {
+        $self->dumper( $c, \%machines );
+        $self->dumper( $c, \@rcommits );
+        #$self->dumper( $c, $rev_num_from );
+        $self->dumper( $c, \%ress );
+    }
+    
 }
 
 

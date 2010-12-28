@@ -56,8 +56,8 @@ sub dumper {
         }
     }
 
-    # Change next line to 1  to see debug on server side too.
-    if ( 1 ) {
+    # Change next line to 1 to see debug on server side too.
+    if ( 0 ) {
         return 1 unless $c->stash->{ot};
         print STDERR $c->stash->{ot} . "\n";
         $c->stash->{ot} = '';
@@ -145,9 +145,30 @@ sub edbi_run_dbh_do {
         print STDERR 'me: ' . join( ', ', @$ba ) . "\n";
     }
     
-    my $data = $schema->storage->dbh_do(
-        sub { return $_[1]->$method_name( $_[2], {}, @{$_[3]} ); }, $sql, $ba
-    );
+    my $data = undef;
+    if ( $method_name eq 'selectall_hashref' ) {
+        unless ( $conf->{key_field} ) {
+            my $msg = "Key 'key_field' not found inside \$conf.\n";
+            print STDERR $msg;
+            return undef;
+        }
+        $data = $schema->storage->dbh_do(
+            sub { return $_[1]->$method_name( $_[2], $conf->{key_field}, {}, @{$_[3]} ); },
+            $sql, $ba
+        );
+    
+    } elsif ( $method_name eq 'selectall_arrayref' && $conf->{slice} )  {
+        $data = $schema->storage->dbh_do(
+            sub { return $_[1]->$method_name( $_[2], { Slice => {} }, @{$_[3]} ); },
+            $sql, $ba
+        );
+
+    } else  {
+        $data = $schema->storage->dbh_do(
+            sub { return $_[1]->$method_name( $_[2], {}, @{$_[3]} ); },
+            $sql, $ba
+        );
+    }
 
     unless ( $data ) {
         my $str = $schema->storage->dbh->errstr;
@@ -193,6 +214,22 @@ sub edbi_selectall_arrayref {
 }
 
 
+=head2 edbi_selectall_arrayref_slice
+
+Run eDBI edbi_selectall_arrayref with { Slice => 1 }.
+
+=cut
+
+sub edbi_selectall_arrayref_slice {
+    my ( $self, $c, $cols, $sql_base, $ba, $conf ) = @_;
+    
+    $conf = {} unless defined $conf;
+    $conf->{slice} = 1;
+    my $do_data = $self->edbi_run_dbh_do( $c, 'selectall_arrayref', $cols, $sql_base, $ba, $conf );
+    return $do_data->{data};
+}
+
+
 =head2 edbi_selectrow_hashref
 
 Run eDBI selectrow_hashref.
@@ -204,6 +241,21 @@ sub edbi_selectrow_hashref {
     my $c = shift;
 
     my $do_data = $self->edbi_run_dbh_do( $c, 'selectrow_hashref', @_ );
+    return $do_data->{data};
+}
+
+
+=head2 edbi_selectall_hashref
+
+Run eDBI edbi_selectall_hashref.
+
+=cut
+
+sub edbi_selectall_hashref {
+    my $self = shift;
+    my $c = shift;
+
+    my $do_data = $self->edbi_run_dbh_do( $c, 'selectall_hashref', @_ );
     return $do_data->{data};
 }
 
