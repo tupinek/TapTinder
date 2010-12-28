@@ -75,15 +75,52 @@ sub git_checkout {
         . $commit_sha
         . ' 2>&1 |'
     ;
-    if ( open( GITUP, $git_checkout_cmd ) ) {
+    if ( open( GITCHECKOUT, $git_checkout_cmd ) ) {
         my $gitcheckout_log = '';
-        while ( my $line = <GITUP> ) { $gitcheckout_log .= $line; }
-        close GITUP;
+        while ( my $line = <GITCHECKOUT> ) { $gitcheckout_log .= $line; }
+        close GITCHECKOUT;
         chdir $act_dir || return ( 0, $! );
         return ( 1, $gitcheckout_log );
     }
     chdir $act_dir || return ( 0, $! );
     return ( 0, $! );
+}
+
+
+
+sub git_fetch {
+    my ( $dir ) = @_;
+    my $act_dir = getcwd;
+
+    chdir $dir || return ( 0, $! );
+    my $git_cmd =
+        $git_cmd_prefix . 'git fetch ' 
+        . ' 2>&1 |'
+    ;
+    if ( open( GITPULL, $git_cmd ) ) {
+        my $git_log = '';
+        while ( my $line = <GITPULL> ) { $git_log .= $line; }
+        close GITPULL;
+        chdir $act_dir || return ( 0, $! );
+        return ( 1, $git_log );
+    }
+    chdir $act_dir || return ( 0, $! );
+    return ( 0, $! );
+}
+
+
+
+=head2 check_not_modified
+
+Check if directory is in clean (not modified) state.
+
+=cut
+
+sub check_not_modified {
+    my ( $dir ) = @_;
+
+    # ToDo
+    return 1;
 }
 
 

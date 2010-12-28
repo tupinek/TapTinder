@@ -279,8 +279,9 @@ sub ccmd_get_src {
 
     my $dirs = $self->{repman}->prepare_temp_copy( $rcommit_info );
     unless ( $dirs ) {
-        $data = $self->{agent}->sset( $self->{msession_id}, $self->{msproc_id}, $self->{msjobp_cmd_id}, 6 ); # error, $cmd_status_id
+        $data = $self->{agent}->sset( $self->{msession_id}, $self->{msproc_id}, $self->{msjobp_cmd_id}, 7 ); # error, $cmd_status_id
         return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
+        return 0;
     }
     $cmd_env->{temp_dir} = $dirs->{temp_dir};
     $cmd_env->{results_dir} = $dirs->{results_dir};
@@ -374,7 +375,7 @@ sub run_cmd {
 
     my $status = 4; # 4 .. ok
     if ( $cmd_rc ) {
-        $status = 6; # 6 .. error
+        $status = 7; # 7 .. error
     }
 
     # don't try to send outdata file if it doesn't exists
@@ -675,7 +676,7 @@ sub run {
                 # will set another keys to $cmd_env
                 $ret_code = $self->ccmd_get_src( $cmd_name, $cmd_env );
                 return $self->cleanup_and_return_zero() unless $ret_code;
-
+                
                 # change current working directory (cwd, pwd)
                 chdir( $cmd_env->{temp_dir} );
 

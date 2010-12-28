@@ -12,7 +12,7 @@ use File::Path;
 use File::Copy;
 
 use Watchdog qw(sys sys_for_watchdog);
-use GitShell qw(git_clone git_checkout);
+use GitShell;
 
 
 =head1 NAME
@@ -148,50 +148,18 @@ sub dir_is_empty {
 }
 
 
-=head2 run_git_clone
+=head2 git_cmd_error
 
-Will run git clone command.
-
-=cut
-
-sub run_git_clone {
-    my ( $self, $base_dir, $repo_dir_name, $repo_url ) = @_;
-
-    my ( $ok, $o_log, $tmp_new_rev ) = git_clone(
-        $base_dir,
-        $repo_dir_name,
-        $repo_url
-    );
-
-    # TODO
-    unless ( $ok ) {
-        croak $o_log;
-    }
-
-    return $ok;
-}
-
-
-=head2 run_git_checkout
-
-Will run git checkout command.
+Print error and retur undef.
 
 =cut
 
-sub run_git_checkout {
-    my ( $self, $src_dir_path, $cmd_output_dir_path, $commit_sha ) = @_;
-
-    my ( $ok, $o_log, $tmp_new_rev ) = git_checkout(
-        $src_dir_path,
-        $commit_sha
-    );
-
-    # TODO
-    unless ( $ok ) {
-        croak $o_log;
-    }
-
-    return $ok;
+sub git_cmd_error {
+    my ( $self, $rc, $cmd_name, $o_log ) = @_;
+    
+    print "RepManager command '$cmd_name' error.\n" if $self->{ver} >= 1;
+    print "RepManager cmd log: '$o_log'\n" if $self->{ver} >= 3;
+    return undef;
 }
 
 
@@ -245,20 +213,6 @@ sub prepare_temp_from_src {
 }
 
 
-=head2 check_not_modified
-
-Check if directory is in clean (not modified) state.
-
-=cut
-
-sub check_not_modified {
-    my ( $self, $dir_path, $bypase_svnbug ) = @_;
-
-    # ToDo
-    return 1;
-}
-
-
 =head2 prepare_temp_copy
 
 Prepare temp direcotry with local copy of repository revision.
@@ -288,25 +242,36 @@ sub prepare_temp_copy {
     my $results_dir_path = $self->get_dir_path( $rp_dir_base_name, 'results' );
     my $ret_code;
     
-    # checkout
+    my ( $rc, $o_log );
+    
+    # clone
     if ( $git_clone_needed ) {
-        my $rp_dir_name = $self->get_base_dir_name( $rp_dir_base_name, 'src' );
         print "Repository not found. Doing git clone to '$src_dir_path'.\n" if $self->{ver} >= 4;
-        $ret_code = $self->run_git_clone( $self->{dir}, $rp_dir_name, $rr_info->{repo_url} );
+        ( $rc, $o_log ) = GitShell::git_clone( $self->{dir}, $rp_dir_base_name, $rr_info->{repo_url} );
+        return $self->git_cmd_error( $rc, 'git_clone', $o_log ) unless $rc;
     }
 
-    # update
-    $ret_code = $self->run_git_checkout( $src_dir_path, $results_dir_path, $rr_info->{sha} );
-    return undef unless $self->check_not_modified( $src_dir_path, 0 );
+    # fetch
+    print "Doing git fetch ('$src_dir_path').\n" if $self->{ver} >= 4;
+    ( $rc, $o_log ) = GitShell::git_fetch( $src_dir_path );
+    return $self->git_cmd_error( $rc, 'git_fetch', $o_log ) unless $rc;
 
-    return undef unless $ret_code;
+    # checkout
+    print "Doing git update ('$src_dir_path').\n" if $self->{ver} >= 4;
+    ( $rc, $o_log ) = GitShell::git_checkout( $src_dir_path, $rr_info->{sha} );
+    return $self->git_cmd_error( $rc, 'git_checkout', $o_log ) unless $rc;
+
     $self->{keypress}->process_keypress();
 
     # create temp dir from src dir
     my $temp_dir_path = $self->get_dir_path( $rp_dir_base_name, 'temp' );
     my $prep_rc = $self->prepare_temp_from_src( $temp_dir_path, $src_dir_path );
     return undef unless $prep_rc;
-    return undef unless $self->check_not_modified( $temp_dir_path, 1 );
+
+    # check_not_modified
+    print "Doing check_not_modified ('$temp_dir_path').\n" if $self->{ver} >= 4;
+    ( $rc, $o_log ) = GitShell::check_not_modified( $temp_dir_path );
+    return $self->git_cmd_error( $rc, 'check_not_modified', $o_log ) unless $rc;
 
     return {
         results_dir => $results_dir_path,
