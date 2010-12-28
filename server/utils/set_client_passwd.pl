@@ -51,7 +51,7 @@ my $options_ok = GetOptions(
 if ( defined $client_conf_fpath && !$client_conf_fpath ) {
     $client_conf_fpath = catfile( $RealBin, '..', '..', 'client-conf', 'client-conf.yml' );
     if ( !$client_project_name ) {
-        $client_project_name = 'tt-test-proj';
+        $client_project_name = 'tt-tests';
     }
 }
 

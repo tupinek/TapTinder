@@ -117,7 +117,7 @@ return sub {
         [
             1, 'get_src',
             'clean source code checkout/update, copy clean -> temp, check temp, create dir for results',
-            'rep_path_id, rev_id'
+            'rep_id, rcommit_id'
         ], [
             2, 'prepare',
             'preparing project for TapTinder, add new files or apply patches',

@@ -65,13 +65,16 @@ return sub {
     # table: jobp
     $schema->resultset('jobp')->delete_all() if $delete_all;
     $schema->resultset('jobp')->populate([
-        [ qw/ jobp_id job_id project_id `order` name descr max_age depends_on_id extends / ],
-        [ 1, 1, 1, 1, 'sole',           undef,     3*30*24, undef, 0    ],
-        [ 2, 2, 1, 1, 'base',           undef,     3*30*24, undef, 0    ],
-        [ 3, 2, 2, 2, 'external tests', undef,     5*30*24,     2, 1    ],
-        [ 4, 3, 1, 1, 'base',           undef,       10*24, undef, 0    ],
-        [ 5, 3, 3, 2, 'related part',   undef,    12*30*24,     4, 0    ],
-        [ 6, 4, 1, 1, 'sole',           undef,       undef, undef, 0    ],
+        [ qw/ jobp_id  job_id  project_id   `order`             name    descr    max_age  depends_on_id  extends /  ],
+        [           1,      1,          1,       1,            'sole',  undef,   3*30*24,         undef,       0    ],
+
+        [           2,      2,          1,       1,            'base',  undef,   3*30*24,         undef,       0    ],
+        [           3,      2,          2,       2,  'external tests',  undef,   5*30*24,             2,       1    ],
+
+        [           4,      3,          1,       1,            'base',  undef,     10*24,         undef,       0    ],
+        [           5,      3,          3,       2,    'related part',  undef,  12*30*24,             4,       0    ],
+
+        [           6,      4,          1,       1,            'sole',  undef,     undef,         undef,       0    ],
     ]);
 
  
@@ -79,6 +82,8 @@ return sub {
     $schema->resultset('jobp_cmd')->delete_all() if $delete_all;
     $schema->resultset('jobp_cmd')->populate([
         [ qw/ jobp_cmd_id jobp_id `order` cmd_id / ],
+
+        # job_id = 1
         [ 1, 1, 1, 1 ],
         [ 2, 1, 2, 2 ],
         [ 3, 1, 3, 4 ],
@@ -86,6 +91,7 @@ return sub {
         [ 5, 1, 5, 6 ],
 
 
+        # job_id = 2
         [ 6,  2, 1, 1 ],
         [ 7,  2, 2, 2 ],
         [ 8,  2, 3, 4 ],
@@ -97,6 +103,7 @@ return sub {
         [ 13, 3, 3, 6 ],
 
 
+        # job_id = 3
         [ 14, 4, 1, 1 ],
         [ 15, 4, 2, 2 ],
         [ 16, 4, 3, 4 ],
@@ -109,6 +116,8 @@ return sub {
         [ 22, 5, 4, 5 ],
         [ 23, 5, 5, 6 ],
 
+
+        # job_id = 4
         [ 24, 6, 1, 1 ],
         [ 25, 6, 2, 2 ],
         [ 26, 6, 3, 4 ],
@@ -131,17 +140,20 @@ return sub {
     $schema->resultset('wconf_job')->delete_all() if $delete_all;
     $schema->resultset('wconf_job')->populate([
         [ qw/ wconf_job_id wconf_session_id project_id rep_id rref_id               job_id priority / ],
-        [     1,           1,               1,         1,     $master_tr1_rref_id,  1,     6          ], # tapir1
+        [     1,           1,               1,         1,     $master_tr1_rref_id,  1,     1          ], # tapir1
+        [     2,           1,               1,         1,     $master_tr1_rref_id,  2,     2          ], # tapir1
+        [     3,           1,               1,         1,     $master_tr1_rref_id,  3,     3          ], # tapir1
+        [     4,           1,               1,         1,     $master_tr1_rref_id,  4,     4          ], # tapir1
     ]);
 
 
     # table: wconf_rref
     $schema->resultset('wconf_rref')->delete_all() if $delete_all;
     $schema->resultset('wconf_rref')->populate([
-        [ qw/ wconf_rref_id rref_id               priority / ],
-        [     1,            $master_tr1_rref_id,  1,         ],
-        [     2,            $master_tr2_rref_id,  1,         ],
-        [     3,            $master_tr3_rref_id,  1,         ],
+        [ qw/ wconf_rref_id              rref_id   priority /  ],
+        [                 1, $master_tr1_rref_id,         1,   ],
+        [                 2, $master_tr2_rref_id,         1,   ],
+        [                 3, $master_tr3_rref_id,         1,   ],
     ]);
 
     return 1;
