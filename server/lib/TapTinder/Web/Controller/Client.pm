@@ -370,7 +370,7 @@ sub cmd_msdestroy {
     my $ret_code = $self->create_mslog(
         $c, $data, 'msdestroy',
         $msession_id,
-        7, # $msstatus_id, 7 .. stop by user
+        6, # $msstatus_id, 6 .. stop by user
         1, # $attempt_number
         DateTime->now, # $change_time
         undef # $estimated_finish_time
@@ -633,8 +633,8 @@ sub get_next_cmd_pmcid {
         'msjobp_cmd_id' => $msjobp_cmd_id,
         'msjob_id.msproc_id' => $msproc_id,
     }, {
-        select => [ 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.jobp_id', 'msjobp_id.rcommit_id', 'jobp_id.order', 'jobp_cmd_id.order', ],
-        as =>     [ 'msjobp_id',           'job_id',         'jobp_id',         'rcommit_id',           'jobp_order',    'jobp_cmd_order',    ],
+        select => [ 'msjobp_id.msjob_id', 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.jobp_id', 'msjobp_id.rcommit_id', 'jobp_id.order', 'jobp_cmd_id.order', ],
+        as =>     [ 'msjob_id',           'msjobp_id',           'job_id',         'jobp_id',         'rcommit_id',           'jobp_order',    'jobp_cmd_order',    ],
         join => [ { 'msjobp_id' => [ 'msjob_id', 'jobp_id', ] }, 'jobp_cmd_id', ],
     } );
     #$self->dump_rs( $c, $rs );
@@ -775,10 +775,12 @@ sub cmd_cget {
 
             # if job part id is new, then we should create new msjobp_id
             } else {
+                #$self->dumper( $c, $cmds_data );
                 my $msjob_id = $cmds_data->{prev}->{msjob_id};
 
                 # find new rev_id
                 my $rcommit_id = $self->get_jobp_master_ref_rcommit_id( $c, $data, $jobp_id );
+                return $self->txn_end( $c, $data, 0 ) unless defined $rcommit_id;
 
                 $msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rcommit_id );
                 return $self->txn_end( $c, $data, 0 ) unless defined $msjobp_id;
