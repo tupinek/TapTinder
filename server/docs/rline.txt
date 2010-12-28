@@ -1,0 +1,60 @@
+Example
+|c1 (-)  -> v1 (no ancestor)
+|c2 (c1) -> v1 (one ancestor without descendant -> inherit v1 from c1)
+|c3 (c2) -> v1 (one ancestor without descendant -> inherit v1 from c2)
+|\
+| |c3b (c3)  -> v2 (one ancestor already with any descendant -> new rline v2)
+| |c3c (c3b) -> v2 (one ancestor without descendant -> inherit v2 from c2b)
+|/
+|cm (c3,c3c) -> v1 (more than one ancestor - c3c merged to c3 -> inherit v1 from c3)
+|c5
+- - -
+     |\
+   c6| \c6b    ... c6 (v1) ... (inherit v1 from c5)
+ (v1)   (v3)   ... c6b (v3) ... (vone ancestor already with any descendant -> new rline v3)
+
+
+== Metacode ==
+To fill rline table and rcommit.rline_id
+* no ancestor -> add rline (see below)
+* one ancestor without descendant -> inherit rline
+* one ancestor already with any descendant -> add rline (see below)
+* more than one ancestor - first parent is vX -> inherit rline from vX and add rcparent (see below)
+
+Add new rline (found not merge commit give type, see above)
+* find max rline_num for rep_id (rline_id -> rcommit_id -> rep_id)
+* insert to rline (to_rcommit_id is same as from_rcommit_id)
+* insert self link to rcparent
+
+Add new rcparent (found merge commit)
+* Add row to rcparent
+** for each parent add row where super_id is first parent rline_id
+* set rline.merged to 1
+
+Finishing
+* Update rline.to_rcommit_id values from cache.
+
+
+== Tables content for example ==
+Table rline
+rline_id  first_rcommit_id  last_rcommit_id
+1 (v1),   null,             c6          
+2 (v2),   c3b (v1),         c3c         
+3 (v3),   c5 (v1),          c6b
+
+Table rcparent
+rline_id  super_rline_id
+1 (v1),   1 (v1) ... self link
+2 (v2),   2 (v2) ... self link
+2 (v2),   1 (v1) ... v2 was merged to v1
+3 (v3),   3 (v3) ... self link
+
+
+== Used to ==
+These rline table is used to get all ancestors for given rcommit_id:
+* get rcommit rline_idA ( rcommit.rline_id )
+* get all rcommits where rcommit.rline_id = rcparent.rline_id and rcparent.super_rline_id = rline_idA
+* so e.g.
+** for c2 you get c1, c2, c3, c3b, c3c, cm, c5, c6
+** for c3c you get c3c, c3b
+** for c6b you get c6b
