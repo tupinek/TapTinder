@@ -192,15 +192,23 @@ my $rcommit_rs = $schema->resultset('rcommit')->search(
     {},
     {
         join => 'sha_id',
-        'select' => [ 'me.rcommit_id', 'sha_id.sha' ],
+        'select' => [ 'me.rcommit_id', 'sha_id.sha', 'me.parent_id', 'me.rline_id' ],
     }
 );
 my $rcommits_sha_list = {};
+my $has_descendant = {};
+my $rcommits_rline_id = {};
 foreach my $rcommit_row ( $rcommit_rs->cursor->all ) {
     my $rcommit_id = $rcommit_row->[0];
     my $sha = $rcommit_row->[1];
     $rcommits_sha_list->{ $sha } = $rcommit_id;
+    if ( defined $rcommit_row->[2] ) {
+        my $parent_id = $rcommit_row->[2];
+        $has_descendant->{ $parent_id } = 1;
+    }
+    $rcommits_rline_id->{ $rcommit_id } = $rcommit_row->[3];
 }
+
 
 my $commits_added_num = 0;
 my $err = [];
@@ -218,6 +226,9 @@ if ( $steps->{commits} ) {
     my $sha_rs = $schema->resultset('sha');
     my $rauthor_rs = $schema->resultset('rauthor');
     my $rcparent_rs = $schema->resultset('rcparent');
+    my $rline_rs = $schema->resultset('rline');
+    my $rline_hier_rs = $schema->resultset('rline_hier');
+    my $rline_last_rcommit_id_update = {};
     LOG_COMMIT: foreach my $log_num ( 0..$#$log ) {
         my $log_commit = $log->[ $log_num ];
         #last if $log_num > $#$log / 2; # debug
@@ -232,7 +243,7 @@ if ( $steps->{commits} ) {
         if ( defined $log_commit->{parents}->[0] ) {
            $first_parent_sha = $log_commit->{parents}->[0];
            unless ( exists $rcommits_sha_list->{$first_parent_sha} ) {
-              push @$err, "First parent rcommit_id not found in sha_lit for sha '{$first_parent_sha}'.";
+              push @$err, "First parent rcommit_id not found in sha_lit for sha '$first_parent_sha'.";
               $all_ok = 0; 
               last LOG_COMMIT;
            }
@@ -258,9 +269,51 @@ if ( $steps->{commits} ) {
             email => $log_commit->{committer}->{email},
             rep_id => $rep_id,
         })->id;
-        
+
+
         my $parents = $log_commit->{parents};
         my $num_of_parents = scalar @$parents;
+        my $insert_new_rline_id = undef;
+        my $rline_id = undef;
+        # no ancestor
+        if ( $num_of_parents == 0 ) {
+            $insert_new_rline_id = 1;
+
+        # one parent without descendant
+        } elsif ( $num_of_parents == 1 && $has_descendant->{$first_parent_rcommit_id} ) {
+            $insert_new_rline_id = 1;
+
+        # one parent already with at least one descendant
+        # more than one parent
+        } else {
+            unless ( exists $rcommits_rline_id->{ $first_parent_rcommit_id } ) {
+                push @$err, "First parent rline_id not found in rcommits_rline_id list for rcommit_id '$first_parent_rcommit_id'.";
+                $all_ok = 0; 
+                last LOG_COMMIT;
+            }
+            $insert_new_rline_id = 0;
+            $rline_id = $rcommits_rline_id->{ $first_parent_rcommit_id };
+        }
+        
+        my $rline_row;
+        if ( $insert_new_rline_id ) {
+            $rline_row = $rline_rs->create({
+                first_rcommit_id => undef,
+                last_rcommit_id => undef,
+            });
+            $rline_id = $rline_row->id;
+
+            # self link
+            $rline_hier_rs->create({
+                rline_id => $rline_id,
+                super_rline_id => $rline_id,
+            });
+        }
+        
+        if ( defined $first_parent_rcommit_id ) {
+           $has_descendant->{ $first_parent_rcommit_id } = 1;
+        }
+        
         my $rcommit_row = $rcommit_rs->create({
             rep_id => $rep_id,
             msg => $log_commit->{msg},
@@ -278,12 +331,23 @@ if ( $steps->{commits} ) {
                 epoch => $log_commit->{committer}->{gmtime},
                 time_zone => 'GMT',
             ),
+            rline_id => $rline_id,
         });
         my $rcommit_id = $rcommit_row->id;
         $rcommits_sha_list->{ $rcommit_sha } = $rcommit_id;
+        $rcommits_rline_id->{ $rcommit_id } = $rline_id;
+
+        # update rline row
+        if ( $insert_new_rline_id ) {
+            $rline_row->update( {
+                first_rcommit_id => $rcommit_id,
+                last_rcommit_id => $rcommit_id,
+            } );
+        }
         
+        $rline_last_rcommit_id_update->{ $rline_id }->{last_rcommit_id} = $rcommit_id;
+
         if ( $num_of_parents >= 2 ) {
-            # skipping first one
             foreach my $parent_num ( 1..$#$parents ) {
                 my $parent_sha = $parents->[ $parent_num ];
                 unless ( exists $rcommits_sha_list->{ $parent_sha } ) {
@@ -291,18 +355,41 @@ if ( $steps->{commits} ) {
                     $all_ok = 0; 
                     last LOG_COMMIT;
                 }
+                         
                 my $parent_rcommit_id = $rcommits_sha_list->{ $parent_sha };
-                
+                unless ( exists $rcommits_rline_id->{ $parent_rcommit_id } ) {
+                    push @$err, "Parent rline_id not found in rcommits_rline_id list for rcommit_id '$parent_rcommit_id'.";
+                    $all_ok = 0; 
+                    last LOG_COMMIT;
+                }
+
+                # skip first parent
                 $rcparent_rs->create({
                     child_id => $rcommit_id,
                     parent_id => $parent_rcommit_id,
-                    num => $parent_num,
+                    num => $parent_num+1,
                 });
+
+                my $parent_rline_id = $rcommits_rline_id->{ $parent_rcommit_id };
+                
+                # merge link
+                $rline_hier_rs->create({
+                    rline_id => $parent_rline_id,
+                    super_rline_id => $rline_id, # first parent rline_id
+                });
+
+                $has_descendant->{ $parent_rcommit_id } = 1;
+                $rline_last_rcommit_id_update->{ $parent_rline_id }->{merged} = 1;
             }
         }
         
         $commits_added_num++;
     } # end foreach
+    
+    foreach my $rline_id ( keys %$rline_last_rcommit_id_update ) {
+        my $rline_row = $rline_rs->find( $rline_id );
+        $rline_row->update( $rline_last_rcommit_id_update->{ $rline_id } );
+    }
     
     print "Added $commits_added_num new commits.\n" if $ver >= 3;
 

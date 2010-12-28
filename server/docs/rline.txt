@@ -1,33 +1,46 @@
-Example
-|c1 (-)  -> v1 (no ancestor)
-|c2 (c1) -> v1 (one ancestor without descendant -> inherit v1 from c1)
-|c3 (c2) -> v1 (one ancestor without descendant -> inherit v1 from c2)
-|\
-| |c3b (c3)  -> v2 (one ancestor already with any descendant -> new rline v2)
-| |c3c (c3b) -> v2 (one ancestor without descendant -> inherit v2 from c2b)
-|/
-|cm (c3,c3c) -> v1 (more than one ancestor - c3c merged to c3 -> inherit v1 from c3)
-|c5
-- - -
-     |\
-   c6| \c6b    ... c6 (v1) ... (inherit v1 from c5)
- (v1)   (v3)   ... c6b (v3) ... (vone ancestor already with any descendant -> new rline v3)
+== Example repository ==
+Legend
+* cX ... commit number X (main rline v1)
+* cXb ... commit number X, rline with marked as b
+* vX ... rline marked as X
 
+Commits ordered by 'committer date' are c1, c2, c3, c4, c5x, c6x, c7, c8, c9, c10z, c11.
+
+
+   |c1 (-)  -> v1 ... no parent
+   |c2 (c1) -> v1 ... one parent without descendant -> inherit v1 from c1
+   |c3 (c2) -> v1 ... one parent without descendant -> inherit v1 from c2
+   |\
+   | \
+   |  \
+ c4|   |   ... c4 (c3) -> v1 ... one parent without descendant -> inherit v1 from c3
+   |   |c5x (c3)  -> v2 ... one parent already with one (c4) descendant -> new rline v2
+   |   |c6x (c6x) -> v2 ... one parent without descendant -> inherit v2 from c5x
+   |  / \
+   | /   \ c10z (c6x) -> v4 (one parent already with one (c7) descendant -> new rline v4
+   |/
+   |c7 (c4,c6x) -> v1  ... more than one parent - c3c merged to c3 -> inherit v1 from c3
+   |c8 -> v1 ... one parent without descendant, inherit v1 from c7
+   |\
+ c9| \     ... c9 (c8) -> v1 ... one parent without descendant, inherit v1 from c8
+   |  | c8y (c8) -> v3 ... one parent already with one (c9) descendant -> new rline v3
+c11|       ... c11 (c9) -> v1 ... one parent without descendant, inherit v1 from c9
+ 
 
 == Metacode ==
 To fill rline table and rcommit.rline_id
-* no ancestor -> add rline (see below)
-* one ancestor without descendant -> inherit rline
-* one ancestor already with any descendant -> add rline (see below)
-* more than one ancestor - first parent is vX -> inherit rline from vX and add rcparent (see below)
+* no parent -> add rline (see below)
+* one parent without descendant -> inherit rline
+* one parent already with any descendant -> add rline (see below)
+* more than one parent - first parent is vX -> inherit rline from vX and add rline_hier (see below)
 
 Add new rline (found not merge commit give type, see above)
 * find max rline_num for rep_id (rline_id -> rcommit_id -> rep_id)
 * insert to rline (to_rcommit_id is same as from_rcommit_id)
-* insert self link to rcparent
+* insert self link to rline_hier
 
-Add new rcparent (found merge commit)
-* Add row to rcparent
+Add new rline_hier (found merge commit)
+* Add row to rline_hier
 ** for each parent add row where super_id is first parent rline_id
 * set rline.merged to 1
 
@@ -38,23 +51,25 @@ Finishing
 == Tables content for example ==
 Table rline
 rline_id  first_rcommit_id  last_rcommit_id
-1 (v1),   null,             c6          
-2 (v2),   c3b (v1),         c3c         
-3 (v3),   c5 (v1),          c6b
+1 (v1),   c1,               c11
+2 (v2),   c5x (v1),         c6x
+3 (v3),   c8y (v1),         c8y
+4 (v4),   c10z (v2),        c10z
 
-Table rcparent
+Table rline_hier
 rline_id  super_rline_id
 1 (v1),   1 (v1) ... self link
 2 (v2),   2 (v2) ... self link
-2 (v2),   1 (v1) ... v2 was merged to v1
+2 (v2),   1 (v1) ... merge link, v2 was merged to v1
 3 (v3),   3 (v3) ... self link
+4 (v4),   4 (v4) ... self link
 
 
 == Used to ==
 These rline table is used to get all ancestors for given rcommit_id:
 * get rcommit rline_idA ( rcommit.rline_id )
-* get all rcommits where rcommit.rline_id = rcparent.rline_id and rcparent.super_rline_id = rline_idA
+* get all rcommits where rcommit.rline_id = rline_hier.rline_id and rline_hier.super_rline_id = rline_idA
 * so e.g.
-** for c2 you get c1, c2, c3, c3b, c3c, cm, c5, c6
-** for c3c you get c3c, c3b
-** for c6b you get c6b
+** for c2 you get c1, c2, c3, c4, c5x, c6x, c7, c8, c9, c11
+** for c6x you get c5x, c6x
+** for c8y you get c8y

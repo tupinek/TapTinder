@@ -269,6 +269,12 @@ __PACKAGE__->cwm_conf( {
 } );
 
 
+package TapTinder::DB::Schema::rcparent;
+__PACKAGE__->cwm_conf( {
+     max_deep => 1,
+} );
+
+
 package TapTinder::DB::Schema::sha;
 __PACKAGE__->cwm_conf( {
     col_type => {
