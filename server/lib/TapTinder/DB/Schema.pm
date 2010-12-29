@@ -439,7 +439,7 @@ __PACKAGE__->add_columns(
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => 'NULL',
-      'is_foreign_key' => 0,
+      'is_foreign_key' => 1,
       'name' => 'parent_id',
       'is_nullable' => 1,
       'size' => '11'
@@ -2636,7 +2636,7 @@ __PACKAGE__->add_columns(
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => 'NULL',
-      'is_foreign_key' => 0,
+      'is_foreign_key' => 1,
       'name' => 'first_rcommit_id',
       'is_nullable' => 1,
       'size' => '11'
@@ -2645,7 +2645,7 @@ __PACKAGE__->add_columns(
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => 'NULL',
-      'is_foreign_key' => 0,
+      'is_foreign_key' => 1,
       'name' => 'last_rcommit_id',
       'is_nullable' => 1,
       'size' => '11'
@@ -3252,6 +3252,9 @@ __PACKAGE__->belongs_to('sha_id','TapTinder::DB::Schema::sha','sha_id');
 
 __PACKAGE__->belongs_to('tree_id','TapTinder::DB::Schema::sha','tree_id');
 
+__PACKAGE__->belongs_to('parent_id','TapTinder::DB::Schema::rcommit','parent_id',{join_type => 'left'});
+
+__PACKAGE__->has_many('get_rcommit', 'TapTinder::DB::Schema::rcommit', 'parent_id');
 __PACKAGE__->belongs_to('author_id','TapTinder::DB::Schema::rauthor','author_id');
 
 __PACKAGE__->belongs_to('committer_id','TapTinder::DB::Schema::rauthor','committer_id');
@@ -3260,6 +3263,8 @@ __PACKAGE__->belongs_to('rline_id','TapTinder::DB::Schema::rline','rline_id');
 
 __PACKAGE__->has_many('get_rcparent', 'TapTinder::DB::Schema::rcparent', 'child_id');
 __PACKAGE__->has_many('get_rcparent_parent_id', 'TapTinder::DB::Schema::rcparent', 'parent_id');
+__PACKAGE__->has_many('get_rline', 'TapTinder::DB::Schema::rline', 'first_rcommit_id');
+__PACKAGE__->has_many('get_rline_last_rcommit_id', 'TapTinder::DB::Schema::rline', 'last_rcommit_id');
 __PACKAGE__->has_many('get_rref', 'TapTinder::DB::Schema::rref', 'rcommit_id');
 __PACKAGE__->has_many('get_rfile', 'TapTinder::DB::Schema::rfile', 'rcommit_id');
 __PACKAGE__->has_many('get_msjobp', 'TapTinder::DB::Schema::msjobp', 'rcommit_id');
@@ -3382,11 +3387,11 @@ package TapTinder::DB::Schema::jobp;
 
 __PACKAGE__->belongs_to('job_id','TapTinder::DB::Schema::job','job_id');
 
+__PACKAGE__->belongs_to('project_id','TapTinder::DB::Schema::project','project_id',{join_type => 'left'});
+
 __PACKAGE__->belongs_to('depends_on_id','TapTinder::DB::Schema::jobp','depends_on_id',{join_type => 'left'});
 
 __PACKAGE__->has_many('get_jobp', 'TapTinder::DB::Schema::jobp', 'depends_on_id');
-__PACKAGE__->belongs_to('project_id','TapTinder::DB::Schema::project','project_id',{join_type => 'left'});
-
 __PACKAGE__->has_many('get_jobp_cmd', 'TapTinder::DB::Schema::jobp_cmd', 'jobp_id');
 __PACKAGE__->has_many('get_msjobp', 'TapTinder::DB::Schema::msjobp', 'jobp_id');
 
@@ -3538,6 +3543,10 @@ __PACKAGE__->has_many('get_brun', 'TapTinder::DB::Schema::brun', 'conf_id');
 package TapTinder::DB::Schema::rline;
 
 __PACKAGE__->has_many('get_rcommit', 'TapTinder::DB::Schema::rcommit', 'rline_id');
+__PACKAGE__->belongs_to('first_rcommit_id','TapTinder::DB::Schema::rcommit','first_rcommit_id',{join_type => 'left'});
+
+__PACKAGE__->belongs_to('last_rcommit_id','TapTinder::DB::Schema::rcommit','last_rcommit_id',{join_type => 'left'});
+
 __PACKAGE__->has_many('get_rline_hier', 'TapTinder::DB::Schema::rline_hier', 'rline_id');
 __PACKAGE__->has_many('get_rline_hier_super_rline_id', 'TapTinder::DB::Schema::rline_hier', 'super_rline_id');
 

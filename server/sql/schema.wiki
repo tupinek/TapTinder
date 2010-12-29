@@ -130,14 +130,12 @@ CREATE TABLE rcommit (
     CONSTRAINT fk_rcommit_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
     CONSTRAINT fk_rcommit_sha_id FOREIGN KEY (sha_id) REFERENCES sha (sha_id),
     CONSTRAINT fk_rcommit_tree_id FOREIGN KEY (tree_id) REFERENCES sha (sha_id),
+    CONSTRAINT fk_rcommit_parent_id FOREIGN KEY (parent_id) REFERENCES rcommit (rcommit_id),
     CONSTRAINT fk_rcommit_author_id FOREIGN KEY (author_id) REFERENCES rauthor (rauthor_id),
     CONSTRAINT fk_rcommit_committer_id FOREIGN KEY (committer_id) REFERENCES rauthor (rauthor_id),
     CONSTRAINT fk_rcparent_rline_id FOREIGN KEY (rline_id) REFERENCES rline (rline_id)
 ) TYPE=InnoDB COMMENT='Commit info. Tag: project.';
 </source>
-
- ToDo
-    CONSTRAINT fk_rcommit_parent_id FOREIGN KEY (parent_id) REFERENCES rcommit (rcommit_id),
 
 ==== Table rcparent ====
 <source lang=sql>
@@ -151,7 +149,6 @@ CREATE TABLE rcparent (
 ) TYPE=InnoDB COMMENT='Other parents of merge commits. Tag: project.';
 </source>
 
-
 ==== Table rline ====
 <source lang=sql>
 CREATE TABLE rline (
@@ -159,14 +156,11 @@ CREATE TABLE rline (
     rline_num           INT UNSIGNED NOT NULL,
     first_rcommit_id    INT UNSIGNED DEFAULT NULL,
     last_rcommit_id     INT UNSIGNED DEFAULT NULL,
-    merged              BOOLEAN NOT NULL DEFAULT 0
-) TYPE=InnoDB COMMENT='Commit lines. Tag: project.';
-</source>
-
-ToDo
+    merged              BOOLEAN NOT NULL DEFAULT 0,
     CONSTRAINT fk_rline_first_rcommit_id FOREIGN KEY (first_rcommit_id) REFERENCES rcommit (rcommit_id),
     CONSTRAINT fk_rline_last_rcommit_id FOREIGN KEY (last_rcommit_id) REFERENCES rcommit (rcommit_id)
-
+) TYPE=InnoDB COMMENT='Commit lines. Tag: project.';
+</source>
 
 ==== Table rline_hier ====
 <source lang=sql>
@@ -178,7 +172,6 @@ CREATE TABLE rline_hier (
     CONSTRAINT fk_rline_hier_super_rline_id FOREIGN KEY (super_rline_id) REFERENCES rline (rline_id)
 ) TYPE=InnoDB COMMENT='Hierarchy of reposiotory history lines. Tag: project.';
 </source>
-
 
 ==== Table rref ====
 <source lang=sql>
@@ -244,8 +237,8 @@ CREATE TABLE jobp (
     INDEX i_job_id (job_id),
     INDEX i_project_id (project_id),
     CONSTRAINT fk_jobp_job_id FOREIGN KEY (job_id) REFERENCES job (job_id),
-    CONSTRAINT fk_jobp_depedns_on_id FOREIGN KEY (depends_on_id) REFERENCES jobp (jobp_id),
-    CONSTRAINT fk_jobp_project_id FOREIGN KEY (project_id) REFERENCES project (project_id)
+    CONSTRAINT fk_jobp_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),
+    CONSTRAINT fk_jobp_depedns_on_id FOREIGN KEY (depends_on_id) REFERENCES jobp (jobp_id)
 ) TYPE=InnoDB COMMENT='Job part. Tag: jobs.';
 </source>
 
@@ -845,4 +838,3 @@ CREATE TABLE ibot_log (
 commit;
 </source>
 <!-- PARSE PART DBCREATE END -->
-
