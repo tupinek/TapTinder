@@ -69,6 +69,7 @@ DATA
 
     my %tableoutput = ();
     my %tableextras = ();
+    my $used_has_many = {};
     foreach my $table ($schema->get_tables)
     {
         my $tname = $table->name;
@@ -138,10 +139,18 @@ __PACKAGE__->table('${tname}');
                     . $join_part
                     . ");\n";
 
+                my $get_name = $table->name;
+                if ( exists $used_has_many->{ $cont->reference_table }->{ $table->name } ) {
+                    $get_name .= '_' . $cont->fields->[0]->name;
+                } else {
+                    $used_has_many->{ $cont->reference_table }->{ $table->name } = 1;
+                }
                 my $other = "\n__PACKAGE__->has_many('" .
-                    "get_" . $table->name. "', '" .
+                    "get_" . $get_name . "', '" .
                     "${dbixschema}::" . $table->name. "', '" .
-                    $cont->fields->[0]->name . "');";
+                    $cont->fields->[0]->name . "');"
+                ;
+                
                 $tableextras{$cont->reference_table} .= $other;
             }
         }

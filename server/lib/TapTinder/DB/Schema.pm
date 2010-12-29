@@ -3219,7 +3219,7 @@ __PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id');
 __PACKAGE__->belongs_to('user_id','TapTinder::DB::Schema::user','user_id',{join_type => 'left'});
 
 __PACKAGE__->has_many('get_rcommit', 'TapTinder::DB::Schema::rcommit', 'author_id');
-__PACKAGE__->has_many('get_rcommit', 'TapTinder::DB::Schema::rcommit', 'committer_id');
+__PACKAGE__->has_many('get_rcommit_committer_id', 'TapTinder::DB::Schema::rcommit', 'committer_id');
 
 package TapTinder::DB::Schema::jobp_cmd;
 
@@ -3259,7 +3259,7 @@ __PACKAGE__->belongs_to('committer_id','TapTinder::DB::Schema::rauthor','committ
 __PACKAGE__->belongs_to('rline_id','TapTinder::DB::Schema::rline','rline_id');
 
 __PACKAGE__->has_many('get_rcparent', 'TapTinder::DB::Schema::rcparent', 'child_id');
-__PACKAGE__->has_many('get_rcparent', 'TapTinder::DB::Schema::rcparent', 'parent_id');
+__PACKAGE__->has_many('get_rcparent_parent_id', 'TapTinder::DB::Schema::rcparent', 'parent_id');
 __PACKAGE__->has_many('get_rref', 'TapTinder::DB::Schema::rref', 'rcommit_id');
 __PACKAGE__->has_many('get_rfile', 'TapTinder::DB::Schema::rfile', 'rcommit_id');
 __PACKAGE__->has_many('get_msjobp', 'TapTinder::DB::Schema::msjobp', 'rcommit_id');
@@ -3330,7 +3330,7 @@ __PACKAGE__->has_many('get_trun', 'TapTinder::DB::Schema::trun', 'trun_status_id
 package TapTinder::DB::Schema::sha;
 
 __PACKAGE__->has_many('get_rcommit', 'TapTinder::DB::Schema::rcommit', 'sha_id');
-__PACKAGE__->has_many('get_rcommit', 'TapTinder::DB::Schema::rcommit', 'tree_id');
+__PACKAGE__->has_many('get_rcommit_tree_id', 'TapTinder::DB::Schema::rcommit', 'tree_id');
 
 package TapTinder::DB::Schema::fsfile_ext;
 
@@ -3418,11 +3418,11 @@ __PACKAGE__->has_many('get_msproc_log', 'TapTinder::DB::Schema::msproc_log', 'ms
 package TapTinder::DB::Schema::fsfile;
 
 __PACKAGE__->has_many('get_msjobp_cmd', 'TapTinder::DB::Schema::msjobp_cmd', 'output_id');
-__PACKAGE__->has_many('get_msjobp_cmd', 'TapTinder::DB::Schema::msjobp_cmd', 'outdata_id');
+__PACKAGE__->has_many('get_msjobp_cmd_outdata_id', 'TapTinder::DB::Schema::msjobp_cmd', 'outdata_id');
 __PACKAGE__->belongs_to('fspath_id','TapTinder::DB::Schema::fspath','fspath_id');
 
 __PACKAGE__->has_many('get_fsfile_ext', 'TapTinder::DB::Schema::fsfile_ext', 'archive_id');
-__PACKAGE__->has_many('get_fsfile_ext', 'TapTinder::DB::Schema::fsfile_ext', 'fsfile_id');
+__PACKAGE__->has_many('get_fsfile_ext_fsfile_id', 'TapTinder::DB::Schema::fsfile_ext', 'fsfile_id');
 
 package TapTinder::DB::Schema::param_type;
 
@@ -3539,7 +3539,7 @@ package TapTinder::DB::Schema::rline;
 
 __PACKAGE__->has_many('get_rcommit', 'TapTinder::DB::Schema::rcommit', 'rline_id');
 __PACKAGE__->has_many('get_rline_hier', 'TapTinder::DB::Schema::rline_hier', 'rline_id');
-__PACKAGE__->has_many('get_rline_hier', 'TapTinder::DB::Schema::rline_hier', 'super_rline_id');
+__PACKAGE__->has_many('get_rline_hier_super_rline_id', 'TapTinder::DB::Schema::rline_hier', 'super_rline_id');
 
 package TapTinder::DB::Schema::mswatch_log;
 
@@ -3605,7 +3605,7 @@ __PACKAGE__->belongs_to('project_id','TapTinder::DB::Schema::project','project_i
 __PACKAGE__->has_many('get_rauthor', 'TapTinder::DB::Schema::rauthor', 'rep_id');
 __PACKAGE__->has_many('get_rcommit', 'TapTinder::DB::Schema::rcommit', 'rep_id');
 __PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'rep_id');
-__PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'rep_id');
+__PACKAGE__->has_many('get_wconf_job_rep_id', 'TapTinder::DB::Schema::wconf_job', 'rep_id');
 __PACKAGE__->has_many('get_fspath_select', 'TapTinder::DB::Schema::fspath_select', 'rep_id');
 
 
