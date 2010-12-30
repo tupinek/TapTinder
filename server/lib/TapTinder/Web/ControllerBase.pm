@@ -165,7 +165,7 @@ sub edbi_run_dbh_do {
 
     } else  {
         $data = $schema->storage->dbh_do(
-            sub { return $_[1]->$method_name( $_[2], {}, @{$_[3]} ); },
+            sub { return $_[1]->$method_name( $_[2], undef, @{$_[3]} ); },
             $sql, $ba
         );
     }

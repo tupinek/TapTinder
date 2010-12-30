@@ -102,13 +102,13 @@ if [ "$1" = "c" ]; then
 
     if [ "$3" = "ld" ]; then
         echo "Executing cron/repository-update.pl -p tt-tr1 (perl):"
-        perl ./cron/repository-update.pl --project=tt-tr1
+        perl ./cron/repository-update.pl --ver=3 --project=tt-tr1
         echo ""
         echo "Executing cron/repository-update.pl -p tt-tr2 (perl):"
-        perl ./cron/repository-update.pl --project=tt-tr2
+        perl ./cron/repository-update.pl --ver=3 --project=tt-tr2
         echo ""
         echo "Executing cron/repository-update.pl -p tt-tr3 (perl):"
-        perl ./cron/repository-update.pl --project=tt-tr3
+        perl ./cron/repository-update.pl --ver=3 --project=tt-tr3
         echo "";
 
         echo "Executing utils/db-fill-sqldata.pl sql/data-dev-jobs.pl"

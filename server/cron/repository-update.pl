@@ -8,7 +8,6 @@ ToDo
 ** https://github.com/mj41/TapTinder/issues#issue/25
 * speed up 
 ** initil parrot to DB takes 15 minutes
-** commit transaction each 1000 commits?
 
 =cut
 
@@ -30,7 +29,7 @@ use lib "$FindBin::Bin/../lib";
 use Git::Repository::LogRaw;
 use TapTinder::DB;
 use TapTinder::Utils::Conf qw(load_conf_multi);
-use TapTinder::Utils::DB qw(get_connected_schema);
+use TapTinder::Utils::DB qw(get_connected_schema do_dbh_sql get_dbh_errstr);
 
 my $help = 0;
 my $project_name = undef;
@@ -82,6 +81,7 @@ if ( defined $steps_str ) {
 }
 
 
+my $start_time = time();
 print "Starting repository update for project '$project_name'.\n" if $ver >= 2;
 
 my $conf_rep = $conf->{project}->{$project_name};
@@ -210,6 +210,40 @@ foreach my $rcommit_row ( $rcommit_rs->cursor->all ) {
 }
 
 
+sub finish_rcommits_set {
+    my ( $schema, $rline_last_rcommit_id_update, $rline_merged_info ) = @_;
+    
+    my $rline_rs = $schema->resultset('rline');
+    my $rcommit_rs = $schema->resultset('rcommit');
+    foreach my $rline_id ( keys %$rline_last_rcommit_id_update ) {
+        my $new_values = $rline_last_rcommit_id_update->{ $rline_id };
+
+        my $rline_row = $rline_rs->find( $rline_id );
+        $rline_row->update( $new_values );
+    }
+    
+    foreach my $data ( @$rline_merged_info ) {
+        my $rline_id = $data->[0];
+        my $merged_to_rline_id = $data->[1];
+        print "Merged $rline_id to $merged_to_rline_id - changing rcommits.\n" if $ver >= 4;
+        my $sql = "
+            update rcommit
+               set super_rline_id = ?
+             where ( rline_id = ? and rline_id = super_rline_id )
+                or ( super_rline_id = ? and rline_id <> super_rline_id )
+        ";
+        my $ba = [ $merged_to_rline_id, $rline_id, $rline_id, ];
+        my $rc = do_dbh_sql( $schema, $sql, $ba );
+        return 0 unless $rc;
+    }
+    
+    $rline_last_rcommit_id_update = {};
+    $rline_merged_info = [];
+    
+    return 1;
+}
+
+
 my $commits_added_num = 0;
 my $err = [];
 if ( $steps->{commits} ) {
@@ -219,7 +253,7 @@ if ( $steps->{commits} ) {
     my $log = $gitrepo_obj->get_log(
         $rcommits_sha_list  # $ssh_skip_list
     );
-    print "Found " . (scalar @$log) . " new log items.\n" if $ver >= 3;
+    print "Found " . (scalar @$log) . " new commit log items.\n" if $ver >= 3;
     #print Dumper( $log );
     
     my $rcommit_rs = $schema->resultset('rcommit');
@@ -229,6 +263,8 @@ if ( $steps->{commits} ) {
     my $rline_rs = $schema->resultset('rline');
     my $rline_hier_rs = $schema->resultset('rline_hier');
     my $rline_last_rcommit_id_update = {};
+    my $rline_merged_info = [];
+    my $new_rcommits_num = 0;
     LOG_COMMIT: foreach my $log_num ( 0..$#$log ) {
         my $log_commit = $log->[ $log_num ];
         #last if $log_num > $#$log / 2; # debug
@@ -331,6 +367,7 @@ if ( $steps->{commits} ) {
                 epoch => $log_commit->{committer}->{gmtime},
                 time_zone => 'GMT',
             ),
+            super_rline_id => $rline_id,
             rline_id => $rline_id,
         });
         my $rcommit_id = $rcommit_row->id;
@@ -380,17 +417,39 @@ if ( $steps->{commits} ) {
 
                 $has_descendant->{ $parent_rcommit_id } = 1;
                 $rline_last_rcommit_id_update->{ $parent_rline_id }->{merged} = 1;
+                push @$rline_merged_info, [ $parent_rline_id, $rline_id ];
             }
         }
         
+        if ( $new_rcommits_num >= 1000 ) {
+            # ToDo - Its too slow to do this each time.
+            my $rc = finish_rcommits_set( $schema, $rline_last_rcommit_id_update, $rline_merged_info );
+            unless ( $rc ) {
+                push @$err, "Method finish_rcommits_set errror: " . get_dbh_errstr($schema);
+                $all_ok = 0; 
+                last LOG_COMMIT;
+            }
+            
+            print "Commiting transaction.\n" if $ver >= 3;
+            $schema->storage->txn_commit;
+            print "Already added $commits_added_num commits.\n" if $ver >= 3;
+
+           
+            print "Starting new transaction.\n" if $ver >= 3;
+            $schema->storage->txn_begin;
+
+            $new_rcommits_num = 0;
+        }
+        $new_rcommits_num++;
+        
         $commits_added_num++;
     } # end foreach
-    
-    foreach my $rline_id ( keys %$rline_last_rcommit_id_update ) {
-        my $rline_row = $rline_rs->find( $rline_id );
-        $rline_row->update( $rline_last_rcommit_id_update->{ $rline_id } );
+
+    my $rc = finish_rcommits_set( $schema, $rline_last_rcommit_id_update, $rline_merged_info );
+    unless ( $rc ) {
+        push @$err, "Method finish_rcommits_set errror: " . get_dbh_errstr($schema);
+        $all_ok = 0; 
     }
-    
     print "Added $commits_added_num new commits.\n" if $ver >= 3;
 
 } # end if
@@ -416,7 +475,7 @@ sub get_db_refs {
 
 my $rref_updated_num = 0;
 my $rref_removed_num = 0;
-if ( $steps->{refs} ) {
+if ( $all_ok && $steps->{refs} ) {
     print "Doing refs update.\n" if $ver >= 2;
     # Hash $db_refs is used to cache DB values. Used keys are removed during processiong
     # repository refs. Then remainning keys are used to deactivate refs in db.
@@ -484,7 +543,8 @@ if ( $steps->{refs} ) {
     $db_refs = get_db_refs( $schema, $rep_id );
     print Dumper( $db_refs ) if $ver >= 5;
    
-}
+} # end if
+
 
 if ( $ver >= 2 && ($commits_added_num == 0 && $rref_updated_num == 0 && $rref_removed_num == 0) ) {
     print "Nothing to do.\n";
@@ -493,6 +553,7 @@ if ( $ver >= 2 && ($commits_added_num == 0 && $rref_updated_num == 0 && $rref_re
 if ( $all_ok ) {
     print "Doing commit.\n" if $ver >= 3;
     $schema->storage->txn_commit;
+
 } else {
     print "Doing rollback.\n" if $ver >= 2;
     if ( $ver >= 1 ) {
@@ -504,7 +565,8 @@ if ( $all_ok ) {
 }
 
 save_state();
-
+my $time_diff = time() - $start_time;
+print "Script takes ${time_diff}s to run.\n" if $ver >= 3;
 
 =head1 NAME
 

@@ -489,6 +489,15 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
+    'super_rline_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'super_rline_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
     'msg' => {
       'data_type' => 'TEXT',
       'is_auto_increment' => 0,
@@ -3261,6 +3270,8 @@ __PACKAGE__->belongs_to('committer_id','TapTinder::DB::Schema::rauthor','committ
 
 __PACKAGE__->belongs_to('rline_id','TapTinder::DB::Schema::rline','rline_id');
 
+__PACKAGE__->belongs_to('super_rline_id','TapTinder::DB::Schema::rline','super_rline_id');
+
 __PACKAGE__->has_many('get_rcparent', 'TapTinder::DB::Schema::rcparent', 'child_id');
 __PACKAGE__->has_many('get_rcparent_parent_id', 'TapTinder::DB::Schema::rcparent', 'parent_id');
 __PACKAGE__->has_many('get_rline', 'TapTinder::DB::Schema::rline', 'first_rcommit_id');
@@ -3543,6 +3554,7 @@ __PACKAGE__->has_many('get_brun', 'TapTinder::DB::Schema::brun', 'conf_id');
 package TapTinder::DB::Schema::rline;
 
 __PACKAGE__->has_many('get_rcommit', 'TapTinder::DB::Schema::rcommit', 'rline_id');
+__PACKAGE__->has_many('get_rcommit_super_rline_id', 'TapTinder::DB::Schema::rcommit', 'super_rline_id');
 __PACKAGE__->belongs_to('first_rcommit_id','TapTinder::DB::Schema::rcommit','first_rcommit_id',{join_type => 'left'});
 
 __PACKAGE__->belongs_to('last_rcommit_id','TapTinder::DB::Schema::rcommit','last_rcommit_id',{join_type => 'left'});

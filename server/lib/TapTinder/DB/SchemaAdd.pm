@@ -260,6 +260,12 @@ __PACKAGE__->cwm_conf( {
 } );
 
 
+package TapTinder::DB::Schema::rline;
+__PACKAGE__->cwm_conf( {
+     max_deep => 1,
+} );
+
+
 package TapTinder::DB::Schema::rauthor;
 __PACKAGE__->cwm_conf( {
     col_type => {

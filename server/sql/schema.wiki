@@ -124,16 +124,17 @@ CREATE TABLE rcommit (
     committer_id    INT UNSIGNED NOT NULL,
     committer_time  DATETIME NOT NULL,
     rline_id        INT UNSIGNED NOT NULL,
+    super_rline_id  INT UNSIGNED NOT NULL,
     msg             TEXT,
-    INDEX i_rep_id (rep_id),
-    INDEX i_sha_id (sha_id),
+    INDEX i_super_rline_id_commiter_time (super_rline_id, committer_time),
     CONSTRAINT fk_rcommit_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
     CONSTRAINT fk_rcommit_sha_id FOREIGN KEY (sha_id) REFERENCES sha (sha_id),
     CONSTRAINT fk_rcommit_tree_id FOREIGN KEY (tree_id) REFERENCES sha (sha_id),
     CONSTRAINT fk_rcommit_parent_id FOREIGN KEY (parent_id) REFERENCES rcommit (rcommit_id),
     CONSTRAINT fk_rcommit_author_id FOREIGN KEY (author_id) REFERENCES rauthor (rauthor_id),
     CONSTRAINT fk_rcommit_committer_id FOREIGN KEY (committer_id) REFERENCES rauthor (rauthor_id),
-    CONSTRAINT fk_rcparent_rline_id FOREIGN KEY (rline_id) REFERENCES rline (rline_id)
+    CONSTRAINT fk_rcparent_rline_id FOREIGN KEY (rline_id) REFERENCES rline (rline_id),
+    CONSTRAINT fk_rcparent_super_rline_id FOREIGN KEY (super_rline_id) REFERENCES rline (rline_id)
 ) TYPE=InnoDB COMMENT='Commit info. Tag: project.';
 </source>
 

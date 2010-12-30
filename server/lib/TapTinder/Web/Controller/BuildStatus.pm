@@ -46,7 +46,7 @@ sub index : Path  {
 
 
     my $rs_rcommits = $c->model('WebDB::rcommit')->search( {
-        'get_rline_hier.super_rline_id' => $rline_id,
+        'me.super_rline_id' => $rline_id,
     }, {
         select => [ qw/
             me.rcommit_id me.committer_time me.msg
@@ -56,7 +56,7 @@ sub index : Path  {
             rcommit_id date msg
             rep_author_id rep_login
         / ],
-        join => [ { 'rline_id' => 'get_rline_hier' }, 'author_id', ],
+        join => [ 'author_id', ],
         order_by => [ 'me.committer_time DESC' ],
         page => 1,
         rows => 100,
@@ -68,6 +68,9 @@ sub index : Path  {
         push @rcommits, { $row_obj->get_columns() };
     }
     #$self->dumper( $c, \@rcommits );
+    my $commit_time_from = $rcommits[-1]->{date};
+    my $commit_time_to = $rcommits[0]->{date};
+    #$c->log( "Commit time from $commit_time_from to $commit_time_to.\n" );
 
     my $cols = [ qw/ 
         machine_id
@@ -84,8 +87,7 @@ sub index : Path  {
               mjpc.status_id,
               cs.name as status_name,
               concat(fsp.web_path, '/', fsf.name) as web_fpath
-         from rline_hier rlh,
-              rcommit rc,
+         from rcommit rc,
               jobp jp,
               jobp_cmd jpc,
               msjobp mjp,
@@ -96,8 +98,9 @@ sub index : Path  {
               msession ms,
               fsfile fsf,
               fspath fsp
-        where rlh.super_rline_id = ?
-          and rc.rline_id = rlh.rline_id
+        where rc.super_rline_id = ?
+          and rc.committer_time >= str_to_date(?,'%Y-%m-%d %H:%i:%s')
+          and rc.committer_time <= str_to_date(?,'%Y-%m-%d %H:%i:%s')
           and jp.job_id = ? -- only this job
           and jp.order = 1 -- only first part
           and jpc.jobp_id = jp.jobp_id
@@ -117,6 +120,8 @@ sub index : Path  {
 
     my $ba = [ 
         $rline_id,  # rlh.super_rline_id
+        $commit_time_from, 
+        $commit_time_to,
         1, # jp.job_id - todo
     ];
     my $all_rows = $self->edbi_selectall_arrayref_slice( $c, $cols, $sql, $ba );

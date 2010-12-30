@@ -5,7 +5,7 @@ use warnings;
 use Carp qw(carp croak verbose);
 
 use base 'Exporter';
-our @EXPORT = qw(get_connected_schema);
+our @EXPORT = qw(get_connected_schema do_dbh_sql get_dbh_errstr);
 
 use TapTinder::DB::SchemaAdd;
 
@@ -102,5 +102,43 @@ sub run_perl_sql_file {
     }
     return $do_sub->( @_ );
 }
+
+=head2 get_dbh_errstr
+
+Return dbh error string;
+
+=cut
+
+
+sub get_dbh_errstr {
+    my ( $schema ) = @_;
+    return $schema->storage->dbh->errstr;
+}
+
+
+=head2 do_dbh_sql
+
+Run $sql, $ba on $schema throug dbh_do (DBI do).
+
+=cut
+
+sub do_dbh_sql {
+    my ( $schema, $sql, $ba ) = @_;
+    
+    my $data = $schema->storage->dbh_do(
+        sub { 
+            my $data = undef;
+            eval { 
+                $data = $_[1]->do( $_[2], {}, @{$_[3]} ); 
+            };
+            return $data;
+        },
+        $sql,
+        $ba
+    );
+    return 0 unless $data;
+    return 1;
+}
+
 
 1;
