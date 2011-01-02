@@ -246,8 +246,9 @@ sub prepare_temp_copy {
     
     # clone
     if ( $git_clone_needed ) {
+        my $src_base_dir_name = $self->get_base_dir_name( $rp_dir_base_name, 'src' );
         print "Repository not found. Doing git clone to '$src_dir_path'.\n" if $self->{ver} >= 4;
-        ( $rc, $o_log ) = GitShell::git_clone( $self->{dir}, $rp_dir_base_name, $rr_info->{repo_url} );
+        ( $rc, $o_log ) = GitShell::git_clone( $self->{dir}, $src_base_dir_name, $rr_info->{repo_url} );
         return $self->git_cmd_error( $rc, 'git_clone', $o_log ) unless $rc;
     }
 

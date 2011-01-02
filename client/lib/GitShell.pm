@@ -24,7 +24,7 @@ sub git_clone {
     my ( $base_dir, $repo_dir_name, $repo_url ) = @_;
     my $act_dir = getcwd;
 
-    chdir $base_dir || return ( 0, $! );
+    chdir $base_dir || return ( 0, "Command chdir to '$base_dir' failed: $!" );
     my $gitclone_cmd =  $git_cmd_prefix . "git clone $repo_url $repo_dir_name" . ' 2>&1 |';
     unless ( open( GITCLONE, $gitclone_cmd ) ) {
         chdir $act_dir;
@@ -46,7 +46,7 @@ sub git_status {
     my ( $dir ) = @_;
     my $act_dir = getcwd;
 
-    chdir $dir || return( 0, $! );
+    chdir $dir || return( 0, "Command chdir to '$dir' failed: $!" );
     my $gitin_cmd =  $git_cmd_prefix . 'git info ' . $dir . ' 2>&1 |';
     unless ( open( GITINFO, $gitin_cmd ) ) {
         chdir $act_dir || return ( 0, $! );
@@ -69,7 +69,7 @@ sub git_checkout {
     my ( $dir, $commit_sha ) = @_;
     my $act_dir = getcwd;
 
-    chdir $dir || return ( 0, $! );
+    chdir $dir || return ( 0, "Command chdir to '$dir' failed: $!" );
     my $git_checkout_cmd =
         $git_cmd_prefix . 'git checkout ' 
         . $commit_sha
@@ -79,10 +79,10 @@ sub git_checkout {
         my $gitcheckout_log = '';
         while ( my $line = <GITCHECKOUT> ) { $gitcheckout_log .= $line; }
         close GITCHECKOUT;
-        chdir $act_dir || return ( 0, $! );
+        chdir $act_dir || return ( 0, "Command chdir back to '$act_dir' failed: $!" );
         return ( 1, $gitcheckout_log );
     }
-    chdir $act_dir || return ( 0, $! );
+    chdir $act_dir || return ( 0, "Command chdir back to '$act_dir' failed: $!" );
     return ( 0, $! );
 }
 
@@ -92,7 +92,7 @@ sub git_fetch {
     my ( $dir ) = @_;
     my $act_dir = getcwd;
 
-    chdir $dir || return ( 0, $! );
+    chdir $dir || return ( 0, "Command chdir to '$dir' failed: $!" );
     my $git_cmd =
         $git_cmd_prefix . 'git fetch ' 
         . ' 2>&1 |'
@@ -101,10 +101,10 @@ sub git_fetch {
         my $git_log = '';
         while ( my $line = <GITFETCH> ) { $git_log .= $line; }
         close GITFETCH;
-        chdir $act_dir || return ( 0, $! );
+        chdir $act_dir || return ( 0, "Command chdir back to '$act_dir' failed: $!" );
         return ( 1, $git_log );
     }
-    chdir $act_dir || return ( 0, $! );
+    chdir $act_dir || return ( 0, "Command chdir back to '$act_dir' failed: $!" );
     return ( 0, $! );
 }
 
