@@ -44,10 +44,10 @@ return sub {
     # table: rep
     $schema->resultset('rep')->delete_all() if $delete_all;
     $schema->resultset('rep')->populate([
-        [ qw/ rep_id project_id active name repo_url descr / ],
-        [ 1, 1, 1, 'default', 'git://github.com/mj41/tt-tr1.git', 'Default repository', ],
-        [ 2, 2, 1, 'default', 'git://github.com/mj41/tt-tr2.git', 'Default repository', ],
-        [ 3, 3, 1, 'default', 'git://github.com/mj41/tt-tr3.git', 'Default repository', ],
+        [ qw/ rep_id project_id active name repo_url github_url descr / ],
+        [ 1, 1, 1, 'default', 'git://github.com/mj41/tt-tr1.git', 'https://github.com/mj41/tt-tr1', 'Default repository', ],
+        [ 2, 2, 1, 'default', 'git://github.com/mj41/tt-tr2.git', 'https://github.com/mj41/tt-tr2', 'Default repository', ],
+        [ 3, 3, 1, 'default', 'git://github.com/mj41/tt-tr3.git', 'https://github.com/mj41/tt-tr3', 'Default repository', ],
     ]);
 
 

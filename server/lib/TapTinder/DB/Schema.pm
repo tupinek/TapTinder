@@ -3179,6 +3179,15 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '255'
     },
+    'github_url' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'github_url',
+      'is_nullable' => 0,
+      'size' => '255'
+    },
     'descr' => {
       'data_type' => 'TEXT',
       'is_auto_increment' => 0,

@@ -35,28 +35,29 @@ sub index : Path  {
     my $project_rs = $c->model('WebDB::rref')->search( $search,
         {
             join => { 'rcommit_id' => { 'rep_id' => 'project_id', }, },
-            'select' => [qw/ me.rref_id rcommit_id.rline_id rep_id.rep_id project_id.name project_id.url /],
-            'as' =>     [qw/ rref_id    rline_id            rep_id        project_name    project_url    /],
+            'select' => [qw/ me.rref_id rcommit_id.rline_id rep_id.rep_id rep_id.github_url project_id.name project_id.url /],
+            'as' =>     [qw/ rref_id    rline_id            rep_id        github_url        project_name    project_url    /],
         }
     );
     my $project_row = $project_rs->next;
-    #$self->dumper( $c, { $project_row->get_columns } );
+    my $project_info = { $project_row->get_columns };
+    $c->stash->{project_info} = $project_info;
 
-    my $rline_id = $project_row->get_column('rline_id');
+    my $rline_id = $project_info->{rline_id};
 
 
     my $rs_rcommits = $c->model('WebDB::rcommit')->search( {
         'me.super_rline_id' => $rline_id,
     }, {
         select => [ qw/
-            me.rcommit_id me.committer_time me.msg
-            author_id.rauthor_id author_id.rep_login
+            me.rcommit_id me.committer_time me.msg sha_id.sha
+            author_id.rauthor_id author_id.rep_login sha
         / ],
         as => [ qw/
-            rcommit_id date msg
+            rcommit_id date msg sha
             rep_author_id rep_login
         / ],
-        join => [ 'author_id', ],
+        join => [ 'author_id', 'sha_id' ],
         order_by => [ 'me.committer_time DESC' ],
         page => 1,
         rows => 100,

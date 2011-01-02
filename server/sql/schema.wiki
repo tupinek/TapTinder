@@ -78,6 +78,7 @@ CREATE TABLE rep (
     project_id      INT UNSIGNED NOT NULL,
     name            VARCHAR(255) NOT NULL,
     repo_url        VARCHAR(255) NOT NULL,
+    github_url      VARCHAR(255) NOT NULL,
     descr           TEXT DEFAULT NULL COMMENT 'Description.',
     active          BOOLEAN NOT NULL DEFAULT 1 COMMENT '1 .. repository is active, 0 .. old (deprecated) repository',
     CONSTRAINT fk_rep_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),

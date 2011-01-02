@@ -18,8 +18,12 @@
 [% FOREACH rcommit IN rcommits -%]
   <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %]">
     <td>
+    [% IF project_info.github_url %]
+      <a href="[% project_info.github_url %]/commit/[% rcommit.sha %]" title="[% rcommit.msg | html %]">
+    [% ELSE %]
       <a href="/cwm/rcommit/id-[% rcommit.rcommit_id %]" title="[% rcommit.msg | html %]">
-        [% rcommit.rcommit_id %]
+    [% END %]
+        [% rcommit.sha.substr(0,6) %]
       </a>
       </td>
     <td>[% rcommit.rep_login %]</td>
