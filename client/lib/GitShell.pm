@@ -97,10 +97,10 @@ sub git_fetch {
         $git_cmd_prefix . 'git fetch ' 
         . ' 2>&1 |'
     ;
-    if ( open( GITPULL, $git_cmd ) ) {
+    if ( open( GITFETCH, $git_cmd ) ) {
         my $git_log = '';
-        while ( my $line = <GITPULL> ) { $git_log .= $line; }
-        close GITPULL;
+        while ( my $line = <GITFETCH> ) { $git_log .= $line; }
+        close GITFETCH;
         chdir $act_dir || return ( 0, $! );
         return ( 1, $git_log );
     }

@@ -59,6 +59,8 @@ return sub {
         [ 2, 257, 2, 'tr1, tr2 A',  undef    ],
         [ 3, 257, 3, 'tr1, tr3 A',  undef    ],
         [ 4, 257, 4, 'tr1 B',       undef    ],
+        [ 5, 257, 1, 'tr2',         undef    ],
+        [ 6, 257, 1, 'tr3',         undef    ],
     ]);
 
  
@@ -66,7 +68,7 @@ return sub {
     $schema->resultset('jobp')->delete_all() if $delete_all;
     $schema->resultset('jobp')->populate([
         [ qw/ jobp_id  job_id  project_id   `order`             name    descr    max_age  depends_on_id  extends /  ],
-        [           1,      1,          1,       1,            'sole',  undef,   3*30*24,         undef,       0    ],
+        [           1,      1,          1,       1,        'sole tr1',  undef,   3*30*24,         undef,       0    ],
 
         [           2,      2,          1,       1,            'base',  undef,   3*30*24,         undef,       0    ],
         [           3,      2,          2,       2,  'external tests',  undef,   5*30*24,             2,       1    ],
@@ -75,6 +77,9 @@ return sub {
         [           5,      3,          3,       2,    'related part',  undef,  12*30*24,             4,       0    ],
 
         [           6,      4,          1,       1,            'sole',  undef,     undef,         undef,       0    ],
+
+        [           7,      5,          2,       1,        'sole tr2',  undef,   3*30*24,         undef,       0    ],
+        [           8,      6,          3,       1,        'sole tr3',  undef,   3*30*24,         undef,       0    ],
     ]);
 
  
@@ -122,6 +127,22 @@ return sub {
         [ 25, 6, 2, 2 ],
         [ 26, 6, 3, 4 ],
         [ 27, 6, 4, 5 ],
+
+
+        # job_id = 5
+        [ 28, 7, 1, 1 ],
+        [ 29, 7, 2, 2 ],
+        [ 30, 7, 3, 4 ],
+        [ 31, 7, 4, 5 ],
+        [ 32, 7, 5, 6 ],
+
+
+        # job_id = 6
+        [ 33, 8, 1, 1 ],
+        [ 34, 8, 2, 2 ],
+        [ 35, 8, 3, 4 ],
+        [ 36, 8, 4, 5 ],
+        [ 37, 8, 5, 6 ],
     ]);
 
 
@@ -131,7 +152,8 @@ return sub {
         [ qw/ wconf_session_id machine_id processes_num / ],
         [ 1, 6, 1  ], # tapir1
         [ 2, 7, 3  ], # tapir2
-        [ 3, 5, 2  ], # pc-jurosz2
+        [ 3, 7, 2  ], # tapir2
+        [ 4, 5, 2  ], # pc-jurosz2
     ]);
 
 
@@ -144,6 +166,11 @@ return sub {
         [     2,           1,               1,         1,     $master_tr1_rref_id,  2,     2          ], # tapir1
         [     3,           1,               1,         1,     $master_tr1_rref_id,  3,     3          ], # tapir1
         [     4,           1,               1,         1,     $master_tr1_rref_id,  4,     4          ], # tapir1
+
+        [     5,           2,               1,         1,     $master_tr1_rref_id,  1,     1          ], # tapir1
+        [     6,           3,               2,         2,     $master_tr2_rref_id,  1,     2          ], # tapir2
+
+        [     7,           4,               3,         3,     $master_tr3_rref_id,  6,     1          ], # pc-jurosz2
     ]);
 
 
