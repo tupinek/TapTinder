@@ -27,7 +27,6 @@ sub index : Path  {
     my $pr = $self->get_page_params( $params );
 
     my $search = { 
-        
         'me.name' => $ref_name,
         'rep_id.active' => 1,
         'project_id.name' => $project_name,
@@ -35,8 +34,8 @@ sub index : Path  {
     my $project_rs = $c->model('WebDB::rref')->search( $search,
         {
             join => { 'rcommit_id' => { 'rep_id' => 'project_id', }, },
-            'select' => [qw/ me.rref_id rcommit_id.rline_id rep_id.rep_id rep_id.github_url project_id.name project_id.url /],
-            'as' =>     [qw/ rref_id    rline_id            rep_id        github_url        project_name    project_url    /],
+            'select' => [qw/ me.rref_id me.name   rcommit_id.rline_id rep_id.rep_id rep_id.github_url project_id.project_id project_id.name project_id.url /],
+            'as' =>     [qw/ rref_id    rref_name rline_id            rep_id        github_url        project_id            project_url    /],
         }
     );
     my $project_row = $project_rs->next;
@@ -44,6 +43,17 @@ sub index : Path  {
     $c->stash->{project_info} = $project_info;
 
     my $rline_id = $project_info->{rline_id};
+
+
+    my $jobp_id = undef;
+    unless ( $jobp_id ) {
+        my $search_wui_build = {
+            'project_id' => $project_info->{project_id},
+        };
+        my $wui_build_rs = $c->model('WebDB::wui_build')->search( $search_wui_build, {} );
+        $jobp_id = $wui_build_rs->next->get_column('jobp_id')
+    }
+    $self->dadd( $c, "jobp_id: $jobp_id\n" );
 
 
     my $rs_rcommits = $c->model('WebDB::rcommit')->search( {
@@ -102,8 +112,7 @@ sub index : Path  {
         where rc.super_rline_id = ?
           and rc.committer_time >= str_to_date(?,'%Y-%m-%d %H:%i:%s')
           and rc.committer_time <= str_to_date(?,'%Y-%m-%d %H:%i:%s')
-          and jp.job_id = ? -- only this job
-          and jp.order = 1 -- only first part
+          and jp.jobp_id = ? -- only this job
           and jpc.jobp_id = jp.jobp_id
           and jpc.cmd_id = 5 -- only make
           and mjp.rcommit_id = rc.rcommit_id
@@ -123,7 +132,7 @@ sub index : Path  {
         $rline_id,  # rlh.super_rline_id
         $commit_time_from, 
         $commit_time_to,
-        1, # jp.job_id - todo
+        $jobp_id, # jp.jobp_id
     ];
     my $all_rows = $self->edbi_selectall_arrayref_slice( $c, $cols, $sql, $ba );
     #$self->dumper( $c, $all_rows );

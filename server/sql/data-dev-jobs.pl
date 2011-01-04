@@ -152,25 +152,27 @@ return sub {
         [ qw/ wconf_session_id machine_id processes_num / ],
         [ 1, 6, 1  ], # tapir1
         [ 2, 7, 3  ], # tapir2
-        [ 3, 7, 2  ], # tapir2
-        [ 4, 5, 2  ], # pc-jurosz2
+        [ 3, 5, 2  ], # pc-jurosz2
     ]);
-
 
 
     # table: wconf_job
     $schema->resultset('wconf_job')->delete_all() if $delete_all;
     $schema->resultset('wconf_job')->populate([
-        [ qw/ wconf_job_id wconf_session_id project_id rep_id rref_id               job_id priority / ],
-        [     1,           1,               1,         1,     $master_tr1_rref_id,  1,     1          ], # tapir1
-        [     2,           1,               1,         1,     $master_tr1_rref_id,  2,     2          ], # tapir1
-        [     3,           1,               1,         1,     $master_tr1_rref_id,  3,     3          ], # tapir1
-        [     4,           1,               1,         1,     $master_tr1_rref_id,  4,     4          ], # tapir1
+        [ qw/ wconf_job_id  wconf_session_id  rep_id               rref_id  job_id  priority  / ],
+        [                1,                1,      1,  $master_tr1_rref_id,      1,        1    ], # tapir1
+        [                2,                1,      1,  $master_tr1_rref_id,      2,        2    ], # tapir1
+        [                3,                1,      1,  $master_tr1_rref_id,      3,        3    ], # tapir1
+        [                4,                1,      1,  $master_tr1_rref_id,      4,        4    ], # tapir1
 
-        [     5,           2,               1,         1,     $master_tr1_rref_id,  1,     1          ], # tapir1
-        [     6,           3,               2,         2,     $master_tr2_rref_id,  1,     2          ], # tapir2
+        [                5,                2,      3,                undef,      6,        1    ], # tapir2
+        [                6,                2,      2,  $master_tr2_rref_id,      5,        2    ], # tapir2
+        [                7,                2,      2,                undef,      5,        3    ], # tapir2
+        [                8,                2,      1,  $master_tr1_rref_id,      1,        4    ], # tapir2
+        [                9,                2,      1,                undef,      2,        5    ], # tapir2
+        [               10,                2,      1,                undef,      1,        6    ], # tapir2
 
-        [     7,           4,               3,         3,     $master_tr3_rref_id,  6,     1          ], # pc-jurosz2
+        [               11,                3,      3,  $master_tr3_rref_id,      6,        1    ], # pc-jurosz2
     ]);
 
 
@@ -182,6 +184,17 @@ return sub {
         [                 2, $master_tr2_rref_id,         1,   ],
         [                 3, $master_tr3_rref_id,         1,   ],
     ]);
+
+
+    # table: wui_build
+    $schema->resultset('wui_build')->delete_all() if $delete_all;
+    $schema->resultset('wui_build')->populate([
+        [ qw/ wui_build_id  project_id  jobp_id /  ],
+        [                1,          1,       1,   ],
+        [                2,          2,       7,   ],
+        [                3,          3,       8,   ],
+    ]);
+
 
     return 1;
 };

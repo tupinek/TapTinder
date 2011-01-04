@@ -38,6 +38,44 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('msproc_abort_reason_id');
 
 
+package TapTinder::DB::Schema::wui_build;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('wui_build');
+
+
+__PACKAGE__->add_columns(
+    'wui_build_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'wui_build_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'project_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'project_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'jobp_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'jobp_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+);
+__PACKAGE__->set_primary_key('wui_build_id');
+
+
 package TapTinder::DB::Schema::rcparent;
 use base 'TapTinder::DB::DBIxClassBase';
 
@@ -2036,22 +2074,13 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'project_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 1,
-      'name' => 'project_id',
-      'is_nullable' => 1,
-      'size' => '11'
-    },
     'rep_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
-      'default_value' => 'NULL',
+      'default_value' => undef,
       'is_foreign_key' => 1,
       'name' => 'rep_id',
-      'is_nullable' => 1,
+      'is_nullable' => 0,
       'size' => '11'
     },
     'rref_id' => {
@@ -3213,6 +3242,13 @@ package TapTinder::DB::Schema::msproc_abort_reason;
 
 __PACKAGE__->has_many('get_msproc', 'TapTinder::DB::Schema::msproc', 'abort_reason_id');
 
+package TapTinder::DB::Schema::wui_build;
+
+__PACKAGE__->belongs_to('project_id','TapTinder::DB::Schema::project','project_id');
+
+__PACKAGE__->belongs_to('jobp_id','TapTinder::DB::Schema::jobp','jobp_id');
+
+
 package TapTinder::DB::Schema::rcparent;
 
 __PACKAGE__->belongs_to('child_id','TapTinder::DB::Schema::rcommit','child_id');
@@ -3414,6 +3450,7 @@ __PACKAGE__->belongs_to('depends_on_id','TapTinder::DB::Schema::jobp','depends_o
 __PACKAGE__->has_many('get_jobp', 'TapTinder::DB::Schema::jobp', 'depends_on_id');
 __PACKAGE__->has_many('get_jobp_cmd', 'TapTinder::DB::Schema::jobp_cmd', 'jobp_id');
 __PACKAGE__->has_many('get_msjobp', 'TapTinder::DB::Schema::msjobp', 'jobp_id');
+__PACKAGE__->has_many('get_wui_build', 'TapTinder::DB::Schema::wui_build', 'jobp_id');
 
 package TapTinder::DB::Schema::fspath;
 
@@ -3457,7 +3494,7 @@ package TapTinder::DB::Schema::project;
 
 __PACKAGE__->has_many('get_rep', 'TapTinder::DB::Schema::rep', 'project_id');
 __PACKAGE__->has_many('get_jobp', 'TapTinder::DB::Schema::jobp', 'project_id');
-__PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'project_id');
+__PACKAGE__->has_many('get_wui_build', 'TapTinder::DB::Schema::wui_build', 'project_id');
 
 package TapTinder::DB::Schema::msjobp;
 
@@ -3473,11 +3510,9 @@ package TapTinder::DB::Schema::wconf_job;
 
 __PACKAGE__->belongs_to('wconf_session_id','TapTinder::DB::Schema::wconf_session','wconf_session_id');
 
-__PACKAGE__->belongs_to('project_id','TapTinder::DB::Schema::project','project_id',{join_type => 'left'});
+__PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id');
 
-__PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id',{join_type => 'left'});
-
-__PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id',{join_type => 'left'});
+__PACKAGE__->belongs_to('rep_id','TapTinder::DB::Schema::rep','rep_id');
 
 __PACKAGE__->belongs_to('rref_id','TapTinder::DB::Schema::rref','rref_id',{join_type => 'left'});
 
@@ -3646,6 +3681,8 @@ use strict;
 use warnings;
 
 __PACKAGE__->register_class('msproc_abort_reason', 'TapTinder::DB::Schema::msproc_abort_reason');
+
+__PACKAGE__->register_class('wui_build', 'TapTinder::DB::Schema::wui_build');
 
 __PACKAGE__->register_class('rcparent', 'TapTinder::DB::Schema::rcparent');
 

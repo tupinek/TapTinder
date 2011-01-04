@@ -461,43 +461,117 @@ sub get_new_job {
     my ( $self, $c, $data, $machine_id, $msession_id ) = @_;
 
     my $cols = [ qw/ 
-        wcj.job_id
-        rc.rcommit_id
+        wconf_job_id
+        rep_id
+        rref_id
+        job_id
+        wcj_priority
+        wcr_priority
+        super_rline_id
     / ];
-
-    # ToDo - this is really simple version:
-    # * wconf_job.rref_id and wconf_job.job_id must be filled
-    # * returns only last commit to which rref_id points if not tested yet
     my $sql = "
-        from wconf_session wcs,
-             wconf_job wcj,
-             rref rr,
-             rcommit rc
-       where wcs.machine_id = ?
-         and wcj.wconf_session_id = wcs.wconf_session_id
-         and rr.rref_id = wcj.rref_id
-         and rc.rcommit_id = rr.rcommit_id
-         and not exists (
-            select 1
-              from msession ms,
-                   msproc msp,
-                   msjob msj,
-                   msjobp msjp,
-                   jobp jp
-             where ms.machine_id = ?
-               and msp.msession_id = ms.msession_id
-               and msj.msproc_id = msp.msproc_id
-               and msjp.msjob_id = msj.msjob_id
-               and msj.job_id = wcj.job_id
-               and msjp.rcommit_id = rc.rcommit_id
-         )
+        from (
+            select wcj.wconf_job_id,
+                   wcj.rep_id,
+                   wcj.rref_id,
+                   wcj.job_id,
+                   wcj.priority as wcj_priority,
+                   wcr.priority as wcr_priority,
+                   rc.super_rline_id
+              from wconf_session wcs
+              join wconf_job wcj
+                on wcj.wconf_session_id = wcs.wconf_session_id
+              join wconf_rref wcr
+                on wcr.rref_id = wcj.rref_id
+              join rref rr
+                on rr.rref_id = wcr.rref_id
+              join rcommit rc
+                on rc.rcommit_id = rr.rcommit_id
+             where wcs.machine_id = ?
+
+             union all
+
+            select wcj.wconf_job_id,
+                   wcj.rep_id,
+                   wcj.rref_id,
+                   wcj.job_id,
+                   wcj.priority as wcj_priority,
+                   wcr.priority as wcr_priority,
+                   rc.super_rline_id
+              from wconf_session as wcs
+              join wconf_job as wcj
+                on wcj.wconf_session_id = wcs.wconf_session_id
+               and wcj.rref_id is null
+              join rep as r
+                on r.rep_id = wcj.rep_id
+              join wconf_rref as wcr
+              join rref as rr
+                on rr.rref_id = wcr.rref_id
+              join rcommit as rc
+                on rc.rcommit_id = rr.rcommit_id
+               and rc.rep_id = r.rep_id
+             where wcs.machine_id = ?
+        ) al
+      order by wcj_priority, wcr_priority
    "; # end sql
 
     my $ba = [ $machine_id, $machine_id ];
-    my $row_data = $self->edbi_selectrow_hashref( $c, $cols, $sql, $ba );
+    my $sr_job_data = $self->edbi_selectall_arrayref_slice( $c, $cols, $sql, $ba );
+    print STDERR Data::Dumper::Dumper( $sr_job_data );
 
-    # TODO - new job not found
-    return $row_data;
+    my $job_id = undef;
+    my $rc_data = undef;
+    my $srline_done_list = {};
+    foreach my $row ( @$sr_job_data ) {
+        my $super_rline_id = $row->{super_rline_id};
+        $job_id = $row->{job_id};
+        
+        my $done_key = $job_id . '-' . $super_rline_id;
+        next if exists $srline_done_list->{ $done_key };
+        $srline_done_list->{ $done_key } = 1;
+        
+        $cols = [
+            'rcommit_id',
+        ];
+    
+        $sql = "
+          from ( 
+            select rc.rcommit_id
+              from rcommit rc
+             where rc.super_rline_id = ?
+               and not exists (
+                    select 1
+                      from msession ms,
+                           msproc msp,
+                           msjob msj,
+                           msjobp msjp,
+                           jobp jp
+                     where ms.machine_id = ?
+                       and msp.msession_id = ms.msession_id
+                       and msj.msproc_id = msp.msproc_id
+                       and msj.job_id = ?
+                       and msjp.msjob_id = msj.msjob_id
+                       and msjp.rcommit_id = rc.rcommit_id
+              )
+            order by rc.committer_time desc
+            limit 1
+          ) al
+        ";
+        $ba = [ $super_rline_id, $machine_id, $job_id ];
+
+        $rc_data = $self->edbi_selectall_arrayref_slice( $c, $cols, $sql, $ba );
+        if ( scalar @$rc_data ) {
+            #print STDERR Data::Dumper::Dumper( $rc_data );
+            last;
+        }
+    }
+
+    return undef unless defined $rc_data;
+    return undef unless scalar @$rc_data;
+    return {
+        'rcommit_id' => $rc_data->[0]->{rcommit_id},
+        'job_id' => $job_id,
+    };
 }
 
 

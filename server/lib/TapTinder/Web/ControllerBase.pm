@@ -142,7 +142,8 @@ sub edbi_run_dbh_do {
     if ( $schema->storage->debug ) {
         print STDERR $sql;
         print STDERR "\n" if $sql !~ m{\n\s*$}s;
-        print STDERR 'me: ' . join( ', ', @$ba ) . "\n";
+        print STDERR 'me: ' . Data::Dumper::Dumper( $ba );
+        print STDERR "\n";
     }
     
     my $data = undef;
