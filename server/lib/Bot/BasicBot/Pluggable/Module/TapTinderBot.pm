@@ -38,13 +38,12 @@ sub tick {
 }
 
 sub _save_done {
-    my ( $self, $ibot_id, $ichannel_conf_id, $rep_path_id, $rev_id ) = @_;
+    my ( $self, $ibot_id, $ichannel_conf_id, $rcommit_id ) = @_;
 
     return $self->{schema}->resultset('ibot_log')->create({
         ibot_id => $ibot_id,
         ichannel_conf_id => $ichannel_conf_id,
-        rep_path_id => $rep_path_id,
-        rev_id => $rev_id,
+        rcommit_id => $rcommit_id,
     });
 }
 
@@ -62,12 +61,13 @@ sub _check_news {
                m.machine_id,
                m.name as machine_name,
                m.archname,
-               jp.rep_path_id,
+               jp.project_id,
                c.name as cmd_name,
                p.name as project_name,
-               rp.path as rep_path,
-               mjp.rev_id,
-               r.rev_num,
+               rc.rcommit_id,
+               rc.rep_id,
+               s.sha,
+               unix_timestamp( rc.committer_time ) as committer_time_ts,
                ra.rep_login as author_login,
                cs.name as status_name,
                mjpc.msjobp_cmd_id,
@@ -77,8 +77,7 @@ sub _check_news {
                    from ibot_log ibl
                   where ibl.ibot_id = ichc.ibot_id
                     and ibl.ichannel_conf_id = ichc.ichannel_conf_id
-                    and ibl.rep_path_id = rp.rep_path_id
-                    and ibl.rev_id = r.rev_id
+                    and ibl.rcommit_id = rc.rcommit_id
                   limit 1
                ) as reported
           from ichannel_conf ichc,
@@ -89,14 +88,15 @@ sub _check_news {
                job j,
                msjobp_cmd mjpc,
                msjobp mjp,
-               rev r,
-               rep_author ra,
                msjob mj,
+               msproc mp,
                msession ms,
                machine m,
-               rep_path rp,
-               rep rep,
+               rcommit rc,
+               sha s,
+               rep r,
                project p,
+               rauthor ra,
                cmd_status cs,
                fsfile fsf,
                fspath fsp
@@ -107,24 +107,25 @@ sub _check_news {
            and c.cmd_id = jpc.cmd_id
            and j.job_id = jp.job_id
            and mjpc.jobp_cmd_id = ichc.jobp_cmd_id
-           and ( mjpc.status_id = 4 or mjpc.status_id = 6 )
-           and ( ichc.errors_only = 0 or mjpc.status_id = 6 )
+           and ( mjpc.status_id = 4 or mjpc.status_id = 7 )
+           and ( ichc.errors_only = 0 or mjpc.status_id = 7 )
            and mjp.msjobp_id = mjpc.msjobp_id
            and mjp.jobp_id = jp.jobp_id
-           and r.rev_id = mjp.rev_id
-           and ( ichc.max_age is null or DATE_SUB(CURDATE(), INTERVAL ichc.max_age HOUR) <= r.date )
-           and ra.rep_author_id = r.author_id
+           and rc.rcommit_id = mjp.rcommit_id
+           and ( ichc.max_age is null or DATE_SUB(CURDATE(), INTERVAL ichc.max_age HOUR) <= rc.committer_time )
+           and ra.rauthor_id = rc.author_id
            and mj.msjob_id = mjp.msjob_id
            and mj.job_id = j.job_id
-           and ms.msession_id = mj.msession_id
+           and mp.msproc_id = mj.msproc_id
+           and ms.msession_id = mp.msession_id
            and m.machine_id = ms.machine_id
-           and rp.rep_path_id = jp.rep_path_id
-           and rep.rep_id = rp.rep_id
-           and p.project_id = rep.project_id
+           and r.rep_id = rc.rep_id
+           and p.project_id = r.project_id
+           and s.sha_id = rc.sha_id
            and cs.cmd_status_id = mjpc.status_id
            and fsf.fsfile_id = mjpc.output_id
            and fsp.fspath_id = fsf.fspath_id
-         order by ichc.ichannel_id, ichc.ireport_type_id, rp.rep_path_id, r.rev_num
+         order by ichc.ichannel_id, ichc.ireport_type_id, rc.committer_time, rc.rcommit_id
 SQLEND
 
     my $ba = [ $self->{ibot_id} ];
@@ -133,42 +134,42 @@ SQLEND
     my $sth = $dbh->prepare( $sql );
     $sth->execute( @$ba );
 
-    my $max_revs = {};
+    my $max_rc = {};
     while ( my $row = $sth->fetchrow_hashref() ) {
-        #print Dumper( $row ) if $debug;
+        print Dumper( $row ) if $debug;
         my $key =
               $row->{ichannel_id} . '-'
             . $row->{ireport_type_id} . '-'
             . $row->{archname} . '-'
-            . $row->{rep_path_id} . '-'
+            . $row->{rep_id} . '-'
             . $row->{status_name}
         ;
-        if ( (not exists $max_revs->{$key}) || $row->{rev_num} > $max_revs->{$key}->{rev_num} ) {
-            $max_revs->{$key} = { %$row };
+        if ( (not exists $max_rc->{$key}) || $row->{committer_time_ts} > $max_rc->{$key}->{committer_time_ts} ) {
+            $max_rc->{$key} = { %$row };
         }
     }
-    print Dumper( $max_revs ) if $debug;
+    print Dumper( $max_rc ) if $debug;
 
-    foreach my $key ( keys %$max_revs ) {
-        next if $max_revs->{$key}->{reported};
+    foreach my $key ( keys %$max_rc ) {
+        next if $max_rc->{$key}->{reported};
 
-        my $channel_name = $max_revs->{$key}->{channel};
+        my $channel_name = $max_rc->{$key}->{channel};
         unless ( exists $self->{Bot}->{channel_data}->{$channel_name} ) {
             carp "Bot not started for channel '$channel_name'.";
             next;
         }
-        my $data = $max_revs->{$key};
+        my $data = $max_rc->{$key};
 
         my $msg = '';
         #$msg .= "$data->{author_login}: ";
-        $msg .= "$data->{project_name} $data->{rep_path}";
-        $msg .= " r$data->{rev_num} $data->{archname}";
+        $msg .= "$data->{project_name} ";
+        $msg .= substr($data->{sha},0,8) . " $data->{archname}";
 
         # build report
         if ( $data->{ireport_type_id} == 1 ) {
             $msg .= " $data->{cmd_name} $data->{status_name}";
             $msg .= " " . $self->{server_base_url} . $data->{web_fpath};
-            $msg .= " ( " . $self->{server_base_url} . "/buildstatus/pr-" . $data->{project_name} . "/rp-" . $data->{rep_path} . " )";
+            $msg .= " (" . $self->{server_base_url} . "buildstatus/pr-" . $data->{project_name} . ")";
             $msg .= " (debug: $self->{loop_num})" if $self->{irc_debug};
             $self->tell( $channel_name, $msg );
 
@@ -178,7 +179,7 @@ SQLEND
             # $self->tell( $channel_name, $msg );
         }
 
-        $self->_save_done( $data->{ibot_id}, $data->{ichannel_conf_id}, $data->{rep_path_id}, $data->{rev_id} );
+        $self->_save_done( $data->{ibot_id}, $data->{ichannel_conf_id}, $data->{rcommit_id} );
     }
 
     return $self;

@@ -833,11 +833,9 @@ CREATE TABLE ibot_log (
     ibot_log_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     ibot_id             INT UNSIGNED NOT NULL,
     ichannel_conf_id    INT UNSIGNED NOT NULL,
-    rref_id       INT UNSIGNED NOT NULL,
-    rcommit_id              INT UNSIGNED NOT NULL,
+    rcommit_id          INT UNSIGNED NOT NULL,
     CONSTRAINT fk_ibot_log_ibot_id FOREIGN KEY (ibot_id) REFERENCES ibot (ibot_id),
     CONSTRAINT fk_ibot_log_ichannel_conf_id FOREIGN KEY (ichannel_conf_id) REFERENCES ichannel_conf (ichannel_conf_id),
-    CONSTRAINT fk_ibot_log_rref_id FOREIGN KEY (rref_id) REFERENCES rref (rref_id),
     CONSTRAINT fk_ibot_log_rcommit_id FOREIGN KEY (rcommit_id) REFERENCES rcommit (rcommit_id)
 ) TYPE=InnoDB COMMENT='IRC bot log. Tag: irc_robot.';
 </source>

@@ -2262,15 +2262,6 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'rref_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'rref_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
     'rcommit_id' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
@@ -3290,7 +3281,6 @@ __PACKAGE__->belongs_to('rcommit_id','TapTinder::DB::Schema::rcommit','rcommit_i
 
 __PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'rref_id');
 __PACKAGE__->has_many('get_wconf_rref', 'TapTinder::DB::Schema::wconf_rref', 'rref_id');
-__PACKAGE__->has_many('get_ibot_log', 'TapTinder::DB::Schema::ibot_log', 'rref_id');
 
 package TapTinder::DB::Schema::user;
 
@@ -3540,8 +3530,6 @@ package TapTinder::DB::Schema::ibot_log;
 __PACKAGE__->belongs_to('ibot_id','TapTinder::DB::Schema::ibot','ibot_id');
 
 __PACKAGE__->belongs_to('ichannel_conf_id','TapTinder::DB::Schema::ichannel_conf','ichannel_conf_id');
-
-__PACKAGE__->belongs_to('rref_id','TapTinder::DB::Schema::rref','rref_id');
 
 __PACKAGE__->belongs_to('rcommit_id','TapTinder::DB::Schema::rcommit','rcommit_id');
 

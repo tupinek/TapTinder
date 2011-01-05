@@ -196,5 +196,33 @@ return sub {
     ]);
 
 
+    # table: ibot
+    $schema->resultset('ibot')->delete_all() if $delete_all;
+    $schema->resultset('ibot')->populate([
+        [ qw/ ibot_id        nick              full_name               server  port  operator_id /  ],
+        [          1, 'ttbot-dev', 'TapTinder bot (dev).', 'irc.freenode.org', 6667,           1    ],
+    ]);
+
+
+    # table: ichannel
+    $schema->resultset('ichannel')->delete_all() if $delete_all;
+    $schema->resultset('ichannel')->populate([
+        [ qw/ ichannel_id                  name / ],
+        [               1, '#taptinder-bottest1'  ],
+        [               2, '#taptinder-bottest2'  ],
+    ]);
+
+
+    # table: ichannel_conf
+    $schema->resultset('ichannel_conf')->delete_all() if $delete_all;
+    $schema->resultset('ichannel_conf')->populate([
+        [ qw/ ichannel_conf_id  ibot_id  ichannel_id  errors_only  ireport_type_id  jobp_cmd_id  max_age / ],
+        [                    1,       1,           1,           1,               1,           4,   14*24,  ],
+        [                    2,       1,           1,           0,               1,           4,    7*24,  ],
+        [                    3,       1,           1,           1,               2,          31,   undef,  ],
+        [                    4,       1,           2,           1,               1,          36 ,    7*24,  ],
+    ]);
+
+
     return 1;
 };
