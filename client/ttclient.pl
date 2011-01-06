@@ -21,7 +21,7 @@ use TapTinder::Client;
 use TapTinder::Client::Conf qw(load_client_conf);
 
 my $help = 0;
-my $project_name = 'tt-test-proj';
+my $project_name = 'tt-tests';
 my $conf_fpath = catfile( $RealBin, '..', 'client-conf', 'client-conf.yml' );
 my $ver = 2; # verbosity level
 my $debug = 0; # debug

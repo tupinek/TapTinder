@@ -1,7 +1,8 @@
 --- 
-parrot:
+tt-tests:
    machine_id: SomeNumber
    machine_passwd: YourClientPasswd
    email: email@somedomain.com
    irc_nick: YourProjectIRCNick
-   taptinderserv: http://tt.taptinder.org/
+#   taptinderserv: http://tt.taptinder.org/
+   taptinderserv: http://tapir1.ro.vutbr.cz:2000/
