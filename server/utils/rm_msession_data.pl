@@ -20,6 +20,7 @@ my $help = 0;
 my $ver = 2;
 my $sel_msession_id = undef;
 my $sel_machine_id = undef;
+my $sel_msproc_id = undef;
 my $sel_msjob_id = undef;
 my $sel_trun_id = undef;
 my $options_ok = GetOptions(
@@ -27,17 +28,19 @@ my $options_ok = GetOptions(
     'ver|v=i' => \$ver,
     'trun_id=i' => \$sel_trun_id,
     'msjob_id=i' => \$sel_msjob_id,
+    'msproc_id=i' => \$sel_msproc_id,
     'msession_id=i' => \$sel_msession_id,
     'machine_id=i' => \$sel_machine_id,
 );
 pod2usage(1) if $help || !$options_ok;
 if (    (not defined $sel_machine_id)
      && (not defined $sel_msession_id)
+     && (not defined $sel_msproc_id)
      && (not defined $sel_msjob_id)
      && (not defined $sel_trun_id)
    )
 {
-    print "No machine_id, msession_id, msjob_id or trun_id selected.\n";
+    print "No machine_id, msession_id, msproc_id, msjob_id or trun_id selected.\n";
     pod2usage(1);
 }
 
@@ -49,6 +52,7 @@ my $schema = get_connected_schema( $conf->{db} );
 my $search_cond = {};
 $search_cond->{'trun_id.trun_id'}         = $sel_trun_id if defined $sel_trun_id;
 $search_cond->{'msjob_id.msjob_id'}       = $sel_msjob_id if defined $sel_msjob_id;
+$search_cond->{'msproc_id.msproc_id'}     = $sel_msproc_id if defined $sel_msproc_id;
 $search_cond->{'msession_id.msession_id'} = $sel_msession_id if defined $sel_msession_id;
 $search_cond->{'msession_id.machine_id'}  = $sel_machine_id  if defined $sel_machine_id;
 
@@ -59,6 +63,8 @@ if ( defined $sel_trun_id ) {
     $table_name = 'trun';
 } elsif ( defined $sel_msjob_id ) {
     $table_name = 'msjob';
+} elsif ( defined $sel_msproc_id ) {
+    $table_name = 'msproc';
 } else {
     $table_name = 'msession';
 }
@@ -82,6 +88,10 @@ unless ( $found ) {
         print ", " if $id_str;
         print "msjob_id=$sel_msjob_id";
     }
+    if ( defined $sel_msproc_id ) {
+        print ", " if $id_str;
+        print "msproc_id=$sel_msproc_id";
+    }
     if ( defined $sel_msession_id ) {
         print ", " if $id_str;
         print "msession_id=$sel_msession_id";
@@ -104,6 +114,7 @@ sub get_rs_for_my_attrs {
     $search_attrs->{prefetch} = $joins if defined $joins;
     my $rs = $schema->resultset($table_name)->search( $search_cond, $search_attrs );
 }
+
 
 sub delete_fsfile {
     my ( $schema, $fsfile_id ) = @_;
@@ -129,7 +140,13 @@ sub delete_fsfile {
 
 my @fsfile_ids_to_delete = ();
 unless ( defined $sel_trun_id ) {
-    my $files_conf = [ 'msjobp_cmd', [ 'output_id', 'outdata_id', { 'msjobp_id' => { 'msjob_id' => 'msession_id' }, }, ], ];
+    my $files_conf = [ 
+        'msjobp_cmd', 
+        [ 'output_id',
+          'outdata_id', 
+          { 'msjobp_id' => { 'msjob_id' => { 'msproc_id' => 'msession_id' }, }, },
+        ],
+    ];
     my $rs = get_rs_for_my_attrs( $schema, $search_cond, $files_conf );
 
     # Prepare list of files to delete.
@@ -147,52 +164,76 @@ unless ( defined $sel_trun_id ) {
 my $all_confs = [
     [
         'ttest',
-        { 'trun_id' => { 'msjobp_cmd_id' => { 'msjobp_id' => { 'msjob_id' => 'msession_id' }, }, }, },
+        { 'trun_id' => { 'msjobp_cmd_id' => { 'msjobp_id' => { 'msjob_id' => { 'msproc_id' => 'msession_id' }, }, }, }, },
     ], [
         'tfile',
-        { 'trun_id' => { 'msjobp_cmd_id' => { 'msjobp_id' => { 'msjob_id' => 'msession_id' }, }, }, },
+        { 'trun_id' => { 'msjobp_cmd_id' => { 'msjobp_id' => { 'msjob_id' => { 'msproc_id' => 'msession_id' }, }, }, }, },
     ], [
         'trun',
-        { 'msjobp_cmd_id' => { 'msjobp_id' => { 'msjob_id' => 'msession_id' }, }, },
+        { 'msjobp_cmd_id' => { 'msjobp_id' => { 'msjob_id' => { 'msproc_id' => 'msession_id' }, }, }, },
     ],
 ];
 
 
 unless ( defined $sel_trun_id ) {
-    # del from  msjob related tables
+    # Delete from msjob related tables.
     $all_confs = [
         @$all_confs,
         [
             'msjobp_cmd',
-            { 'msjobp_id' => { 'msjob_id' => 'msession_id' }, },
+            { 'msjobp_id' => { 'msjob_id' => { 'msproc_id' => 'msession_id' }, }, },
         ], [
             'msjobp',
-            { 'msjob_id' => 'msession_id' },
+            { 'msjob_id' => { 'msproc_id' => 'msession_id' }, },
         ], [
             'msjob',
-            'msession_id',
+            { 'msproc_id' => 'msession_id' },
         ],
     ];
 
-    # del from msession related tables
+    # Delete from msproc related tables.
     unless ( defined $sel_msjob_id ) {
         $all_confs = [
             @$all_confs,
             [
-                'mslog',
-                'msession_id',
+                'msproc_log',
+                { 'msproc_id' => 'msession_id' },
             ], [
-                'msession',
-                undef
+                'msproc',
+                'msession_id',
             ],
         ];
+
+        # Delete from msession related tables.
+        unless ( defined $sel_msproc_id ) {
+            $all_confs = [
+                @$all_confs,
+                [
+                    'mslog',
+                    'msession_id',
+                ], [
+                    'mswatch_log',
+                    'msession_id',
+                ], [
+                    'msession',
+                    undef
+                ],
+            ];
+        }
+        
     }
 }
 
+
 # Delete direct data.
 foreach my $conf_num ( 0..$#$all_confs ) {
-    my $rs = get_rs_for_my_attrs( $schema, $search_cond, $all_confs->[ $conf_num ] );
-    $rs->delete_all;
+    my $conf = $all_confs->[ $conf_num ];
+    my $rs = get_rs_for_my_attrs( $schema, $search_cond, $conf );
+    if ( $rs ) {
+        $rs->delete_all;
+    } else {
+        print Dumper( $conf );
+    }
 }
 
 
@@ -218,6 +259,7 @@ perl tests-to-db.pl [options]
    --ver=$NUM .. Verbosity level. Default 2.
    --trun_id=$ID .. Machine session test run id.
    --msjob_id=$ID .. Machine session job id.
+   --msproc_id=$ID .. Machine session process id.
    --msession_id=$ID .. Machine session id.
    --machine_id=$ID .. Machine id.
 
