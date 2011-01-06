@@ -4,7 +4,7 @@ date
 echo ""
 
 echo "Repository update:"
-nice -n 10 perl repository-update.pl --project=Parrot
+nice -n 10 perl repository-update.pl --project=parrot
 echo ""
 
 echo "Tests to DB:"

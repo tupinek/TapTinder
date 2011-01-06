@@ -12,7 +12,8 @@ Usage:
   u ... update schema files
   uu ... update schema files, update dbdoc
   
-  ld ... load default repositories
+  ld ... load test repositories
+  la ... load test, Parrot and Rakudo repositories
   
 Example:
   utils/clear-dev-db.sh c 
@@ -100,7 +101,7 @@ if [ "$1" = "c" ]; then
     perl ./utils/rm_uploaded_files.pl --remove
     echo ""
 
-    if [ "$3" = "ld" ]; then
+    if [ "$3" = "ld" -o "$3" = "la" ]; then
         echo "Executing cron/repository-update.pl -p tt-tr1 (perl):"
         perl ./cron/repository-update.pl --ver=3 --project=tt-tr1
         echo ""
@@ -110,6 +111,15 @@ if [ "$1" = "c" ]; then
         echo "Executing cron/repository-update.pl -p tt-tr3 (perl):"
         perl ./cron/repository-update.pl --ver=3 --project=tt-tr3
         echo "";
+
+        if [ "$3" = "la" ]; then
+            echo "Executing cron/repository-update.pl -p parrot (perl):"
+            perl ./cron/repository-update.pl --ver=3 --project=parrot
+            echo ""
+            echo "Executing cron/repository-update.pl -p rakudo (perl):"
+            perl ./cron/repository-update.pl --ver=3 --project=rakudo
+            echo "";
+        fi
 
         echo "Executing utils/db-fill-sqldata.pl sql/data-dev-jobs.pl"
         perl ./utils/db-fill-sqldata.pl ./sql/data-dev-jobs.pl

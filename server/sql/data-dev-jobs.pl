@@ -20,7 +20,7 @@ return sub {
     my $master_tr1_rref_id = $schema->resultset('rref')->find(
         {
             'me.name' => 'master',
-            'rcommit_id.rep_id' => 1, # default repo fro tt-tr1 project, see data-dev.pl
+            'rcommit_id.rep_id' => 1, # default repo for tt-tr1 project, see data-dev.pl
         },
         {
             join => 'rcommit_id',
@@ -31,7 +31,7 @@ return sub {
     my $master_tr2_rref_id = $schema->resultset('rref')->find(
         {
             'me.name' => 'master',
-            'rcommit_id.rep_id' => 2, # default repo fro tt-tr2 project, see data-dev.pl
+            'rcommit_id.rep_id' => 2, # default repo for tt-tr2 project, see data-dev.pl
         },
         {
             join => 'rcommit_id',
@@ -42,13 +42,38 @@ return sub {
     my $master_tr3_rref_id = $schema->resultset('rref')->find(
         {
             'me.name' => 'master',
-            'rcommit_id.rep_id' => 3, # default repo fro tt-tr3 project, see data-dev.pl
+            'rcommit_id.rep_id' => 3, # default repo for tt-tr3 project, see data-dev.pl
         },
         {
             join => 'rcommit_id',
         }
     )->id;
     return 0 unless $master_tr3_rref_id;
+
+    # Parrot, Rakudo
+    my $master_parrot_rref_rs = $schema->resultset('rref')->find(
+        {
+            'me.name' => 'master',
+            'rcommit_id.rep_id' => 4, # default repo for tt-tr3 project, see data-dev.pl
+        },
+        {
+            join => 'rcommit_id',
+        }
+    );
+    my $master_parrot_rref_id = undef;
+    $master_parrot_rref_id = $master_parrot_rref_rs->id if defined $master_parrot_rref_rs;
+
+    my $master_rakudo_rref_rs = $schema->resultset('rref')->find(
+        {
+            'me.name' => 'master',
+            'rcommit_id.rep_id' => 5, # default repo for tt-tr3 project, see data-dev.pl
+        },
+        {
+            join => 'rcommit_id',
+        }
+    );
+    my $master_rakudo_rref_id = undef;
+    $master_rakudo_rref_id = $master_rakudo_rref_rs->id if defined $master_rakudo_rref_rs;
     
     
     # table: job
@@ -61,6 +86,8 @@ return sub {
         [ 4, 257, 4, 'tr1 B',       undef    ],
         [ 5, 257, 1, 'tr2',         undef    ],
         [ 6, 257, 1, 'tr3',         undef    ],
+        [ 7, 257, 1, 'Parrot',      undef    ],
+        [ 8, 257, 1, 'Rakudo',      undef    ],
     ]);
 
  
@@ -80,6 +107,8 @@ return sub {
 
         [           7,      5,          2,       1,        'sole tr2',  undef,   3*30*24,         undef,       0    ],
         [           8,      6,          3,       1,        'sole tr3',  undef,   3*30*24,         undef,       0    ],
+        [           9,      7,          4,       1,     'sole Parrot',  undef,   3*30*24,         undef,       0    ],
+        [          10,      8,          5,       1,     'sole Rakudo',  undef,   3*30*24,         undef,       0    ],
     ]);
 
  
@@ -134,15 +163,28 @@ return sub {
         [ 29, 7, 2, 2 ],
         [ 30, 7, 3, 4 ],
         [ 31, 7, 4, 5 ],
-        [ 32, 7, 5, 6 ],
 
 
         # job_id = 6
-        [ 33, 8, 1, 1 ],
-        [ 34, 8, 2, 2 ],
-        [ 35, 8, 3, 4 ],
-        [ 36, 8, 4, 5 ],
-        [ 37, 8, 5, 6 ],
+        [ 32, 8, 1, 1 ],
+        [ 33, 8, 2, 2 ],
+        [ 34, 8, 3, 4 ],
+        [ 35, 8, 4, 5 ],
+
+
+        # job_id = 7
+        [ 36, 9, 1, 1 ],
+        [ 37, 9, 2, 2 ],
+        [ 38, 9, 3, 4 ],
+        [ 39, 9, 4, 5 ],
+
+
+        # job_id = 8
+        [ 40, 10, 1, 1 ],
+        [ 41, 10, 2, 2 ],
+        [ 42, 10, 3, 4 ],
+        [ 43, 10, 4, 5 ],
+
     ]);
 
 
@@ -168,11 +210,13 @@ return sub {
         [                5,                2,      3,                undef,      6,        1    ], # tapir2
         [                6,                2,      2,  $master_tr2_rref_id,      5,        2    ], # tapir2
         [                7,                2,      2,                undef,      5,        3    ], # tapir2
-        [                8,                2,      1,  $master_tr1_rref_id,      1,        4    ], # tapir2
-        [                9,                2,      1,                undef,      2,        5    ], # tapir2
-        [               10,                2,      1,                undef,      1,        6    ], # tapir2
+        [                8,                2,      4,                undef,      7,        4    ], # tapir2
+        [                9,                2,      5,                undef,      8,        5    ], # tapir2
+        [               10,                2,      1,  $master_tr1_rref_id,      1,        6    ], # tapir2
+        [               11,                2,      1,                undef,      2,        7    ], # tapir2
+        [               12,                2,      1,                undef,      1,        8    ], # tapir2
 
-        [               11,                3,      3,  $master_tr3_rref_id,      6,        1    ], # pc-jurosz2
+        [               13,                3,      3,  $master_tr3_rref_id,      6,        1    ], # pc-jurosz2
     ]);
 
 
@@ -184,6 +228,20 @@ return sub {
         [                 2, $master_tr2_rref_id,         1,   ],
         [                 3, $master_tr3_rref_id,         1,   ],
     ]);
+    if ( $master_parrot_rref_id ) {
+        $schema->resultset('wconf_rref')->create({
+            wconf_rref_id => 4,
+            rref_id => $master_parrot_rref_id,
+            priority => 1,
+        });
+    }
+    if ( $master_rakudo_rref_id ) {
+        $schema->resultset('wconf_rref')->create({
+            wconf_rref_id => 5,
+            rref_id => $master_rakudo_rref_id,
+            priority => 1,
+        });
+    }
 
 
     # table: wui_build
@@ -193,23 +251,8 @@ return sub {
         [                1,          1,       1,   ],
         [                2,          2,       7,   ],
         [                3,          3,       8,   ],
-    ]);
-
-
-    # table: ibot
-    $schema->resultset('ibot')->delete_all() if $delete_all;
-    $schema->resultset('ibot')->populate([
-        [ qw/ ibot_id        nick              full_name               server  port  operator_id /  ],
-        [          1, 'ttbot-dev', 'TapTinder bot (dev).', 'irc.freenode.org', 6667,           1    ],
-    ]);
-
-
-    # table: ichannel
-    $schema->resultset('ichannel')->delete_all() if $delete_all;
-    $schema->resultset('ichannel')->populate([
-        [ qw/ ichannel_id                  name / ],
-        [               1, '#taptinder-bottest1'  ],
-        [               2, '#taptinder-bottest2'  ],
+        [                4,          4,       9,   ],
+        [                5,          5,      10,   ],
     ]);
 
 
@@ -220,7 +263,9 @@ return sub {
         [                    1,       1,           1,           1,               1,           4,   14*24,  ],
         [                    2,       1,           1,           0,               1,           4,    7*24,  ],
         [                    3,       1,           1,           1,               2,          31,   undef,  ],
-        [                    4,       1,           2,           1,               1,          36 ,    7*24,  ],
+        [                    4,       1,           2,           1,               1,          35 ,   7*24,  ],
+        [                    5,       1,           2,           1,               1,          39 ,   7*24,  ],
+        [                    6,       1,           2,           1,               1,          43 ,   7*24,  ],
     ]);
 
 

@@ -250,6 +250,7 @@ sub prepare_temp_copy {
         print "Repository not found. Doing git clone to '$src_dir_path'.\n" if $self->{ver} >= 4;
         ( $rc, $o_log ) = GitShell::git_clone( $self->{dir}, $src_base_dir_name, $rr_info->{repo_url} );
         return $self->git_cmd_error( $rc, 'git_clone', $o_log ) unless $rc;
+        print "Clone log: $o_log\n" if $self->{ver} >= 4;
     }
 
     # fetch

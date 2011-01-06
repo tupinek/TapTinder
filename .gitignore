@@ -9,3 +9,4 @@
 /server/root/dbdoc/*
 /client-data/*
 /server/root/file/*
+/server/cron/bot-basicbot.sqlite
