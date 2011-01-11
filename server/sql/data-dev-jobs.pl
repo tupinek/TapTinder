@@ -95,20 +95,20 @@ return sub {
     $schema->resultset('jobp')->delete_all() if $delete_all;
     $schema->resultset('jobp')->populate([
         [ qw/ jobp_id  job_id  project_id   `order`             name    descr    max_age  depends_on_id  extends /  ],
-        [           1,      1,          1,       1,        'sole tr1',  undef,   3*30*24,         undef,       0    ],
+        [           1,      1,          1,       1,        'sole tr1',  undef,  5*365*24,         undef,       0    ],
 
-        [           2,      2,          1,       1,            'base',  undef,   3*30*24,         undef,       0    ],
-        [           3,      2,          2,       2,  'external tests',  undef,   5*30*24,             2,       1    ],
+        [           2,      2,          1,       1,            'base',  undef,  5*365*24,         undef,       0    ],
+        [           3,      2,          2,       2,  'external tests',  undef,  5*365*24,             2,       1    ],
 
-        [           4,      3,          1,       1,            'base',  undef,     10*24,         undef,       0    ],
-        [           5,      3,          3,       2,    'related part',  undef,  12*30*24,             4,       0    ],
+        [           4,      3,          1,       1,            'base',  undef,  5*365*24,         undef,       0    ],
+        [           5,      3,          3,       2,    'related part',  undef,  5*365*24,             4,       0    ],
 
-        [           6,      4,          1,       1,            'sole',  undef,     undef,         undef,       0    ],
+        [           6,      4,          1,       1,        'sole tr1',  undef,     undef,         undef,       0    ],
 
-        [           7,      5,          2,       1,        'sole tr2',  undef,   3*30*24,         undef,       0    ],
-        [           8,      6,          3,       1,        'sole tr3',  undef,   3*30*24,         undef,       0    ],
-        [           9,      7,          4,       1,     'sole Parrot',  undef,   3*30*24,         undef,       0    ],
-        [          10,      8,          5,       1,     'sole Rakudo',  undef,   3*30*24,         undef,       0    ],
+        [           7,      5,          2,       1,        'sole tr2',  undef,     undef,         undef,       0    ],
+        [           8,      6,          3,       1,        'sole tr3',  undef,  5*365*24,         undef,       0    ],
+        [           9,      7,          4,       1,     'sole Parrot',  undef,      1*24,         undef,       0    ],
+        [          10,      8,          5,       1,     'sole Rakudo',  undef,      1*24,         undef,       0    ],
     ]);
 
  
@@ -217,6 +217,8 @@ return sub {
         [               12,                2,      1,                undef,      1,        8    ], # tapir2
 
         [               13,                3,      3,  $master_tr3_rref_id,      6,        1    ], # pc-jurosz2
+        [               14,                3,      4,                undef,      7,        2    ], # pc-jurosz2
+        [               15,                3,      5,                undef,      8,        3    ], # pc-jurosz2
     ]);
 
 
@@ -262,10 +264,10 @@ return sub {
         [ qw/ ichannel_conf_id  ibot_id  ichannel_id  errors_only  ireport_type_id  jobp_cmd_id  max_age / ],
         [                    1,       1,           1,           1,               1,           4,   14*24,  ],
         [                    2,       1,           1,           0,               1,           4,    7*24,  ],
-        [                    3,       1,           1,           1,               2,          31,   undef,  ],
-        [                    4,       1,           2,           1,               1,          35 ,   7*24,  ],
-        [                    5,       1,           2,           1,               1,          39 ,   7*24,  ],
-        [                    6,       1,           2,           1,               1,          43 ,   7*24,  ],
+        [                    3,       1,           1,           1,               1,          31,   undef,  ],
+        [                    4,       1,           1,           1,               1,          39 ,   7*24,  ],
+        [                    5,       1,           1,           1,               1,          43 ,   7*24,  ],
+        [                    6,       1,           2,           1,               1,          35 ,   7*24,  ],
     ]);
 
 

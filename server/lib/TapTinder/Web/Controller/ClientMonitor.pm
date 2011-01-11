@@ -41,7 +41,8 @@ sub index : Path  {
         max_mslog_id
         mslog_id mslog_change_time msstatus_name
         last_cmd_name last_cmd_end_time
-        last_cmd_rev_num last_cmd_rep_path last_cmd_author last_cmd_project_name
+        last_cmd_rcommit_id last_cmd_rcommit_sha
+        last_cmd_author last_cmd_project_name
     /];
     # $mslog{mslog_change_time} gt $date_from_str
     my $search_conf = {

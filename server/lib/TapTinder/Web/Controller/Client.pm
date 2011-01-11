@@ -468,6 +468,7 @@ sub get_new_job {
         wcj_priority
         wcr_priority
         super_rline_id
+        jobp_id
     / ];
     my $sql = "
         from (
@@ -477,10 +478,14 @@ sub get_new_job {
                    wcj.job_id,
                    wcj.priority as wcj_priority,
                    wcr.priority as wcr_priority,
-                   rc.super_rline_id
+                   rc.super_rline_id,
+                   jp.jobp_id
               from wconf_session wcs
               join wconf_job wcj
                 on wcj.wconf_session_id = wcs.wconf_session_id
+              join jobp jp
+                on jp.job_id = wcj.job_id
+               and jp.order = 1
               join wconf_rref wcr
                 on wcr.rref_id = wcj.rref_id
               join rref rr
@@ -497,11 +502,15 @@ sub get_new_job {
                    wcj.job_id,
                    wcj.priority as wcj_priority,
                    wcr.priority as wcr_priority,
-                   rc.super_rline_id
+                   rc.super_rline_id,
+                   jp.jobp_id
               from wconf_session as wcs
               join wconf_job as wcj
                 on wcj.wconf_session_id = wcs.wconf_session_id
                and wcj.rref_id is null
+              join jobp jp
+                on jp.job_id = wcj.job_id
+               and jp.order = 1
               join rep as r
                 on r.rep_id = wcj.rep_id
               join wconf_rref as wcr
@@ -538,6 +547,8 @@ sub get_new_job {
           from ( 
             select rc.rcommit_id
               from rcommit rc
+              join jobp jp
+                on jp.jobp_id = ?
              where rc.super_rline_id = ?
                and not exists (
                     select 1
@@ -553,15 +564,16 @@ sub get_new_job {
                        and msjp.msjob_id = msj.msjob_id
                        and msjp.rcommit_id = rc.rcommit_id
               )
+              and ( jp.max_age is null or DATE_SUB(CURDATE(), INTERVAL jp.max_age HOUR) <= rc.committer_time )
             order by rc.committer_time desc
             limit 1
           ) al
         ";
-        $ba = [ $super_rline_id, $machine_id, $job_id ];
+        $ba = [ $row->{jobp_id}, $super_rline_id, $machine_id, $job_id ];
 
         $rc_data = $self->edbi_selectall_arrayref_slice( $c, $cols, $sql, $ba );
         if ( scalar @$rc_data ) {
-            #print STDERR Data::Dumper::Dumper( $rc_data );
+            print STDERR Data::Dumper::Dumper( $rc_data );
             last;
         }
     }
@@ -688,8 +700,8 @@ sub get_next_cmd {
     ];
     my $row_data = $self->edbi_selectrow_hashref( $c, undef, $sql, $ba );
 
-    $self->dumper( $c, $row_data );
-    #TODO, if jobp_cmd_id changed, then
+    #$self->dumper( $c, $row_data );
+    # ToDo - if jobp_cmd_id changed, then ...
     return $row_data;
 }
 
@@ -747,7 +759,8 @@ sub start_new_job {
     my ( $self, $c, $data, $machine_id, $msession_id, $msproc_id ) = @_;
 
     my $new_job = $self->get_new_job( $c, $data, $machine_id, $msession_id );
-    return $new_job unless $new_job; # undef isn't error
+    #$self->dumper( $c, $new_job );
+    return undef unless $new_job; # undef isn't error
 
     my $job_id = $new_job->{job_id};
     my $rcommit_id = $new_job->{rcommit_id};
@@ -761,17 +774,17 @@ sub start_new_job {
     my $cmd_name = $next_cmd->{cmd_name};
 
     my $msjob_id = $self->create_msjob( $c, $data, $msproc_id, $job_id );
-    return 0 unless defined $msjob_id;
+    return 0 unless $msjob_id;
 
     my $msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rcommit_id );
-    return 0 unless defined $msjobp_id;
+    return 0 unless $msjobp_id;
 
     my $msjobp_cmd_id = $self->create_msjobp_cmd( $c, $data, $msjobp_id, $jobp_cmd_id );
-    return 0 unless defined $msjobp_cmd_id;
+    return 0 unless $msjobp_cmd_id;
 
-    $self->dumper( $c, "job_id: $job_id, rcommit_id: $rcommit_id");
-    $self->dumper( $c, "jobp_id: $jobp_id, jobp_cmd_id: $jobp_cmd_id");
-    $self->dumper( $c, "msjob_id: $msjob_id, msjobp_id: $msjobp_id, msjobp_cmd_id: $msjobp_cmd_id" );
+    #$self->dumper( $c, "job_id: $job_id, rcommit_id: $rcommit_id");
+    #$self->dumper( $c, "jobp_id: $jobp_id, jobp_cmd_id: $jobp_cmd_id");
+    #$self->dumper( $c, "msjob_id: $msjob_id, msjobp_id: $msjobp_id, msjobp_cmd_id: $msjobp_cmd_id" );
 
     # need to be in sync with cmd_cget
     $data->{msjob_id} = $msjob_id;
@@ -793,18 +806,27 @@ sub get_jobp_master_ref_rcommit_id {
     my ( $self, $c, $data, $jobp_id ) = @_;
 
     my $job = $c->model('WebDB::jobp')->single( { jobp_id => $jobp_id, } );
-
-    my $rs = $c->model('WebDB::rref')->search( {
-        
-    } );
+    my $project_id = $job->get_column('project_id');
+    my $rs = $c->model('WebDB::rref')->search(
+        { 
+            'me.name' => 'master',
+            'me.active' => 1,
+            'rep_id.active' => 1,
+            'rep_id.project_id' => $project_id,
+        },
+        {
+            join => { 'rcommit_id' => 'rep_id' },
+            'select' => [qw/ rcommit_id.rcommit_id /],
+            'as' =>     [qw/ rcommit_id            /],
+        }
+    );
     my $row = $rs->next;
     if ( !$row ) {
         $data->{err} = 1;
         $data->{err_msg} = "Error: Master ref rcommit_id for jobp_id $jobp_id not found.";
-        return 0;
+        return undef;
     }
-    my $row_data = { $row->get_columns() };
-    return $row_data->{rev_id};
+    return $row->get_column('rcommit_id');
 }
 
 
@@ -852,12 +874,15 @@ sub cmd_cget {
                 #$self->dumper( $c, $cmds_data );
                 my $msjob_id = $cmds_data->{prev}->{msjob_id};
 
-                # find new rev_id
+                # find new rcommit_id
                 my $rcommit_id = $self->get_jobp_master_ref_rcommit_id( $c, $data, $jobp_id );
-                return $self->txn_end( $c, $data, 0 ) unless defined $rcommit_id;
+                return $self->txn_end( $c, $data, 0 ) unless $rcommit_id;
+                
+                # ToDo - get not tested rcommit_id
+                return $self->txn_end( $c, $data, 0 );
 
                 $msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rcommit_id );
-                return $self->txn_end( $c, $data, 0 ) unless defined $msjobp_id;
+                return $self->txn_end( $c, $data, 0 ) unless $msjobp_id;
 
                 # need to be in sync with start_new_job
                 $data->{msjob_id} = $msjob_id;
@@ -866,7 +891,7 @@ sub cmd_cget {
             }
 
             my $msjobp_cmd_id = $self->create_msjobp_cmd( $c, $data, $msjobp_id, $jobp_cmd_id );
-            return $self->txn_end( $c, $data, 0 ) unless defined $msjobp_cmd_id;
+            return $self->txn_end( $c, $data, 0 ) unless $msjobp_cmd_id;
 
             #$self->dumper( $c, "jobp_cmd_id: $jobp_cmd_id, msjobp_id: $msjobp_id, msjobp_cmd_id: $msjobp_cmd_id" );
             $data->{msjobp_cmd_id} = $msjobp_cmd_id;
@@ -1098,7 +1123,7 @@ sub cmd_sset {
     # $params->{mid} - already checked
     my $machine_id = $params->{mid};
     # $params->{mspid} - already checked
-    my $msproc_id = $params->{msid};
+    my $msproc_id = $params->{mspid};
     # TODO - is_numeric?
     my $msjobp_cmd_id = $params->{mcid};
     # TODO is valid status_id?
@@ -1234,6 +1259,8 @@ sub cmd_mevent {
     my $machine_id = $params->{mid};
     # $params->{msid} - already checked
     my $msession_id = $params->{msid};
+    # $params->{mspid} - already checked
+    my $msproc_id = $params->{mspid};
 
     # TODO - undef or is_numeric?
     my $msjobp_cmd_id = $params->{mcid};
@@ -1277,7 +1304,7 @@ sub cmd_mevent {
 
     if ( $msjobp_cmd_id && $new_cmd_status_id ) {
         # check/validate of msession_id vs. msjobp_cmd_id
-        my $msjob_info = $self->get_msjobp_cmd_info( $c, $data, $msession_id, $msjobp_cmd_id );
+        my $msjob_info = $self->get_msjobp_cmd_info( $c, $data, $msproc_id, $msjobp_cmd_id );
         return 0 unless $msjob_info;
 
         my $to_set = {
