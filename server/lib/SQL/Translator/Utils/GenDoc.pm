@@ -72,6 +72,7 @@ sub produce_db_doc {
         [ qw/ PaleGreen LimeGreen / ],
         [ qw/ PaleTurquoise dodgerblue3 / ],
         [ qw/ Grey DimGray / ],
+        [ qw/ MistyRose Orchid / ],
     ];
 
 

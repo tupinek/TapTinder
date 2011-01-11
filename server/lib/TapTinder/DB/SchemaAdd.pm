@@ -20,8 +20,8 @@ $new_source3->name(\<<'SQLEND');
            mss.name as msstatus_name,
            c.name as last_cmd_name,
            mjpc.end_time as last_cmd_end_time,
-           rev.rev_num as last_cmd_rev_num,
-           rp.path as last_cmd_rep_path,
+           rc.rcommit_id as last_cmd_rcommit_id,
+           s.sha as last_cmd_rcommit_sha,
            ra.rep_login as last_cmd_author,
            project.name as last_cmd_project_name
       from (
@@ -34,10 +34,12 @@ $new_source3->name(\<<'SQLEND');
                ms.client_rev,
                ms.start_time,
                ( select max(msjpc.msjobp_cmd_id)
-                   from msjob msj,
+                   from msproc msp,
+                        msjob msj,
                         msjobp msjp,
                         msjobp_cmd msjpc
-                  where msj.msession_id = ms.msession_id
+                  where msp.msession_id = ms.msession_id
+                    and msj.msproc_id = msp.msproc_id
                     and msjp.msjob_id = msj.msjob_id
                     and msjpc.msjobp_id = msjp.msjobp_id
                ) as last_finished_msjobp_cmd_id,
@@ -58,9 +60,9 @@ $new_source3->name(\<<'SQLEND');
       jobp_cmd jpc,
       jobp jp,
       cmd c,
-      rev,
-      rep_path rp,
-      rep_author ra,
+      rcommit rc,
+      sha s,
+      rauthor ra,
       rep,
       project
     where msl.mslog_id = xm.max_mslog_id
@@ -71,63 +73,17 @@ $new_source3->name(\<<'SQLEND');
       and jpc.jobp_cmd_id = mjpc.jobp_cmd_id
       and jp.jobp_id = jpc.jobp_id
       and c.cmd_id = jpc.cmd_id
-      and rev.rev_id = mjp.rev_id
-      and ra.rep_author_id = rev.author_id
-      and rep.rep_id = rev.rep_id
-      and rp.rep_path_id = jp.rep_path_id
+      and rc.rcommit_id = mjp.rcommit_id
+      and s.sha_id = rc.sha_id
+      and ra.rauthor_id = rc.author_id
+      and rep.rep_id = rc.rep_id
+      and rep.project_id = jp.project_id
       and project.project_id = rep.project_id
     order by xm.machine_id, xm.msession_id, xm.start_time
 )
 SQLEND
 
 TapTinder::DB::Schema->register_extra_source( 'MSessionStatus' => $new_source3 );
-
-
-
-package TapTinder::DB::Schema::rcommit;
-
-my $source4 = __PACKAGE__->result_source_instance();
-my $new_source4 = $source4->new( $source4 );
-$new_source4->source_name( 'BuildStatus' );
-
-$new_source4->name(\<<'SQLEND');
-(
-   select ms.machine_id,
-          r.rev_id,
-          mjpc.status_id,
-          cs.name as status_name,
-          concat(fsp.web_path, '/', fsf.name) as web_fpath
-     from rev_rep_path rrp,
-          rev r,
-          jobp jp,
-          jobp_cmd jpc,
-          msjobp mjp,
-          msjobp_cmd mjpc,
-          cmd_status cs,
-          msjob mj,
-          msession ms,
-          fsfile fsf,
-          fspath fsp
-    where rrp.rep_path_id = ? -- <
-      and r.rev_id = rrp.rev_id
-      and r.rev_num >= ? -- last 100 revs
-      and jp.job_id = 1 -- only this job
-      and jp.order = 1 -- only first part
-      and jpc.jobp_id = jp.jobp_id
-      and jpc.cmd_id = 5 -- only make
-      and mjp.rev_id = r.rev_id
-      and mjp.jobp_id = jp.jobp_id
-      and mjpc.jobp_cmd_id = jpc.jobp_cmd_id
-      and mjpc.msjobp_id = mjp.msjobp_id
-      and cs.cmd_status_id = mjpc.status_id
-      and fsf.fsfile_id = mjpc.output_id
-      and fsp.fspath_id = fsf.fspath_id
-      and mj.msjob_id = mjp.msjobp_id
-      and ms.msession_id = mj.msession_id
-)
-SQLEND
-
-TapTinder::DB::Schema->register_extra_source( 'BuildStatus' => $new_source4 );
 
 
 
