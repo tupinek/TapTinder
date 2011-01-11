@@ -317,6 +317,9 @@ sub index : Path  {
     my ( $is_index, $project_name, $params ) = $self->get_projname_params( $c, $p_project, $par1, $par2 );
     my $pr = $self->get_page_params( $params );
 
+    # ToDo - port to Git
+    return 1;
+    
     #$c->model('WebDB')->storage->debug(1);
 
     if ( $is_index ) {

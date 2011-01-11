@@ -23,7 +23,7 @@
     [% ELSE %]
       <a href="/cwm/rcommit/id-[% rcommit.rcommit_id %]" title="[% rcommit.msg | html %]">
     [% END %]
-        [% rcommit.sha.substr(0,6) %]
+        [% rcommit.sha.substr(0,8) %]
       </a>
       </td>
     <td>[% rcommit.rep_login %]</td>

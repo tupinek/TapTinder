@@ -3,12 +3,13 @@
 <li><a href="/buildstatus/pr-tt-tr1">tt-tr1 build status</a></li>
 <li><a href="/buildstatus/pr-tt-tr2">tt-tr2 build status</a></li>
 <li><a href="/buildstatus/pr-tt-tr3">tt-tr3 build status</a></li>
+<li><a href="/buildstatus/pr-parrot">Parrot build status</a></li>
+<li><a href="/buildstatus/pr-rakudo">Rakudo build status</a></li>
 </ul>
 
 
 <h2>Browsing:</h2>
 <ul class=menu>
-<li><a href="/report">Reports</a></li>
 <li><a href="/clientmonitor">Client monitor</a></li>
 </ul>
 

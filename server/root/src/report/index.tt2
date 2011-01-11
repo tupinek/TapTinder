@@ -10,6 +10,8 @@
 [%- END -%]
 .</div>
 
+Not ported to Git yet.
+
 [% FOREACH pr IN projects -%]
 [% IF !project_name %]
     <h2 class=table>Project: <a href="[% c.uri_for( '/report/pr-' _ pr.name ) %]">[% pr.name %]</a></h2>

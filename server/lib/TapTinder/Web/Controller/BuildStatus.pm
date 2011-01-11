@@ -28,19 +28,23 @@ sub index : Path  {
 
     my $search = { 
         'me.name' => $ref_name,
+        'me.active' => 1,
         'rep_id.active' => 1,
         'project_id.name' => $project_name,
     };
     my $project_rs = $c->model('WebDB::rref')->search( $search,
         {
             join => { 'rcommit_id' => { 'rep_id' => 'project_id', }, },
-            'select' => [qw/ me.rref_id me.name   rcommit_id.rline_id rep_id.rep_id rep_id.github_url project_id.project_id project_id.name project_id.url /],
-            'as' =>     [qw/ rref_id    rref_name rline_id            rep_id        github_url        project_id            project_url    /],
+            'select' => [qw/ me.rref_id me.name   rcommit_id.rcommit_id rcommit_id.super_rline_id rep_id.rep_id rep_id.github_url project_id.project_id project_id.name project_id.url /],
+            'as' =>     [qw/ rref_id    rref_name rcommit_id            rline_id                  rep_id        github_url        project_id            project_url    /],
         }
     );
     my $project_row = $project_rs->next;
+    return 1 unless $project_row;
+    
     my $project_info = { $project_row->get_columns };
     $c->stash->{project_info} = $project_info;
+    $self->dumper( $c, $project_info );
 
     my $rline_id = $project_info->{rline_id};
 
@@ -51,9 +55,12 @@ sub index : Path  {
             'project_id' => $project_info->{project_id},
         };
         my $wui_build_rs = $c->model('WebDB::wui_build')->search( $search_wui_build, {} );
-        $jobp_id = $wui_build_rs->next->get_column('jobp_id')
+        my $jobp_row = $wui_build_rs->next;
+        return 0 unless $jobp_row;
+        $jobp_id = $jobp_row->get_column('jobp_id');
     }
     $self->dadd( $c, "jobp_id: $jobp_id\n" );
+    $self->dadd( $c, "rline_id: $rline_id\n" );
 
 
     my $rs_rcommits = $c->model('WebDB::rcommit')->search( {
@@ -79,6 +86,10 @@ sub index : Path  {
         push @rcommits, { $row_obj->get_columns() };
     }
     #$self->dumper( $c, \@rcommits );
+    if ( scalar @rcommits <= 0 ) {
+        return 1;
+    }
+    
     my $commit_time_from = $rcommits[-1]->{date};
     my $commit_time_to = $rcommits[0]->{date};
     #$c->log( "Commit time from $commit_time_from to $commit_time_to.\n" );
