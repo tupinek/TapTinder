@@ -45,24 +45,24 @@ sub dumper {
 
     return unless $c->log->is_debug;
 
+    my $new_ot = '';
     foreach my $val ( @_ ) {
         my $var_type = ref($val);
         if ( $var_type =~ /^TapTinder\:\:Web\:\:Model/ ) {
-            $c->stash->{ot} .= "dump_row:\n";
-            $c->stash->{ot} .= DBIx::Dumper::dump_row( $val );
+            $new_ot .= "dump_row:\n";
+            $new_ot .= DBIx::Dumper::dump_row( $val );
         } else {
-            #$c->stash->{ot} .= "normal dumper: \n";
-            $c->stash->{ot} .= Data::Dumper::Dumper( $val );
+            #$new_ot .= "normal dumper: \n";
+            $new_ot .= Data::Dumper::Dumper( $val );
         }
     }
 
     # Change next line to 1 to see debug on server side too.
-    if ( 0 ) {
-        return 1 unless $c->stash->{ot};
-        print STDERR $c->stash->{ot} . "\n";
-        $c->stash->{ot} = '';
+    if ( 1 ) {
+        return 1 unless $new_ot;
+        print STDERR $new_ot . "\n";
     }
-
+    $c->stash->{ot} .= $new_ot;
     return 1;
 }
 
