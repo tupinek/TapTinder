@@ -4,72 +4,88 @@ Legend
 * cXb ... commit number X, rline with marked as b
 * vX ... rline marked as X
 
-Commits ordered by 'committer date' are c1, c2, c3, c4, c5x, c6x, c7, c8, c9, c10z, c11.
+Commits ordered by 'committer date' are c1, c2, c3, c4, c5x, c6x, c7, c8, c9, c10y, c11z, c12y.
 
 
-   |c1 (-)  -> v1 ... no parent
-   |c2 (c1) -> v1 ... one parent without descendant -> inherit v1 from c1
-   |c3 (c2) -> v1 ... one parent without descendant -> inherit v1 from c2
-   |\
-   | \
-   |  \
- c4|   |   ... c4 (c3) -> v1 ... one parent without descendant -> inherit v1 from c3
-   |   |c5x (c3)  -> v2 ... one parent already with one (c4) descendant -> new rline v2
-   |   |c6x (c6x) -> v2 ... one parent without descendant -> inherit v2 from c5x
-   |  / \
-   | /   \ c10z (c6x) -> v4 (one parent already with one (c7) descendant -> new rline v4
-   |/
-   |c7 (c4,c6x) -> v1  ... more than one parent - c3c merged to c3 -> inherit v1 from c3
-   |c8 -> v1 ... one parent without descendant, inherit v1 from c7
-   |\
- c9| \     ... c9 (c8) -> v1 ... one parent without descendant, inherit v1 from c8
-   |  | c8y (c8) -> v3 ... one parent already with one (c9) descendant -> new rline v3
-c11|       ... c11 (c9) -> v1 ... one parent without descendant, inherit v1 from c9
- 
+    |c1 (-)  -> v1 ... no parent
+    |c2 (c1) -> v1 ... one parent without descendant -> inherit v1 from c1
+    |c3 (c2) -> v1 ... one parent without descendant -> inherit v1 from c2
+    |\
+    | \
+    |  \
+  c4|   |   ... c4 (c3) -> v1 ... one parent without descendant -> inherit v1 from c3
+    |   |c5x (c3)  -> v2 ... one parent already with one (c4) descendant -> new rline v2
+    |   |c6x (c6x) -> v2 ... one parent without descendant -> inherit v2 from c5x
+    |  / \
+    | /   \ c11z (c6x) -> v4 (one parent already with one (c7) descendant -> new rline v4
+    |/    v4
+    |
+    |c7 (c4,c6x) -> v1  ... more than one parent - c3c merged to c3 -> inherit v1 from c3
+    |c8 -> v1 ... one parent without descendant, inherit v1 from c7
+    |\
+    | \
+    |  | c9 (c8) -> v1 ... one parent without descendant, inherit v1 from c8 
+c10y|  |     ... c10y (c8) -> v3 ... one parent already with one (c8) descendant -> new rline v3
+c12y|  |     ... c12y (c10y) -> v3 ... one parent without descendant, inherit v3 from c10y
+   v3  v1
+(master)
+
+State:
+* v1, v3 (master), v4 - not merged yet
+* v2 - already merged to v1
+
 
 == Metacode ==
 To fill rline table and rcommit.rline_id
 * no parent -> add rline (see below)
 * one parent without descendant -> inherit rline
 * one parent already with any descendant -> add rline (see below)
-* more than one parent - first parent is vX -> inherit rline from vX and add rline_hier (see below)
+* more than one parent - first parent is cX -> inherit rline from cX
 
 Add new rline (found not merge commit give type, see above)
 * find max rline_num for rep_id (rline_id -> rcommit_id -> rep_id)
 * insert to rline (to_rcommit_id is same as from_rcommit_id)
 * insert self link to rline_hier
 
-Add new rline_hier (found merge commit)
-* Add row to rline_hier
-** for each parent add row where super_id is first parent rline_id
-* set rline.merged to 1
-
 Finishing
 * Update rline.to_rcommit_id values from cache.
+
+
+== Table rref_rcommit ==
+* rref_id
+* rcommit_id
+
+rref data change
+* same rline_id - add new rcommits
+* changed rline_id
+** load rcommits history - make changes
 
 
 == Tables content for example ==
 Table rline
 rline_id  first_rcommit_id  last_rcommit_id
-1 (v1),   c1,               c11
+1 (v1),   c1,               c12y
 2 (v2),   c5x (v1),         c6x
-3 (v3),   c8y (v1),         c8y
-4 (v4),   c10z (v2),        c10z
-
-Table rline_hier
-rline_id  super_rline_id
-1 (v1),   1 (v1) ... self link
-2 (v2),   2 (v2) ... self link
-2 (v2),   1 (v1) ... merge link, v2 was merged to v1
-3 (v3),   3 (v3) ... self link
-4 (v4),   4 (v4) ... self link
+3 (v3),   c10y (v1),        c12y
+4 (v4),   c11z (v2),        c11z
 
 
 == Used to ==
-These rline table is used to get all ancestors for given rcommit_id:
-* get rcommit rline_idA ( rcommit.rline_id )
-* get all rcommits where rcommit.rline_id = rline_hier.rline_id and rline_hier.super_rline_id = rline_idA
+These rline table is used to get some ancestors for given rcommit_id (rcommit_idA):
+* for rcommit_idA get rcommit rline_idA ( rcommit.rline_id )
+* get all rcommits where rcommit.rline_id = rline_idA and commmitter_time <= commmitter_time of rcommit_idA
 * so e.g.
-** for c2 you get c1, c2, c3, c4, c5x, c6x, c7, c8, c9, c11
-** for c6x you get c5x, c6x
-** for c8y you get c8y
+** for c9 (v1) you get c1, c2, c3, c4, c7, c8, c9
+** for c4 (v1) you get c1, c2, c3, c4
+** for c6x (v2) you get c5x, c6x
+** for c10y (v3) you get c10y, c12y
+** for c11z (v4) you get c11z
+
+To get full history for c6x (c6x, c5x, c3, c2, c1):
+* use prev instructions, so for c6x you get c6x, c5x
+* get parent fo c5x (first commit for rline_idA) -> c3
+* get parent rline_idB for this commit c3 -> v1
+* add full history of c3 (repeat steps for c3)
+* ....
+
+

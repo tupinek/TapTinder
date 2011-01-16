@@ -192,56 +192,37 @@ my $rcommit_rs = $schema->resultset('rcommit')->search(
     {},
     {
         join => 'sha_id',
-        'select' => [ 'me.rcommit_id', 'sha_id.sha', 'me.parent_id', 'me.rline_id' ],
+        'select' => [ 'me.rcommit_id', 'sha_id.sha', 'me.parent_id', 'me.parents_num', \'unix_timestamp(me.committer_time)', ],
     }
 );
 my $rcommits_sha_list = {};
-my $has_descendant = {};
-my $rcommits_rline_id = {};
+my $rcparents = {};
+my $rcommits_time = {};
 foreach my $rcommit_row ( $rcommit_rs->cursor->all ) {
-    my $rcommit_id = $rcommit_row->[0];
-    my $sha = $rcommit_row->[1];
+    my ( $rcommit_id, $sha, $parent_id, $parents_num, $time_ts ) = @$rcommit_row;
     $rcommits_sha_list->{ $sha } = $rcommit_id;
-    if ( defined $rcommit_row->[2] ) {
-        my $parent_id = $rcommit_row->[2];
-        $has_descendant->{ $parent_id } = 1;
+    $rcommits_time->{ $rcommit_id } = $time_ts;
+    if ( defined $parent_id ) {
+        $rcparents->{ $rcommit_id } = $parent_id;
     }
-    $rcommits_rline_id->{ $rcommit_id } = $rcommit_row->[3];
 }
+# print "rcommits_time\n"; print Dumper( $rcommits_time );
 
 
-sub finish_rcommits_set {
-    my ( $schema, $rline_last_rcommit_id_update, $rline_merged_info ) = @_;
-    
-    my $rline_rs = $schema->resultset('rline');
-    my $rcommit_rs = $schema->resultset('rcommit');
-    foreach my $rline_id ( keys %$rline_last_rcommit_id_update ) {
-        my $new_values = $rline_last_rcommit_id_update->{ $rline_id };
-
-        my $rline_row = $rline_rs->find( $rline_id );
-        $rline_row->update( $new_values );
+my $rcparent_rs = $schema->resultset('rcparent')->search( {}, {
+    'select' => [ 'me.child_id', 'me.parent_id', 'me.num', ],
+} );
+foreach my $rcparent_row ( $rcparent_rs->cursor->all ) {
+    my $child_id = $rcparent_row->[0];
+    my $parent_id = $rcparent_row->[1];
+    my $num = $rcparent_row->[2];
+    # Changing sclar value to array ref.
+    unless ( ref $rcparents->{ $child_id } ) {
+        $rcparents->{ $child_id } = [ $rcparents->{ $child_id } ];
     }
-    
-    foreach my $data ( @$rline_merged_info ) {
-        my $rline_id = $data->[0];
-        my $merged_to_rline_id = $data->[1];
-        print "Merged $rline_id to $merged_to_rline_id - changing rcommits.\n" if $ver >= 4;
-        my $sql = "
-            update rcommit
-               set super_rline_id = ?
-             where ( rline_id = ? and rline_id = super_rline_id )
-                or ( super_rline_id = ? and rline_id <> super_rline_id )
-        ";
-        my $ba = [ $merged_to_rline_id, $rline_id, $rline_id, ];
-        my $rc = do_dbh_sql( $schema, $sql, $ba );
-        return 0 unless $rc;
-    }
-    
-    $rline_last_rcommit_id_update = {};
-    $rline_merged_info = [];
-    
-    return 1;
+    $rcparents->{ $child_id }->[ $num ] = $parent_id;
 }
+#print Dumper( $rcparents ) if $ver >= 6;
 
 
 my $commits_added_num = 0;
@@ -260,10 +241,6 @@ if ( $steps->{commits} ) {
     my $sha_rs = $schema->resultset('sha');
     my $rauthor_rs = $schema->resultset('rauthor');
     my $rcparent_rs = $schema->resultset('rcparent');
-    my $rline_rs = $schema->resultset('rline');
-    my $rline_hier_rs = $schema->resultset('rline_hier');
-    my $rline_last_rcommit_id_update = {};
-    my $rline_merged_info = [];
     my $new_rcommits_num = 0;
     LOG_COMMIT: foreach my $log_num ( 0..$#$log ) {
         my $log_commit = $log->[ $log_num ];
@@ -309,47 +286,6 @@ if ( $steps->{commits} ) {
 
         my $parents = $log_commit->{parents};
         my $num_of_parents = scalar @$parents;
-        my $insert_new_rline_id = undef;
-        my $rline_id = undef;
-        # no ancestor
-        if ( $num_of_parents == 0 ) {
-            $insert_new_rline_id = 1;
-
-        # one parent without descendant
-        } elsif ( $num_of_parents == 1 && $has_descendant->{$first_parent_rcommit_id} ) {
-            $insert_new_rline_id = 1;
-
-        # one parent already with at least one descendant
-        # more than one parent
-        } else {
-            unless ( exists $rcommits_rline_id->{ $first_parent_rcommit_id } ) {
-                push @$err, "First parent rline_id not found in rcommits_rline_id list for rcommit_id '$first_parent_rcommit_id'.";
-                $all_ok = 0; 
-                last LOG_COMMIT;
-            }
-            $insert_new_rline_id = 0;
-            $rline_id = $rcommits_rline_id->{ $first_parent_rcommit_id };
-        }
-        
-        my $rline_row;
-        if ( $insert_new_rline_id ) {
-            $rline_row = $rline_rs->create({
-                first_rcommit_id => undef,
-                last_rcommit_id => undef,
-            });
-            $rline_id = $rline_row->id;
-
-            # self link
-            $rline_hier_rs->create({
-                rline_id => $rline_id,
-                super_rline_id => $rline_id,
-            });
-        }
-        
-        if ( defined $first_parent_rcommit_id ) {
-           $has_descendant->{ $first_parent_rcommit_id } = 1;
-        }
-        
         my $rcommit_row = $rcommit_rs->create({
             rep_id => $rep_id,
             msg => $log_commit->{msg},
@@ -367,22 +303,16 @@ if ( $steps->{commits} ) {
                 epoch => $log_commit->{committer}->{gmtime},
                 time_zone => 'GMT',
             ),
-            super_rline_id => $rline_id,
-            rline_id => $rline_id,
         });
         my $rcommit_id = $rcommit_row->id;
         $rcommits_sha_list->{ $rcommit_sha } = $rcommit_id;
-        $rcommits_rline_id->{ $rcommit_id } = $rline_id;
-
-        # update rline row
-        if ( $insert_new_rline_id ) {
-            $rline_row->update( {
-                first_rcommit_id => $rcommit_id,
-                last_rcommit_id => $rcommit_id,
-            } );
+        $rcommits_time->{ $rcommit_id } = $log_commit->{author}->{gmtime};
+        if ( $num_of_parents <= 1 ) {
+            $rcparents->{ $rcommit_id } = $first_parent_rcommit_id;
+        } else {
+            $rcparents->{ $rcommit_id } = [ $first_parent_rcommit_id ];
         }
-        
-        $rline_last_rcommit_id_update->{ $rline_id }->{last_rcommit_id} = $rcommit_id;
+
 
         if ( $num_of_parents >= 2 ) {
             foreach my $parent_num ( 1..$#$parents ) {
@@ -392,49 +322,24 @@ if ( $steps->{commits} ) {
                     $all_ok = 0; 
                     last LOG_COMMIT;
                 }
-                         
                 my $parent_rcommit_id = $rcommits_sha_list->{ $parent_sha };
-                unless ( exists $rcommits_rline_id->{ $parent_rcommit_id } ) {
-                    push @$err, "Parent rline_id not found in rcommits_rline_id list for rcommit_id '$parent_rcommit_id'.";
-                    $all_ok = 0; 
-                    last LOG_COMMIT;
-                }
 
                 # skip first parent
                 $rcparent_rs->create({
                     child_id => $rcommit_id,
                     parent_id => $parent_rcommit_id,
-                    num => $parent_num+1,
+                    num => $parent_num,
                 });
-
-                my $parent_rline_id = $rcommits_rline_id->{ $parent_rcommit_id };
-                
-                # merge link
-                $rline_hier_rs->create({
-                    rline_id => $parent_rline_id,
-                    super_rline_id => $rline_id, # first parent rline_id
-                });
-
-                $has_descendant->{ $parent_rcommit_id } = 1;
-                $rline_last_rcommit_id_update->{ $parent_rline_id }->{merged} = 1;
-                push @$rline_merged_info, [ $parent_rline_id, $rline_id ];
+                $rcparents->{ $rcommit_id }->[ $parent_num ] = $parent_rcommit_id;
             }
         }
         
         if ( $new_rcommits_num >= 1000 ) {
-            # ToDo - Its too slow to do this each time.
-            my $rc = finish_rcommits_set( $schema, $rline_last_rcommit_id_update, $rline_merged_info );
-            unless ( $rc ) {
-                push @$err, "Method finish_rcommits_set errror: " . get_dbh_errstr($schema);
-                $all_ok = 0; 
-                last LOG_COMMIT;
-            }
             
             print "Commiting transaction.\n" if $ver >= 3;
             $schema->storage->txn_commit;
             print "Already added $commits_added_num commits.\n" if $ver >= 3;
 
-           
             print "Starting new transaction.\n" if $ver >= 3;
             $schema->storage->txn_begin;
 
@@ -445,14 +350,10 @@ if ( $steps->{commits} ) {
         $commits_added_num++;
     } # end foreach
 
-    my $rc = finish_rcommits_set( $schema, $rline_last_rcommit_id_update, $rline_merged_info );
-    unless ( $rc ) {
-        push @$err, "Method finish_rcommits_set errror: " . get_dbh_errstr($schema);
-        $all_ok = 0; 
-    }
     print "Added $commits_added_num new commits.\n" if $ver >= 3;
 
 } # end if
+print Dumper( $rcparents ) if $ver >= 6;
 
 
 sub get_db_refs {
@@ -473,6 +374,110 @@ sub get_db_refs {
 }
 
 
+
+sub update_rref_rcommit {
+    my ( $rref_rcommit_rs, $rcparents, $rcommits_time, $rep_id, $rref_id, $rref_rcommit_id ) = @_;
+    print "Updating rref_rcommits for rref_id $rref_id (rcommit_id $rref_rcommit_id).\n"  if $ver >= 4;
+    
+    my $num = 0;
+    my $new_list = {};
+    my $act_rcommit = $rref_rcommit_id;
+    SEARCH_RREF: while (1) {
+       
+        if ( ref $act_rcommit ) {
+            #print "act_rcommit "; print Dumper( $act_rcommit );
+            
+            # Find max committer_time.
+            my $max_rcommit_id = undef;
+            my $max_ts = 0;
+            foreach my $rcommit_id ( keys %$act_rcommit ) {
+                my $commit_ts = $rcommits_time->{ $rcommit_id };
+                if ( $commit_ts > $max_ts ) {
+                    $max_ts = $commit_ts;
+                    $max_rcommit_id = $rcommit_id;
+                }
+            }
+            $new_list->{ $max_rcommit_id } = 1;
+            delete $act_rcommit->{ $max_rcommit_id };
+
+            if ( ref $rcparents->{ $max_rcommit_id } ) {
+                foreach my $tmp_rcommit_id ( @{$rcparents->{$max_rcommit_id}} ) {
+                    next if exists $new_list->{ $tmp_rcommit_id };
+                    next if exists $act_rcommit->{ $tmp_rcommit_id };
+                    $act_rcommit->{ $tmp_rcommit_id } = 1;
+                }
+            
+            } else {
+                my $tmp_rcommit_id = $rcparents->{ $max_rcommit_id };
+                if (    (defined $tmp_rcommit_id) 
+                     && (not exists $new_list->{$tmp_rcommit_id}) 
+                     && (not exists $act_rcommit->{$tmp_rcommit_id}) 
+                   ) 
+                {
+                    $act_rcommit->{ $tmp_rcommit_id } = 1;
+                }
+            }
+            
+            last SEARCH_RREF unless scalar keys %$act_rcommit;
+
+        } else {
+            last SEARCH_RREF unless defined $act_rcommit;
+            my $rcommit_id = $act_rcommit;
+            
+            $new_list->{ $rcommit_id } = 1;
+            if ( ref $rcparents->{ $rcommit_id } ) {
+                $act_rcommit = {};
+                for my $key ( @{ $rcparents->{$rcommit_id} } ) {
+                    $act_rcommit->{ $key } = 1;
+                }
+            } else {
+                last SEARCH_RREF unless exists $rcparents->{ $rcommit_id };
+                $act_rcommit = $rcparents->{ $rcommit_id };
+            }
+        }
+        $num++;
+        
+        last if $num >= 100;
+        
+       
+    }
+    #print Dumper( $new_list );
+
+    
+    $rref_rcommit_rs->search({
+        'rref_id' => $rref_id,
+        'rcommit_id.rep_id' => $rep_id,
+    }, {
+        join => 'rcommit_id',
+        select => [ 'me.rcommit_id', ],
+        'as' => [ 'rcommit_id', ],
+    });
+    
+    my $act_data = {};
+    while ( my $rref_rcommit_row = $rref_rcommit_rs->next ) {
+        my $rcommit_id = $rref_rcommit_row->get_column('rcommit_id');
+        unless ( exists $new_list->{$rcommit_id} ) {
+            #$rref_rcommit_rs->find( $rref_id, $rcommit_id )->delete;
+            $rref_rcommit_rs->search({
+                rref_id => $rref_id,
+                rcommit_id => $rcommit_id,
+            })->delete;
+        } else {
+            delete $new_list->{ $rcommit_id };
+        }
+    }
+    
+    foreach my $rcommit_id ( keys %$new_list ) {
+        $rref_rcommit_rs->create({
+            rref_id => $rref_id,
+            rcommit_id => $rcommit_id,
+        });
+    }
+    
+    return 1;
+}
+
+
 my $rref_updated_num = 0;
 my $rref_removed_num = 0;
 if ( $all_ok && $steps->{refs} ) {
@@ -480,30 +485,38 @@ if ( $all_ok && $steps->{refs} ) {
     # Hash $db_refs is used to cache DB values. Used keys are removed during processiong
     # repository refs. Then remainning keys are used to deactivate refs in db.
     my $db_refs = get_db_refs( $schema, $rep_id );
-    print Dumper( $db_refs ) if $ver >= 5;
+    print Dumper( $db_refs ) if $ver >= 4;
 
     my $repo_refs = $gitrepo_obj->get_refs( 'remote_ref' );
     my $rcommit_rs = $schema->resultset('rcommit');
     my $rref_rs = $schema->resultset('rref');
+    my $rref_rcommit_rs = $schema->resultset('rref_rcommit');
     REF_LIST: foreach my $ref_key ( keys %$repo_refs ) {
         my $ref_info = $repo_refs->{ $ref_key };
         my $ref_sha = $ref_info->{sha};
         my $ref_fullname = $ref_info->{fullname};
         
-        # Not changed.
+        # rref with this name already exists
         if ( exists $db_refs->{$ref_key} ) {
-            if ( ! $db_refs->{$ref_key}->{active} ) {
+            if ( $db_refs->{$ref_key} eq $ref_sha && $db_refs->{$ref_key}->{active} ) {
+                print "Ref '$ref_key' not changed.\n" if $ver >= 5;
+            
+            } else {
                 my $rref_id = $db_refs->{$ref_key}->{rref_id};
-                my $row = $rref_rs->find( $rref_id );
+                unless ( exists $rcommits_sha_list->{ $ref_sha } ) {
+                    push @$err, "Can't find rcommit_id for sha '$ref_sha' in sha_list.";
+                    $all_ok = 0; 
+                    last REF_LIST;
+                }
                 my $rcommit_id = $rcommits_sha_list->{ $ref_sha };
+                my $row = $rref_rs->find( $rref_id );
                 $row->update({
                     active => 1,
                     rcommit_id => $rcommit_id,
                 });
-                print "Activating a probably also updating '$ref_key'.\n" if $ver >= 3;
+                print "Activating/updating ref '$ref_key'.\n" if $ver >= 4;
                 $rref_updated_num++;
-            } elsif ( $db_refs->{$ref_key} eq $ref_sha ) {
-                print "Ref '$ref_key' not changed.\n" if $ver >= 4;
+                update_rref_rcommit( $rref_rcommit_rs, $rcparents, $rcommits_time, $rep_id, $rref_id, $rcommit_id );
             }
             delete $db_refs->{$ref_key};
             next REF_LIST;
@@ -515,18 +528,18 @@ if ( $all_ok && $steps->{refs} ) {
             last REF_LIST;
         }
         my $rcommit_id = $rcommits_sha_list->{ $ref_sha };
-        $rref_rs->update_or_create(
+        my $new_rref_row = $rref_rs->create(
             {
                 fullname => $ref_key,
                 name => $ref_info->{branch_name},
                 rcommit_id => $rcommit_id,
                 active => 1,
-            }, {
-                fullname => $ref_key,
             }
         );
-        print "Updating '$ref_key'.\n" if $ver >= 3;
+        my $rref_id = $new_rref_row->id;
+        print "Creating '$ref_key'.\n" if $ver >= 4;
         $rref_updated_num++;
+        update_rref_rcommit( $rref_rcommit_rs, $rcparents, $rcommits_time, $rep_id, $rref_id, $rcommit_id );
     }
     print "Updated $rref_updated_num refs.\n" if $ver >= 3;
 
@@ -535,9 +548,12 @@ if ( $all_ok && $steps->{refs} ) {
         next unless $db_refs->{ $ref_key }->{active};
         my $rref_id = $db_refs->{ $ref_key }->{rref_id};
         my $row = $rref_rs->find( $rref_id );
+        print "Deactivating '$ref_key'.\n" if $ver >= 4;
         $row->update({active => 0});
+        $rref_rcommit_rs->search({ rref_id => $rref_id })->delete;
         $rref_removed_num++;
     }
+    
     print "Deactivated $rref_removed_num refs.\n" if $ver >= 3;
  
     $db_refs = get_db_refs( $schema, $rep_id );
@@ -546,7 +562,9 @@ if ( $all_ok && $steps->{refs} ) {
 } # end if
 
 
-if ( $ver >= 2 && ($commits_added_num == 0 && $rref_updated_num == 0 && $rref_removed_num == 0) ) {
+my $some_rref_change = ( $rref_updated_num != 0 || $rref_removed_num != 0 );
+my $some_change = ( $some_rref_change || $commits_added_num != 0 );
+if ( $ver >= 2 && !$some_change ) {
     print "Nothing to do.\n";
 }
 

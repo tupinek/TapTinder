@@ -467,7 +467,6 @@ sub get_new_job {
         job_id
         wcj_priority
         wcr_priority
-        super_rline_id
         jobp_id
     / ];
     my $sql = "
@@ -478,7 +477,6 @@ sub get_new_job {
                    wcj.job_id,
                    wcj.priority as wcj_priority,
                    wcr.priority as wcr_priority,
-                   rc.super_rline_id,
                    jp.jobp_id
               from wconf_session wcs
               join wconf_job wcj
@@ -502,7 +500,6 @@ sub get_new_job {
                    wcj.job_id,
                    wcj.priority as wcj_priority,
                    wcr.priority as wcr_priority,
-                   rc.super_rline_id,
                    jp.jobp_id
               from wconf_session as wcs
               join wconf_job as wcj
@@ -527,49 +524,89 @@ sub get_new_job {
     my $ba = [ $machine_id, $machine_id ];
     my $sr_job_data = $self->edbi_selectall_arrayref_slice( $c, $cols, $sql, $ba );
     print STDERR Data::Dumper::Dumper( $sr_job_data );
-
+    
     my $job_id = undef;
     my $rc_data = undef;
-    my $srline_done_list = {};
+    my $rref_done_list = {};
+    $cols = [
+        'rcommit_id',
+    ];
+
     foreach my $row ( @$sr_job_data ) {
-        my $super_rline_id = $row->{super_rline_id};
+        my $rref_id = $row->{rref_id};
+        my $rep_id = $row->{rep_id};
         $job_id = $row->{job_id};
         
-        my $done_key = $job_id . '-' . $super_rline_id;
-        next if exists $srline_done_list->{ $done_key };
-        $srline_done_list->{ $done_key } = 1;
+        my $done_key = $job_id . '-' . $rep_id;
         
-        $cols = [
-            'rcommit_id',
-        ];
-    
-        $sql = "
-          from ( 
-            select rc.rcommit_id
-              from rcommit rc
-              join jobp jp
-                on jp.jobp_id = ?
-             where rc.super_rline_id = ?
-               and not exists (
-                    select 1
-                      from msession ms,
-                           msproc msp,
-                           msjob msj,
-                           msjobp msjp,
-                           jobp jp
-                     where ms.machine_id = ?
-                       and msp.msession_id = ms.msession_id
-                       and msj.msproc_id = msp.msproc_id
-                       and msj.job_id = ?
-                       and msjp.msjob_id = msj.msjob_id
-                       and msjp.rcommit_id = rc.rcommit_id
-              )
-              and ( jp.max_age is null or DATE_SUB(CURDATE(), INTERVAL jp.max_age HOUR) <= rc.committer_time )
-            order by rc.committer_time desc
-            limit 1
-          ) al
-        ";
-        $ba = [ $row->{jobp_id}, $super_rline_id, $machine_id, $job_id ];
+        if ( $rref_id ) {
+            $done_key .= '-' . $rref_id;
+
+            next if exists $rref_done_list->{ $done_key };
+            $rref_done_list->{ $done_key } = 1;
+            
+            $sql = "
+              from ( 
+                select rc.rcommit_id
+                  from rref_rcommit rrc
+                  join rcommit rc
+                    on rc.rcommit_id = rrc.rcommit_id
+                  join jobp jp
+                    on jp.jobp_id = ?
+                 where rrc.rref_id = ?
+                   and not exists (
+                        select 1
+                          from msession ms,
+                               msproc msp,
+                               msjob msj,
+                               msjobp msjp,
+                               jobp jp
+                         where ms.machine_id = ?
+                           and msp.msession_id = ms.msession_id
+                           and msj.msproc_id = msp.msproc_id
+                           and msj.job_id = ?
+                           and msjp.msjob_id = msj.msjob_id
+                           and msjp.rcommit_id = rc.rcommit_id
+                  )
+                  and ( jp.max_age is null or DATE_SUB(CURDATE(), INTERVAL jp.max_age HOUR) <= rc.committer_time )
+                order by rc.committer_time desc
+                limit 1
+              ) al
+            ";
+            $ba = [ $row->{jobp_id}, $rref_id, $machine_id, $job_id ];
+
+        } else {
+            next if exists $rref_done_list->{ $done_key };
+            $rref_done_list->{ $done_key } = 1;
+
+            $sql = "
+              from ( 
+                select rc.rcommit_id
+                  from rcommit rc
+                  join jobp jp
+                    on jp.jobp_id = ?
+                 where rc.rep_id = ?
+                   and not exists (
+                        select 1
+                          from msession ms,
+                               msproc msp,
+                               msjob msj,
+                               msjobp msjp,
+                               jobp jp
+                         where ms.machine_id = ?
+                           and msp.msession_id = ms.msession_id
+                           and msj.msproc_id = msp.msproc_id
+                           and msj.job_id = ?
+                           and msjp.msjob_id = msj.msjob_id
+                           and msjp.rcommit_id = rc.rcommit_id
+                  )
+                  and ( jp.max_age is null or DATE_SUB(CURDATE(), INTERVAL jp.max_age HOUR) <= rc.committer_time )
+                order by rc.committer_time desc
+                limit 1
+              ) al
+            ";
+            $ba = [ $row->{jobp_id}, $rep_id, $machine_id, $job_id ];
+        }
 
         $rc_data = $self->edbi_selectall_arrayref_slice( $c, $cols, $sql, $ba );
         if ( scalar @$rc_data ) {

@@ -216,12 +216,6 @@ __PACKAGE__->cwm_conf( {
 } );
 
 
-package TapTinder::DB::Schema::rline;
-__PACKAGE__->cwm_conf( {
-     max_deep => 1,
-} );
-
-
 package TapTinder::DB::Schema::rauthor;
 __PACKAGE__->cwm_conf( {
     col_type => {
@@ -232,6 +226,18 @@ __PACKAGE__->cwm_conf( {
 
 
 package TapTinder::DB::Schema::rcparent;
+__PACKAGE__->cwm_conf( {
+     max_deep => 1,
+} );
+
+
+package TapTinder::DB::Schema::rref_rcommit;
+# ToDo SQL::Translator...
+__PACKAGE__->set_primary_key('rref_id', 'rcommit_id');
+__PACKAGE__->add_unique_constraint(
+    'primary' => [ qw/ rref_id rcommit_id / ],
+);
+
 __PACKAGE__->cwm_conf( {
      max_deep => 1,
 } );

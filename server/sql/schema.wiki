@@ -124,18 +124,13 @@ CREATE TABLE rcommit (
     author_time     DATETIME NOT NULL,
     committer_id    INT UNSIGNED NOT NULL,
     committer_time  DATETIME NOT NULL,
-    rline_id        INT UNSIGNED NOT NULL,
-    super_rline_id  INT UNSIGNED NOT NULL,
     msg             TEXT,
-    INDEX i_super_rline_id_commiter_time (super_rline_id, committer_time),
     CONSTRAINT fk_rcommit_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
     CONSTRAINT fk_rcommit_sha_id FOREIGN KEY (sha_id) REFERENCES sha (sha_id),
     CONSTRAINT fk_rcommit_tree_id FOREIGN KEY (tree_id) REFERENCES sha (sha_id),
     CONSTRAINT fk_rcommit_parent_id FOREIGN KEY (parent_id) REFERENCES rcommit (rcommit_id),
     CONSTRAINT fk_rcommit_author_id FOREIGN KEY (author_id) REFERENCES rauthor (rauthor_id),
-    CONSTRAINT fk_rcommit_committer_id FOREIGN KEY (committer_id) REFERENCES rauthor (rauthor_id),
-    CONSTRAINT fk_rcparent_rline_id FOREIGN KEY (rline_id) REFERENCES rline (rline_id),
-    CONSTRAINT fk_rcparent_super_rline_id FOREIGN KEY (super_rline_id) REFERENCES rline (rline_id)
+    CONSTRAINT fk_rcommit_committer_id FOREIGN KEY (committer_id) REFERENCES rauthor (rauthor_id)
 ) TYPE=InnoDB COMMENT='Commit info. Tag: project.';
 </source>
 
@@ -149,30 +144,6 @@ CREATE TABLE rcparent (
     CONSTRAINT fk_rcparent_child_id FOREIGN KEY (child_id) REFERENCES rcommit (rcommit_id),
     CONSTRAINT fk_rcparent_parent_id FOREIGN KEY (parent_id) REFERENCES rcommit (rcommit_id)
 ) TYPE=InnoDB COMMENT='Other parents of merge commits. Tag: project.';
-</source>
-
-==== Table rline ====
-<source lang=sql>
-CREATE TABLE rline (
-    rline_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    rline_num           INT UNSIGNED NOT NULL,
-    first_rcommit_id    INT UNSIGNED DEFAULT NULL,
-    last_rcommit_id     INT UNSIGNED DEFAULT NULL,
-    merged              BOOLEAN NOT NULL DEFAULT 0,
-    CONSTRAINT fk_rline_first_rcommit_id FOREIGN KEY (first_rcommit_id) REFERENCES rcommit (rcommit_id),
-    CONSTRAINT fk_rline_last_rcommit_id FOREIGN KEY (last_rcommit_id) REFERENCES rcommit (rcommit_id)
-) TYPE=InnoDB COMMENT='Commit lines. Tag: project.';
-</source>
-
-==== Table rline_hier ====
-<source lang=sql>
-CREATE TABLE rline_hier (
-    rline_hier_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    rline_id        INT UNSIGNED NOT NULL,
-    super_rline_id  INT UNSIGNED NOT NULL,
-    CONSTRAINT fk_rline_hier_rline_id FOREIGN KEY (rline_id) REFERENCES rline (rline_id),
-    CONSTRAINT fk_rline_hier_super_rline_id FOREIGN KEY (super_rline_id) REFERENCES rline (rline_id)
-) TYPE=InnoDB COMMENT='Hierarchy of reposiotory history lines. Tag: project.';
 </source>
 
 ==== Table rref ====
@@ -191,6 +162,18 @@ CREATE TABLE rref (
  
  ToDo
    add 'rtag_id' and 'rtag' table
+
+==== Table rref_rcommit ====
+<source lang=sql>
+CREATE TABLE rref_rcommit (
+    rref_id         INT UNSIGNED NOT NULL,
+    rcommit_id      INT UNSIGNED NOT NULL,
+    INDEX i_rref_id (rref_id),
+    UNIQUE KEY primary (rref_id, rcommit_id),
+    CONSTRAINT fk_rref_rcommit_rref_id FOREIGN KEY (rref_id) REFERENCES rref (rref_id),
+    CONSTRAINT fk_rref_rcommit_rcommit_id FOREIGN KEY (rcommit_id) REFERENCES rcommit (rcommit_id)
+) TYPE=InnoDB COMMENT='Repository referencies to rcommits mapping. Cache for last 500 rcommit in each rref. Tag: project.';
+</source>
    
 ==== Table rfile ====
 <source lang=sql>

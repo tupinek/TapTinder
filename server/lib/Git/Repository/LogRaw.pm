@@ -108,7 +108,7 @@ sub parse_person_log_line_part {
 sub get_log {
     my ( $self, $ssh_skip_list ) = @_;
     
-    my $cmd = $self->{repo}->command( 'log' => '--date-order', '--reverse', '--all', '--pretty=raw', '--raw', '-c', '-t', '--root', '--abbrev=40', '--raw' );
+    my $cmd = $self->{repo}->command( 'log' => '--date-order', '--reverse', '--all', '--pretty=raw', '--raw', '-c', '-t', '--root', '--abbrev=40' );
     print "LogRaw cmdline: '" . join(' ', $cmd->cmdline() ) . "'\n" if $self->{ver} >= 4;
 
     

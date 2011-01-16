@@ -35,8 +35,8 @@ sub index : Path  {
     my $project_rs = $c->model('WebDB::rref')->search( $search,
         {
             join => { 'rcommit_id' => { 'rep_id' => 'project_id', }, },
-            'select' => [qw/ me.rref_id me.name   rcommit_id.rcommit_id rcommit_id.super_rline_id rep_id.rep_id rep_id.github_url project_id.project_id project_id.name project_id.url /],
-            'as' =>     [qw/ rref_id    rref_name rcommit_id            rline_id                  rep_id        github_url        project_id            project_url    /],
+            'select' => [qw/ me.rref_id me.name   rcommit_id.rcommit_id rep_id.rep_id rep_id.github_url project_id.project_id project_id.name project_id.url /],
+            'as' =>     [qw/ rref_id    rref_name rcommit_id            rep_id        github_url        project_id            project_url    /],
         }
     );
     my $project_row = $project_rs->next;
@@ -46,7 +46,7 @@ sub index : Path  {
     $c->stash->{project_info} = $project_info;
     $self->dumper( $c, $project_info );
 
-    my $rline_id = $project_info->{rline_id};
+    my $rref_id = $project_info->{rref_id};
 
 
     my $jobp_id = undef;
@@ -60,22 +60,22 @@ sub index : Path  {
         $jobp_id = $jobp_row->get_column('jobp_id');
     }
     $self->dadd( $c, "jobp_id: $jobp_id\n" );
-    $self->dadd( $c, "rline_id: $rline_id\n" );
+    $self->dadd( $c, "rref_id: $rref_id\n" );
 
 
-    my $rs_rcommits = $c->model('WebDB::rcommit')->search( {
-        'me.super_rline_id' => $rline_id,
+    my $rs_rcommits = $c->model('WebDB::rref_rcommit')->search( {
+        'me.rref_id' => $rref_id,
     }, {
         select => [ qw/
-            me.rcommit_id me.committer_time me.msg sha_id.sha
-            author_id.rauthor_id author_id.rep_login sha
+            me.rcommit_id rcommit_id.committer_time rcommit_id.msg sha_id.sha
+            author_id.rauthor_id author_id.rep_login
         / ],
         as => [ qw/
             rcommit_id date msg sha
             rep_author_id rep_login
         / ],
-        join => [ 'author_id', 'sha_id' ],
-        order_by => [ 'me.committer_time DESC' ],
+        join => { 'rcommit_id' => [ 'author_id', 'sha_id' ], },
+        order_by => [ 'rcommit_id.committer_time DESC' ],
         page => 1,
         rows => 100,
         #offset => 0,
@@ -92,7 +92,7 @@ sub index : Path  {
     
     my $commit_time_from = $rcommits[-1]->{date};
     my $commit_time_to = $rcommits[0]->{date};
-    #$c->log( "Commit time from $commit_time_from to $commit_time_to.\n" );
+    $self->dadd( $c, "Commit time from $commit_time_from to $commit_time_to.\n" );
 
     my $cols = [ qw/ 
         machine_id
@@ -109,7 +109,8 @@ sub index : Path  {
               mjpc.status_id,
               cs.name as status_name,
               concat(fsp.web_path, '/', fsf.name) as web_fpath
-         from rcommit rc,
+         from rref_rcommit rrc,
+              rcommit rc,
               jobp jp,
               jobp_cmd jpc,
               msjobp mjp,
@@ -120,7 +121,8 @@ sub index : Path  {
               msession ms,
               fsfile fsf,
               fspath fsp
-        where rc.super_rline_id = ?
+        where rrc.rref_id = ?
+          and rc.rcommit_id = rrc.rcommit_id
           and rc.committer_time >= str_to_date(?,'%Y-%m-%d %H:%i:%s')
           and rc.committer_time <= str_to_date(?,'%Y-%m-%d %H:%i:%s')
           and jp.jobp_id = ? -- only this job
@@ -140,7 +142,7 @@ sub index : Path  {
    "; # end sql
 
     my $ba = [ 
-        $rline_id,  # rlh.super_rline_id
+        $rref_id,
         $commit_time_from, 
         $commit_time_to,
         $jobp_id, # jp.jobp_id

@@ -1,5 +1,33 @@
 
 
+package TapTinder::DB::Schema::rref_rcommit;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('rref_rcommit');
+
+
+__PACKAGE__->add_columns(
+    'rref_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'rref_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'rcommit_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'rcommit_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+);
+
+
 package TapTinder::DB::Schema::msproc_abort_reason;
 use base 'TapTinder::DB::DBIxClassBase';
 
@@ -518,24 +546,6 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => 0
     },
-    'rline_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'rline_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'super_rline_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'super_rline_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
     'msg' => {
       'data_type' => 'TEXT',
       'is_auto_increment' => 0,
@@ -903,44 +913,6 @@ __PACKAGE__->add_columns(
     },
 );
 __PACKAGE__->set_primary_key('msjob_id');
-
-
-package TapTinder::DB::Schema::rline_hier;
-use base 'TapTinder::DB::DBIxClassBase';
-
-__PACKAGE__->table('rline_hier');
-
-
-__PACKAGE__->add_columns(
-    'rline_hier_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 1,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'rline_hier_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'rline_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'rline_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'super_rline_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 1,
-      'name' => 'super_rline_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-);
-__PACKAGE__->set_primary_key('rline_hier_id');
 
 
 package TapTinder::DB::Schema::fsfile_type;
@@ -2636,62 +2608,6 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('brun_conf_id');
 
 
-package TapTinder::DB::Schema::rline;
-use base 'TapTinder::DB::DBIxClassBase';
-
-__PACKAGE__->table('rline');
-
-
-__PACKAGE__->add_columns(
-    'rline_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 1,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'rline_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'rline_num' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'rline_num',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'first_rcommit_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 1,
-      'name' => 'first_rcommit_id',
-      'is_nullable' => 1,
-      'size' => '11'
-    },
-    'last_rcommit_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 1,
-      'name' => 'last_rcommit_id',
-      'is_nullable' => 1,
-      'size' => '11'
-    },
-    'merged' => {
-      'data_type' => 'BOOLEAN',
-      'is_auto_increment' => 0,
-      'default_value' => '0',
-      'is_foreign_key' => 0,
-      'name' => 'merged',
-      'is_nullable' => 0,
-      'size' => 0
-    },
-);
-__PACKAGE__->set_primary_key('rline_id');
-
-
 package TapTinder::DB::Schema::mswatch_log;
 use base 'TapTinder::DB::DBIxClassBase';
 
@@ -3229,6 +3145,13 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key('rep_id');
 
+package TapTinder::DB::Schema::rref_rcommit;
+
+__PACKAGE__->belongs_to('rref_id','TapTinder::DB::Schema::rref','rref_id');
+
+__PACKAGE__->belongs_to('rcommit_id','TapTinder::DB::Schema::rcommit','rcommit_id');
+
+
 package TapTinder::DB::Schema::msproc_abort_reason;
 
 __PACKAGE__->has_many('get_msproc', 'TapTinder::DB::Schema::msproc', 'abort_reason_id');
@@ -3279,6 +3202,7 @@ package TapTinder::DB::Schema::rref;
 
 __PACKAGE__->belongs_to('rcommit_id','TapTinder::DB::Schema::rcommit','rcommit_id');
 
+__PACKAGE__->has_many('get_rref_rcommit', 'TapTinder::DB::Schema::rref_rcommit', 'rref_id');
 __PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'rref_id');
 __PACKAGE__->has_many('get_wconf_rref', 'TapTinder::DB::Schema::wconf_rref', 'rref_id');
 
@@ -3303,15 +3227,10 @@ __PACKAGE__->belongs_to('author_id','TapTinder::DB::Schema::rauthor','author_id'
 
 __PACKAGE__->belongs_to('committer_id','TapTinder::DB::Schema::rauthor','committer_id');
 
-__PACKAGE__->belongs_to('rline_id','TapTinder::DB::Schema::rline','rline_id');
-
-__PACKAGE__->belongs_to('super_rline_id','TapTinder::DB::Schema::rline','super_rline_id');
-
 __PACKAGE__->has_many('get_rcparent', 'TapTinder::DB::Schema::rcparent', 'child_id');
 __PACKAGE__->has_many('get_rcparent_parent_id', 'TapTinder::DB::Schema::rcparent', 'parent_id');
-__PACKAGE__->has_many('get_rline', 'TapTinder::DB::Schema::rline', 'first_rcommit_id');
-__PACKAGE__->has_many('get_rline_last_rcommit_id', 'TapTinder::DB::Schema::rline', 'last_rcommit_id');
 __PACKAGE__->has_many('get_rref', 'TapTinder::DB::Schema::rref', 'rcommit_id');
+__PACKAGE__->has_many('get_rref_rcommit', 'TapTinder::DB::Schema::rref_rcommit', 'rcommit_id');
 __PACKAGE__->has_many('get_rfile', 'TapTinder::DB::Schema::rfile', 'rcommit_id');
 __PACKAGE__->has_many('get_msjobp', 'TapTinder::DB::Schema::msjobp', 'rcommit_id');
 __PACKAGE__->has_many('get_ibot_log', 'TapTinder::DB::Schema::ibot_log', 'rcommit_id');
@@ -3358,13 +3277,6 @@ __PACKAGE__->has_many('get_msjobp', 'TapTinder::DB::Schema::msjobp', 'msjob_id')
 package TapTinder::DB::Schema::msabort_reason;
 
 __PACKAGE__->has_many('get_msession', 'TapTinder::DB::Schema::msession', 'abort_reason_id');
-
-package TapTinder::DB::Schema::rline_hier;
-
-__PACKAGE__->belongs_to('rline_id','TapTinder::DB::Schema::rline','rline_id');
-
-__PACKAGE__->belongs_to('super_rline_id','TapTinder::DB::Schema::rline','super_rline_id');
-
 
 package TapTinder::DB::Schema::fsfile_type;
 
@@ -3583,17 +3495,6 @@ __PACKAGE__->belongs_to('alias_conf_id','TapTinder::DB::Schema::brun_conf','alia
 __PACKAGE__->has_many('get_brun_conf', 'TapTinder::DB::Schema::brun_conf', 'alias_conf_id');
 __PACKAGE__->has_many('get_brun', 'TapTinder::DB::Schema::brun', 'conf_id');
 
-package TapTinder::DB::Schema::rline;
-
-__PACKAGE__->has_many('get_rcommit', 'TapTinder::DB::Schema::rcommit', 'rline_id');
-__PACKAGE__->has_many('get_rcommit_super_rline_id', 'TapTinder::DB::Schema::rcommit', 'super_rline_id');
-__PACKAGE__->belongs_to('first_rcommit_id','TapTinder::DB::Schema::rcommit','first_rcommit_id',{join_type => 'left'});
-
-__PACKAGE__->belongs_to('last_rcommit_id','TapTinder::DB::Schema::rcommit','last_rcommit_id',{join_type => 'left'});
-
-__PACKAGE__->has_many('get_rline_hier', 'TapTinder::DB::Schema::rline_hier', 'rline_id');
-__PACKAGE__->has_many('get_rline_hier_super_rline_id', 'TapTinder::DB::Schema::rline_hier', 'super_rline_id');
-
 package TapTinder::DB::Schema::mswatch_log;
 
 __PACKAGE__->belongs_to('msession_id','TapTinder::DB::Schema::msession','msession_id');
@@ -3668,6 +3569,8 @@ use base 'DBIx::Class::Schema';
 use strict;
 use warnings;
 
+__PACKAGE__->register_class('rref_rcommit', 'TapTinder::DB::Schema::rref_rcommit');
+
 __PACKAGE__->register_class('msproc_abort_reason', 'TapTinder::DB::Schema::msproc_abort_reason');
 
 __PACKAGE__->register_class('wui_build', 'TapTinder::DB::Schema::wui_build');
@@ -3699,8 +3602,6 @@ __PACKAGE__->register_class('wconf_rref', 'TapTinder::DB::Schema::wconf_rref');
 __PACKAGE__->register_class('msabort_reason', 'TapTinder::DB::Schema::msabort_reason');
 
 __PACKAGE__->register_class('msjob', 'TapTinder::DB::Schema::msjob');
-
-__PACKAGE__->register_class('rline_hier', 'TapTinder::DB::Schema::rline_hier');
 
 __PACKAGE__->register_class('fsfile_type', 'TapTinder::DB::Schema::fsfile_type');
 
@@ -3765,8 +3666,6 @@ __PACKAGE__->register_class('ttest', 'TapTinder::DB::Schema::ttest');
 __PACKAGE__->register_class('tdiag_msg', 'TapTinder::DB::Schema::tdiag_msg');
 
 __PACKAGE__->register_class('brun_conf', 'TapTinder::DB::Schema::brun_conf');
-
-__PACKAGE__->register_class('rline', 'TapTinder::DB::Schema::rline');
 
 __PACKAGE__->register_class('mswatch_log', 'TapTinder::DB::Schema::mswatch_log');
 
