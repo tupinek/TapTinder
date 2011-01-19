@@ -79,15 +79,15 @@ return sub {
     # table: job
     $schema->resultset('job')->delete_all() if $delete_all;
     $schema->resultset('job')->populate([
-        [ qw/ job_id client_min_ver priority name descr / ],
-        [ 1, 257, 1, 'tr1 A',       undef    ],
-        [ 2, 257, 2, 'tr1, tr2 A',  undef    ],
-        [ 3, 257, 3, 'tr1, tr3 A',  undef    ],
-        [ 4, 257, 4, 'tr1 B',       undef    ],
-        [ 5, 257, 1, 'tr2',         undef    ],
-        [ 6, 257, 1, 'tr3',         undef    ],
-        [ 7, 257, 1, 'Parrot',      undef    ],
-        [ 8, 257, 1, 'Rakudo',      undef    ],
+        [ qw/ job_id  client_min_ver  priority           name   descr / ],
+        [          1,            257,        1,       'tr1 A',  undef    ],
+        [          2,            257,        2,  'tr1, tr2 A',  undef    ],
+        [          3,            257,        3,  'tr1, tr3 A',  undef    ],
+        [          4,            257,        4,       'tr1 B',  undef    ],
+        [          5,            257,        1,         'tr2',  undef    ],
+        [          6,            257,        1,         'tr3',  undef    ],
+        [          7,            257,        1,      'Parrot',  undef    ],
+        [          8,            257,        1,      'Rakudo',  undef    ],
     ]);
 
  
@@ -203,17 +203,19 @@ return sub {
     $schema->resultset('wconf_job')->populate([
         [ qw/ wconf_job_id  wconf_session_id  rep_id               rref_id  job_id  priority  / ],
         [                1,                1,      1,  $master_tr1_rref_id,      1,        1    ], # tapir1
-        [                2,                1,      1,  $master_tr1_rref_id,      2,        2    ], # tapir1
-        [                3,                1,      1,  $master_tr1_rref_id,      3,        3    ], # tapir1
+       #[                2,                1,      1,  $master_tr1_rref_id,      2,        2    ], # tapir1 - ToDo #issue/17
+       #[                3,                1,      1,  $master_tr1_rref_id,      3,        3    ], # tapir1 - ToDo #issue/17
         [                4,                1,      1,  $master_tr1_rref_id,      4,        4    ], # tapir1
 
         [                5,                2,      3,                undef,      6,        1    ], # tapir2
+        
         [                6,                2,      2,  $master_tr2_rref_id,      5,        2    ], # tapir2
         [                7,                2,      2,                undef,      5,        3    ], # tapir2
         [                8,                2,      4,                undef,      7,        4    ], # tapir2
         [                9,                2,      5,                undef,      8,        5    ], # tapir2
         [               10,                2,      1,  $master_tr1_rref_id,      1,        6    ], # tapir2
-        [               11,                2,      1,                undef,      2,        7    ], # tapir2
+       
+       #[               11,                2,      1,                undef,      2,        7    ], # tapir2 - ToDo #issue/17
         [               12,                2,      1,                undef,      1,        8    ], # tapir2
 
         [               13,                3,      3,  $master_tr3_rref_id,      6,        1    ], # pc-jurosz2

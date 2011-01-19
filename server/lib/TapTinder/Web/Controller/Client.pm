@@ -915,7 +915,7 @@ sub cmd_cget {
                 my $rcommit_id = $self->get_jobp_master_ref_rcommit_id( $c, $data, $jobp_id );
                 return $self->txn_end( $c, $data, 0 ) unless $rcommit_id;
                 
-                # ToDo - get not tested rcommit_id
+                # ToDo #issue/17 - get not tested rcommit_id
                 return $self->txn_end( $c, $data, 0 );
 
                 $msjobp_id = $self->create_msjobp( $c, $data, $msjob_id, $jobp_id, $rcommit_id );
