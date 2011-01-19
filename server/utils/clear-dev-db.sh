@@ -85,7 +85,7 @@ if [ "$1" = "c" ]; then
         echo ""
     fi
 
-    echo "Executing utils/deploy --drop --deploy --data=dev"
+    echo "Executing utils/deploy.pl --drop --deploy --data=dev"
     perl ./utils/deploy.pl --drop --deploy --data=dev
     echo ""
 
