@@ -1,10 +1,19 @@
 use strict;
 use warnings;
 use utf8;
+use FindBin;
+use File::Spec;
+use Cwd 'abs_path';
+
 
 return sub {
     my ( $schema, $delete_all, $data ) = @_;
     
+    my $server_data_dir = abs_path( 
+        File::Spec->catdir($FindBin::Bin,'..','server-data')
+    );
+    
+
     # table: user
     $schema->resultset('user')->delete_all() if $delete_all;
     $schema->resultset('user')->populate([
@@ -59,8 +68,8 @@ return sub {
     $schema->resultset('fspath')->delete_all() if $delete_all;
     $schema->resultset('fspath')->populate([
         [ qw/ fspath_id path web_path public created deleted name descr / ],
-        [ 1, '/home/jurosz/dev-tt/server-data/cmdout', 'file/cmdout', 1, \'NOW()', undef, 'dir-cmdout', 'dir for command outputs'  ],
-        [ 2, '/home/jurosz/dev-tt/server-data/patch',  'file/patch',  1, \'NOW()', undef, 'dir-patch',  'dir for patches'          ],
+        [ 1, $server_data_dir.'/cmdout', 'file/cmdout', 1, \'NOW()', undef, 'dir-cmdout', 'dir for command outputs'  ],
+        [ 2, $server_data_dir.'/patch',  'file/patch',  1, \'NOW()', undef, 'dir-patch',  'dir for patches'          ],
     ]);
 
  
