@@ -10,7 +10,7 @@ return sub {
     my ( $schema, $delete_all, $data ) = @_;
     
     my $server_data_dir = abs_path( 
-        File::Spec->catdir($FindBin::Bin,'..','server-data')
+        File::Spec->catdir( $FindBin::Bin, '..', '..', 'server-data' )
     );
     
 
