@@ -146,7 +146,7 @@ unless ( -d $work_tree ) {
     );
     if ( $steps->{pull} ) {
         print "Running 'git pull'.\n" if $ver >= 2;
-        $repo->command( 'pull' );
+        $repo->command( 'pull' => '--all' );
     }
 }
 
@@ -443,18 +443,17 @@ sub update_rref_rcommit {
     }
     #print Dumper( $new_list );
 
-    
-    $rref_rcommit_rs->search({
+    my $this_rref_rcommits_rs = $rref_rcommit_rs->search({
         'rref_id' => $rref_id,
         'rcommit_id.rep_id' => $rep_id,
     }, {
-        join => 'rcommit_id',
-        select => [ 'me.rcommit_id', ],
+        'join' => 'rcommit_id',
+        'select' => [ 'me.rcommit_id', ],
         'as' => [ 'rcommit_id', ],
     });
     
     my $act_data = {};
-    while ( my $rref_rcommit_row = $rref_rcommit_rs->next ) {
+    while ( my $rref_rcommit_row = $this_rref_rcommits_rs->next ) {
         my $rcommit_id = $rref_rcommit_row->get_column('rcommit_id');
         unless ( exists $new_list->{$rcommit_id} ) {
             #$rref_rcommit_rs->find( $rref_id, $rcommit_id )->delete;
@@ -466,6 +465,7 @@ sub update_rref_rcommit {
             delete $new_list->{ $rcommit_id };
         }
     }
+    #print Dumper( $new_list );
     
     foreach my $rcommit_id ( keys %$new_list ) {
         $rref_rcommit_rs->create({
