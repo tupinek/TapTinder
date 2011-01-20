@@ -332,22 +332,14 @@ sub get_refs {
                     sha_type => $sha_type,
                     prefix => $name_prefix,
                 };
-                if ( $name_prefix eq 'refs/remotes' ) {
-                    if ( my ( $repo_alias, $branch_name ) = $name_base =~ /^([^\/]+)\/(.*)$/ ) {
-                        $ref_info->{type} = 'remote_ref';
-                        $ref_info->{repo_alias} = $repo_alias;
-                        $ref_info->{branch_name} = $branch_name;
-                    } else {
-                        $err_msg = "Can't split refs/remote to repo_alias and branch_name";
-                        last PARSE_REF;
-                    }
+                if ( $name_prefix eq 'refs/heads' ) {
+                    $ref_info->{type} = 'remote_ref';
+                    $ref_info->{repo_alias} = 'origin';
+                    $ref_info->{branch_name} = $name_base;
+
                 } elsif ( $name_prefix eq 'refs/tags' ) {
                     $ref_info->{type} = 'tag';
                     $ref_info->{tag_name} = $name_base;
-                    
-                } elsif ( $name_prefix eq 'refs/heads' ) {
-                    $ref_info->{type} = 'local_ref';
-                    $ref_info->{ref_name} = $name_base;
 
                 } else {
                     $ref_info->{type} = 'unknown';

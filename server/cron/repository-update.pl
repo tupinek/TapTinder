@@ -494,9 +494,11 @@ if ( $all_ok && $steps->{refs} ) {
     # Hash $db_refs is used to cache DB values. Used keys are removed during processiong
     # repository refs. Then remainning keys are used to deactivate refs in db.
     my $db_refs = get_db_refs( $schema, $rep_id );
-    print Dumper( $db_refs ) if $ver >= 4;
+    print Dumper( $db_refs ) if $ver >= 5;
 
     my $repo_refs = $gitrepo_obj->get_refs( 'remote_ref' );
+    print Dumper( $repo_refs ) if $ver >= 5;
+
     my $rcommit_rs = $schema->resultset('rcommit');
     my $rref_rs = $schema->resultset('rref');
     my $rref_rcommit_rs = $schema->resultset('rref_rcommit');
