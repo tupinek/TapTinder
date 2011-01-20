@@ -23,9 +23,9 @@ use DateTime;
 use Data::Dumper;
 use File::Spec::Functions;
 use Devel::StackTrace;
-use Git::Repository;
 
 use lib "$FindBin::Bin/../lib";
+use Git::Repository;
 use Git::Repository::LogRaw;
 use TapTinder::DB;
 use TapTinder::Utils::Conf qw(load_conf_multi);
@@ -135,18 +135,27 @@ if ( -e $state_fn ) {
 my $repo = undef;
 unless ( -d $work_tree ) {
     print "Cloning '$repo_url' to '$work_tree'.\n" if $ver >= 3;
+    mkdir( $work_tree) || croak "Can't create '$work_tree' direcotry: $!\n";
     $repo = Git::Repository->create( 
-        clone => $repo_url => $work_tree,
+        clone => '--mirror', $repo_url, $work_tree
     );
 
 } else {
     print "Initializing from '$work_tree'.\n" if $ver >= 3;
     $repo = Git::Repository->new( 
-        work_tree => $work_tree,
+        git_dir => $work_tree,
     );
     if ( $steps->{pull} ) {
         print "Running 'git pull'.\n" if $ver >= 2;
-        $repo->command( 'pull' => '--all' );
+        my $cmd = $repo->command( 'pull' => '--all' );
+        $cmd = $repo->command( 'remote' => 'update' );
+
+        #print join( ' ', $cmd->cmdline() ) . "\n";
+        #my $stdout = $cmd->stdout();
+        #print $_ while (<$stdout>);
+        #my $stderr = $cmd->stderr();
+        #print $_ while (<$stderr>);
+        #$cmd->close();
     }
 }
 
