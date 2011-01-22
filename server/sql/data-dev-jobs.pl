@@ -192,9 +192,9 @@ return sub {
     $schema->resultset('wconf_session')->delete_all() if $delete_all;
     $schema->resultset('wconf_session')->populate([
         [ qw/ wconf_session_id machine_id processes_num / ],
-        [ 1, 6, 1  ], # tapir1
-        [ 2, 7, 3  ], # tapir2
-        [ 3, 5, 2  ], # pc-jurosz2
+        [ 1, 1, 1  ], # tapir1
+        [ 2, 2, 3  ], # tapir2
+        [ 3, 3, 2  ], # pc-jurosz2
     ]);
 
 

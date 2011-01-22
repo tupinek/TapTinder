@@ -22,7 +22,7 @@ use TapTinder::Utils::DB qw(get_connected_schema);
 my $help = 0;
 my $ver = 2;
 my $debug = undef;
-my $db_type = 'stable';
+my $db_type = 'prod';
 my $ibot_id = undef;
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
@@ -118,7 +118,7 @@ Example:
 
  Options:
    --help
-   --db_type .. Possibilities: 'stable', 'dev', 'copy'.
+   --db_type .. Possibilities: 'prod', 'dev', 'copy'.
    --ibot_id .. ID to ibot table.
    --ver .. Verbosity level.
    --debug .. Debug.

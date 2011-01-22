@@ -9,21 +9,21 @@ echo "Before you start:"
 echo "* Stop all repository update loops."
 echo ""
 echo "This will be stoped automaticaly:"
-echo "* httpd service"
+echo "* FastCGI server"
 echo ""
 echo "Press <Enter> to continue or <Ctrl+C> to cancel ..."
 read
 
-echo "Stoping httpd service:"
-service httpd stop
+echo "Stoping FastCGI processes"
+utils/start-server.sh prod f stop
 echo ""
 
 echo "Running utils/all-sql.sh"
 ./utils/all-sql.sh $1
 echo ""
 
-echo "Executing temp/all-stable.sql (perl utils/db-run-sqlscript.pl):"
-perl ./utils/db-run-sqlscript.pl ./temp/all-stable.sql 1
+echo "Executing utils/deploy.pl --drop --deploy --data=prod"
+perl ./utils/deploy.pl --drop --deploy --data=prod
 echo ""
 
 echo "Copying temp/schema-raw-create.sql to temp/schema-raw-create-dump.sql"
@@ -38,20 +38,28 @@ echo "Executing utils/set_client_passwd.pl --client_passwd_list (perl):"
 perl ./utils/set_client_passwd.pl --client_passwd_list
 echo ""
 
-echo "Executing utils/reptable-load.sh:"
-./utils/reptables-load.sh
-echo ""
+#echo "Executing utils/reptable-load.sh:"
+#./utils/reptables-load.sh
+#echo ""
 
 echo "Executing cron/repository-update.pl --project=Parrot (perl):"
-perl ./cron/repository-update.pl --project=Parrot
+perl ./cron/repository-update.pl --project=parrot
 echo ""
 
+#echo "Executing cron/repository-update.pl --project=Parrot (perl):"
+#perl ./cron/repository-update.pl --project=rakudo
+#echo ""
+
+echo "Executing utils/db-fill-sqldata.pl sql/data-prod-jobs.pl"
+perl ./utils/db-fill-sqldata.pl ./sql/data-prod-jobs.pl
+echo "";
+        
 echo "Executing utils/rm_uploaded_files.pl --remove (perl):"
 perl ./utils/rm_uploaded_files.pl --remove
 echo ""
 
-echo "Starting httpd service:"
-service httpd start
+echo "Starting FastCGI processes"
+utils/start-server.sh prod f start
 echo ""
 
 echo "Done."

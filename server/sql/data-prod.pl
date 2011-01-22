@@ -35,10 +35,15 @@ return sub {
     $schema->resultset('machine')->populate([
         [ qw/ machine_id name user_id passwd descr created ip cpuarch osname archname disabled prev_machine_id farm_id / ],
         [ 1, 'tapir1',        1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.191.11', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, undef, 1       ],
-        [ 2, 'tapir2',        1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.191.12', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, undef, 1       ]
+        [ 2, 'tapir2',        1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.191.12', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, undef, 1       ],
         [ 3, 'pc-jurosz2',    1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.5.124',  'i386',   'MSWin32', 'MSWin32-x86-multi-thread', 0, undef, undef   ],
+        [ 4, 'ttcl-rh5-32',   1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.2.73',   'x86_64', 'linux',   'i386-linux-thread-multi',  0, undef, undef   ],
+        [ 5, 'ttcl-fbsd-32',  1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.2.193',  'x86_64', 'linux',   'i386-linux-thread-multi',  0, undef, undef   ],
+        [ 6, 'ttcl-macos-32', 1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.2.183',  'x86_64', 'linux',   'i386-linux-thread-multi',  0, undef, undef   ],
+        [ 7, 'ttcl-win-32',   1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.2.152',  'x86_64', 'linux',   'i386-linux-thread-multi',  0, undef, undef   ],
+        [ 8, 'ttcl-win2-32',  1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.2.160',  'x86_64', 'linux',   'i386-linux-thread-multi',  0, undef, undef   ],
+        [ 9, 'ttcl-osol-64',  1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.2.152',  'x86_64', 'linux',   'i386-linux-thread-multi',  0, undef, undef   ],
     ]);
-
 
     # table: project
     $schema->resultset('project')->delete_all() if $delete_all;
@@ -88,12 +93,6 @@ return sub {
         [                    8,              2,      3,         1,  ],
         [                    9,              2,      4,         1,  ],
         [                   10,              2,      5,         1,  ],
-
-        [                   11,              3,      1,         2,  ],
-        [                   12,              3,      2,         2,  ],
-        [                   13,              3,      3,         2,  ],
-        [                   14,              3,      4,         2,  ],
-        [                   15,              3,      5,         2,  ],
     ]);
 
  
@@ -101,16 +100,14 @@ return sub {
     $schema->resultset('ibot')->delete_all() if $delete_all;
     $schema->resultset('ibot')->populate([
         [ qw/ ibot_id        nick              full_name               server  port  operator_id /  ],
-        [          1, 'ttbot-dev', 'TapTinder bot (dev).', 'irc.freenode.org', 6667,           1,   ],
+        [          1,     'ttbot',      'TapTinder bot.',      'irc.perl.org', 6667,           1,   ],
     ]);
-
 
     # table: ichannel
     $schema->resultset('ichannel')->delete_all() if $delete_all;
     $schema->resultset('ichannel')->populate([
         [ qw/ ichannel_id                  name  / ],
-        [               1, '#taptinder-bottest1',  ],
-        [               2, '#taptinder-bottest2',  ],
+        [               1,            '#parrot',   ],
     ]);
 
 
