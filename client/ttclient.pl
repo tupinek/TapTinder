@@ -21,7 +21,7 @@ use TapTinder::Client;
 use TapTinder::Client::Conf qw(load_client_conf);
 
 my $help = 0;
-my $project_name = 'tt-tests';
+my $conf_section_name = 'dev';
 my $conf_fpath = catfile( $RealBin, '..', 'client-conf', 'client-conf.yml' );
 my $ver = 2; # verbosity level
 my $debug = 0; # debug
@@ -29,7 +29,7 @@ my $end_after_no_new_job = 0;
 
 my $options_ok = GetOptions(
     'help|h|?' => \$help,
-    'project|p=s' => \$project_name,
+    'config_section_name|csn=s' => \$conf_section_name,
     'conf_fpath|cfp=s' => \$conf_fpath,
     'verbose|v=i' => \$ver,
     'debug|d=i' => \$debug,
@@ -45,9 +45,9 @@ if ( $ver !~ /^\s*\d+\s*$/ || $ver < 0 || $ver > 5 ) {
 print "Verbose level: $ver\n" if $ver >= 3;
 print "Working path: '" . $RealBin . "'\n" if $ver >= 4;
 
-print "Loading config file for project '$project_name'.\n" if $ver >= 3;
+print "Loading config file section '$conf_section_name'.\n" if $ver >= 3;
 
-my $client_conf = load_client_conf( $conf_fpath, $project_name );
+my $client_conf = load_client_conf( $conf_fpath, $conf_section_name );
 
 # debug, will also dump passwd on screen
 # print Dumper( $client_conf ) if $ver >= 5;
@@ -106,10 +106,10 @@ ttclient [options]
 
  Options:
    --help
-   --project ... Project name.
    --conf_fpath ... Config file path.
    --ver ... Verbose level, 0-5, default 2.
    --end_after_no_new_job ... Will end if new job not found.
+   --config_section_name ... Configuration section name. Default 'dev'.
 
 =head1 DESCRIPTION
 

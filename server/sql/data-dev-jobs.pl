@@ -195,6 +195,7 @@ return sub {
         [ 1, 1, 1  ], # tapir1
         [ 2, 2, 3  ], # tapir2
         [ 3, 3, 2  ], # pc-jurosz2
+        [ 4, 4, 1  ], # some-test-machine
     ]);
 
 
@@ -221,6 +222,8 @@ return sub {
         [               13,                3,      3,  $master_tr3_rref_id,      6,        1    ], # pc-jurosz2
         [               14,                3,      4,                undef,      7,        2    ], # pc-jurosz2
         [               15,                3,      5,                undef,      8,        3    ], # pc-jurosz2
+
+        [               16,                4,      1,  $master_tr1_rref_id,      1,        1    ], # some-test-machine
     ]);
 
 

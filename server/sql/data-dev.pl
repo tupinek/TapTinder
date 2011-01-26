@@ -34,9 +34,10 @@ return sub {
     $schema->resultset('machine')->delete_all() if $delete_all;
     $schema->resultset('machine')->populate([
         [ qw/ machine_id name user_id passwd descr created ip cpuarch osname archname disabled prev_machine_id farm_id / ],
-        [ 1, 'tapir1',        1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.191.11', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, undef, 1       ],
-        [ 2, 'tapir2',        1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.191.12', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, undef, 1       ]
-        [ 3, 'pc-jurosz2',    1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.5.124',  'i386',   'MSWin32', 'MSWin32-x86-multi-thread', 0, undef, undef   ],
+        [ 1, 'tapir1',           1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.191.11', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, undef, 1       ],
+        [ 2, 'tapir2',           1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.191.12', 'x86_64', 'linux',   'i386-linux-thread-multi',  0, undef, 1       ],
+        [ 3, 'pc-jurosz2',       1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '147.229.5.124',  'i386',   'MSWin32', 'MSWin32-x86-multi-thread', 0, undef, undef   ],
+        [ 4, 'some-new-machine', 1, \'substring(MD5(RAND()), -8)', undef, \'NOW()', '',               '',       '',        '',                         0, undef, undef   ],
     ]);
 
 
@@ -47,8 +48,8 @@ return sub {
         [ 1, 'tt-tr1', 'http://dev.taptinder.org/wiki/TapTinder-tr1', 'TapTinder test repository 1' ],
         [ 2, 'tt-tr2', 'http://dev.taptinder.org/wiki/TapTinder-tr2', 'TapTinder test repository 2' ],
         [ 3, 'tt-tr3', 'http://dev.taptinder.org/wiki/TapTinder-tr3', 'TapTinder test repository 3' ],
-        [ 4, 'Parrot', 'http://www.parrot.org/', 'Parrot' ],
-        [ 5, 'Rakudo', 'http://www.rakudo.org/', 'Rakudo Perl 6' ],
+        [ 4, 'Parrot', 'http://www.parrot.org/',                      'Parrot'                      ],
+        [ 5, 'Rakudo', 'http://www.rakudo.org/',                      'Rakudo Perl 6'               ],
     ]);
 
  
