@@ -21,6 +21,9 @@ croak "Connection to DB failed." unless $schema;
 $schema->storage->txn_begin;
 
 my $req_fpath = $ARGV[0];
+croak "First parameter should be perl input file path.\n" unless $req_fpath;
+croak "Can't find input file '$req_fpath'.\n" unless -f $req_fpath;
+
 my $rc = TapTinder::Utils::DB::run_perl_sql_file(
     $req_fpath,     # $req_fpath
     $schema,        # $schema
