@@ -88,102 +88,111 @@ return sub {
         [          6,            257,        1,         'tr3',  undef    ],
         [          7,            257,        1,      'Parrot',  undef    ],
         [          8,            257,        1,      'Rakudo',  undef    ],
+        [          9,            257,        1,  'tr1 params',  undef    ],
     ]);
 
  
     # table: jobp
     $schema->resultset('jobp')->delete_all() if $delete_all;
     $schema->resultset('jobp')->populate([
-        [ qw/ jobp_id  job_id  project_id   `order`             name    descr    max_age  depends_on_id  extends /  ],
-        [           1,      1,          1,       1,        'sole tr1',  undef,  5*365*24,         undef,       0    ],
+        [ qw/ jobp_id  job_id  project_id   `order`                      name    descr    max_age  depends_on_id  extends /  ],
+        [           1,      1,          1,       1,                 'sole tr1',  undef,  5*365*24,         undef,       0    ],
 
-        [           2,      2,          1,       1,            'base',  undef,  5*365*24,         undef,       0    ],
-        [           3,      2,          2,       2,  'external tests',  undef,  5*365*24,             2,       1    ],
+        [           2,      2,          1,       1,                     'base',  undef,  5*365*24,         undef,       0    ],
+        [           3,      2,          2,       2,           'external tests',  undef,  5*365*24,             2,       1    ],
 
-        [           4,      3,          1,       1,            'base',  undef,  5*365*24,         undef,       0    ],
-        [           5,      3,          3,       2,    'related part',  undef,  5*365*24,             4,       0    ],
+        [           4,      3,          1,       1,                     'base',  undef,  5*365*24,         undef,       0    ],
+        [           5,      3,          3,       2,             'related part',  undef,  5*365*24,             4,       0    ],
 
-        [           6,      4,          1,       1,        'sole tr1',  undef,     undef,         undef,       0    ],
+        [           6,      4,          1,       1,                 'sole tr1',  undef,     undef,         undef,       0    ],
 
-        [           7,      5,          2,       1,        'sole tr2',  undef,     undef,         undef,       0    ],
-        [           8,      6,          3,       1,        'sole tr3',  undef,  5*365*24,         undef,       0    ],
-        [           9,      7,          4,       1,     'sole Parrot',  undef,      1*24,         undef,       0    ],
-        [          10,      8,          5,       1,     'sole Rakudo',  undef,      1*24,         undef,       0    ],
+        [           7,      5,          2,       1,                 'sole tr2',  undef,     undef,         undef,       0    ],
+        [           8,      6,          3,       1,                 'sole tr3',  undef,  5*365*24,         undef,       0    ],
+        [           9,      7,          4,       1,              'sole Parrot',  undef,      1*24,         undef,       0    ],
+        [          10,      8,          5,       1,              'sole Rakudo',  undef,      1*24,         undef,       0    ],
+        [          11,      9,          1,       1,     'sole tr1 with params',  undef,  5*365*24,         undef,       0    ],
     ]);
 
  
     # table: jobp_cmd
     $schema->resultset('jobp_cmd')->delete_all() if $delete_all;
     $schema->resultset('jobp_cmd')->populate([
-        [ qw/ jobp_cmd_id jobp_id `order` cmd_id / ],
+        [ qw/ jobp_cmd_id jobp_id `order` cmd_id params / ],
 
         # job_id = 1
-        [ 1, 1, 1, 1 ],
-        [ 2, 1, 2, 2 ],
-        [ 3, 1, 3, 4 ],
-        [ 4, 1, 4, 5 ],
-        [ 5, 1, 5, 6 ],
+        [ 1, 1, 1, 1, undef ],
+        [ 2, 1, 2, 2, undef ],
+        [ 3, 1, 3, 4, undef ],
+        [ 4, 1, 4, 5, undef ],
+        [ 5, 1, 5, 6, undef ],
 
 
         # job_id = 2
-        [ 6,  2, 1, 1 ],
-        [ 7,  2, 2, 2 ],
-        [ 8,  2, 3, 4 ],
-        [ 9,  2, 4, 5 ],
-        [ 10, 2, 5, 6 ],
+        [ 6,  2, 1, 1, undef ],
+        [ 7,  2, 2, 2, undef ],
+        [ 8,  2, 3, 4, undef ],
+        [ 9,  2, 4, 5, undef ],
+        [ 10, 2, 5, 6, undef ],
 
-        [ 11, 3, 1, 1 ],
-        [ 12, 3, 2, 2 ],
-        [ 13, 3, 3, 6 ],
+        [ 11, 3, 1, 1, undef ],
+        [ 12, 3, 2, 2, undef ],
+        [ 13, 3, 3, 6, undef ],
 
 
         # job_id = 3
-        [ 14, 4, 1, 1 ],
-        [ 15, 4, 2, 2 ],
-        [ 16, 4, 3, 4 ],
-        [ 17, 4, 4, 5 ],
-        [ 18, 4, 5, 6 ],
+        [ 14, 4, 1, 1, undef ],
+        [ 15, 4, 2, 2, undef ],
+        [ 16, 4, 3, 4, undef ],
+        [ 17, 4, 4, 5, undef ],
+        [ 18, 4, 5, 6, undef ],
 
-        [ 19, 5, 1, 1 ],
-        [ 20, 5, 2, 2 ],
-        [ 21, 5, 3, 4 ],
-        [ 22, 5, 4, 5 ],
-        [ 23, 5, 5, 6 ],
+        [ 19, 5, 1, 1, undef ],
+        [ 20, 5, 2, 2, undef ],
+        [ 21, 5, 3, 4, undef ],
+        [ 22, 5, 4, 5, undef ],
+        [ 23, 5, 5, 6, undef ],
 
 
         # job_id = 4
-        [ 24, 6, 1, 1 ],
-        [ 25, 6, 2, 2 ],
-        [ 26, 6, 3, 4 ],
-        [ 27, 6, 4, 5 ],
+        [ 24, 6, 1, 1, undef ],
+        [ 25, 6, 2, 2, undef ],
+        [ 26, 6, 3, 4, undef ],
+        [ 27, 6, 4, 5, undef ],
 
 
         # job_id = 5
-        [ 28, 7, 1, 1 ],
-        [ 29, 7, 2, 2 ],
-        [ 30, 7, 3, 4 ],
-        [ 31, 7, 4, 5 ],
+        [ 28, 7, 1, 1, undef ],
+        [ 29, 7, 2, 2, undef ],
+        [ 30, 7, 3, 4, undef ],
+        [ 31, 7, 4, 5, undef ],
 
 
         # job_id = 6
-        [ 32, 8, 1, 1 ],
-        [ 33, 8, 2, 2 ],
-        [ 34, 8, 3, 4 ],
-        [ 35, 8, 4, 5 ],
+        [ 32, 8, 1, 1, undef ],
+        [ 33, 8, 2, 2, undef ],
+        [ 34, 8, 3, 4, undef ],
+        [ 35, 8, 4, 5, undef ],
 
 
         # job_id = 7
-        [ 36, 9, 1, 1 ],
-        [ 37, 9, 2, 2 ],
-        [ 38, 9, 3, 4 ],
-        [ 39, 9, 4, 5 ],
+        [ 36, 9, 1, 1, undef ],
+        [ 37, 9, 2, 2, undef ],
+        [ 38, 9, 3, 4, undef ],
+        [ 39, 9, 4, 5, undef ],
 
 
         # job_id = 8
-        [ 40, 10, 1, 1 ],
-        [ 41, 10, 2, 2 ],
-        [ 42, 10, 3, 4 ],
-        [ 43, 10, 4, 5 ],
+        [ 40, 10, 1, 1, undef ],
+        [ 41, 10, 2, 2, undef ],
+        [ 42, 10, 3, 4, undef ],
+        [ 43, 10, 4, 5, undef ],
+
+
+        # job_id = 9
+        [ 44, 11, 1, 1, 'param1-val' ],
+        [ 45, 11, 2, 2, 'param1-val' ],
+        [ 46, 11, 3, 4, 'param1-val' ],
+        [ 47, 11, 4, 5, 'param1-val' ],
 
     ]);
 
@@ -203,27 +212,27 @@ return sub {
     $schema->resultset('wconf_job')->delete_all() if $delete_all;
     $schema->resultset('wconf_job')->populate([
         [ qw/ wconf_job_id  wconf_session_id  rep_id               rref_id  job_id  priority  / ],
-        [                1,                1,      1,  $master_tr1_rref_id,      1,        1    ], # tapir1
+        [                1,                1,      1,  $master_tr1_rref_id,      9,        1    ], # tapir1
        #[                2,                1,      1,  $master_tr1_rref_id,      2,        2    ], # tapir1 - ToDo #issue/17
        #[                3,                1,      1,  $master_tr1_rref_id,      3,        3    ], # tapir1 - ToDo #issue/17
         [                4,                1,      1,  $master_tr1_rref_id,      4,        4    ], # tapir1
 
-        [                5,                2,      3,                undef,      6,        1    ], # tapir2
-        
-        [                6,                2,      2,  $master_tr2_rref_id,      5,        2    ], # tapir2
-        [                7,                2,      2,                undef,      5,        3    ], # tapir2
-        [                8,                2,      4,                undef,      7,        4    ], # tapir2
-        [                9,                2,      5,                undef,      8,        5    ], # tapir2
-        [               10,                2,      1,  $master_tr1_rref_id,      1,        6    ], # tapir2
+        [                5,                2,      1,  $master_tr1_rref_id,      9,        1    ], # tapir2
+        [                6,                2,      3,                undef,      6,        2    ], # tapir2
+        [                7,                2,      2,  $master_tr2_rref_id,      5,        3    ], # tapir2
+        [                8,                2,      2,                undef,      5,        4    ], # tapir2
+        [                9,                2,      4,                undef,      7,        5    ], # tapir2
+        [               10,                2,      5,                undef,      8,        6    ], # tapir2
+        [               11,                2,      1,  $master_tr1_rref_id,      1,        7    ], # tapir2
        
-       #[               11,                2,      1,                undef,      2,        7    ], # tapir2 - ToDo #issue/17
-        [               12,                2,      1,                undef,      1,        8    ], # tapir2
+       #[               12,                2,      1,                undef,      2,        7    ], # tapir2 - ToDo #issue/17
+        [               13,                2,      1,                undef,      1,        8    ], # tapir2
 
-        [               13,                3,      3,  $master_tr3_rref_id,      6,        1    ], # pc-jurosz2
-        [               14,                3,      4,                undef,      7,        2    ], # pc-jurosz2
-        [               15,                3,      5,                undef,      8,        3    ], # pc-jurosz2
+        [               14,                3,      3,  $master_tr3_rref_id,      6,        1    ], # pc-jurosz2
+        [               15,                3,      4,                undef,      7,        2    ], # pc-jurosz2
+        [               16,                3,      5,                undef,      8,        3    ], # pc-jurosz2
 
-        [               16,                4,      1,  $master_tr1_rref_id,      1,        1    ], # some-test-machine
+        [               17,                4,      1,  $master_tr1_rref_id,      1,        1    ], # some-test-machine
     ]);
 
 

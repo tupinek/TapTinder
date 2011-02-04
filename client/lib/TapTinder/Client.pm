@@ -258,7 +258,7 @@ Run get_src client command.
 =cut
 
 sub ccmd_get_src {
-    my ( $self, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env, $cmd_params ) = @_;
 
     my $data; # many different uses
     $data = $self->{agent}->rciget(
@@ -300,7 +300,7 @@ Run prepare client command. Prepare project dir for TapTinder run.
 =cut
 
 sub ccmd_prepare {
-    my ( $self, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env, $cmd_params ) = @_;
 
     my $data = $self->{agent}->sset( $self->{msession_id}, $self->{msproc_id}, $self->{msjobp_cmd_id}, 2 ); # running, $cmd_status_id
     return 0 if $self->process_agent_errors_get_err_num( 'sset', $data );
@@ -322,7 +322,7 @@ Run patch client command.
 =cut
 
 sub ccmd_patch {
-    my ( $self, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env, $cmd_params ) = @_;
     print "Client command 'patch' not implemented yet.\n" if $ver >= 2;
     return 1;
 }
@@ -336,7 +336,7 @@ Run command.
 
 sub run_cmd {
     my (
-        $self, $cmd_name, $cmd_env, $cmd,
+        $self, $cmd_name, $cmd_env, $cmd, $cmd_params,
         $cmd_timeout, $outdata_file_full_path
     ) = @_;
 
@@ -365,6 +365,7 @@ sub run_cmd {
 
     my ( $cmd_rc, $out ) = sys_for_watchdog(
         $cmd,
+        $cmd_params,
         $cmd_log_fp,
         $cmd_timeout,
         undef,
@@ -412,11 +413,11 @@ Run perl_configure client command.
 =cut
 
 sub ccmd_perl_configure {
-    my ( $self, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env, $cmd_params ) = @_;
 
     my $cmd = 'perl Configure.pl';
     my $cmd_timeout = 5*60; # 5 min
-    return $self->run_cmd( $cmd_name, $cmd_env, $cmd, $cmd_timeout, undef );
+    return $self->run_cmd( $cmd_name, $cmd_env, $cmd, $cmd_params, $cmd_timeout, undef );
 }
 
 
@@ -427,7 +428,7 @@ Run make client command.
 =cut
 
 sub ccmd_make {
-    my ( $self, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env, $cmd_params ) = @_;
 
     my $cmd = 'make';
     if ( $^O eq 'MSWin32' ) {
@@ -440,7 +441,7 @@ sub ccmd_make {
     }
 
     my $cmd_timeout = 5*60; # 5 min
-    return $self->run_cmd( $cmd_name, $cmd_env, $cmd, $cmd_timeout, undef );
+    return $self->run_cmd( $cmd_name, $cmd_env, $cmd, $cmd_params, $cmd_timeout, undef );
 }
 
 
@@ -451,7 +452,7 @@ Run trun client command.
 =cut
 
 sub ccmd_trun {
-    my ( $self, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env, $cmd_params ) = @_;
 
     my $cmd;
     if ( $^O eq 'MSWin32' ) {
@@ -463,7 +464,7 @@ sub ccmd_trun {
 
     # TODO - Parrot file name
     my $outdata_file_full_path = catfile( $cmd_env->{temp_dir}, 'parrot_test_run.tar.gz' );
-    return $self->run_cmd( $cmd_name, $cmd_env, $cmd, $cmd_timeout, $outdata_file_full_path );
+    return $self->run_cmd( $cmd_name, $cmd_env, $cmd, $cmd_params, $cmd_timeout, $outdata_file_full_path );
 }
 
 
@@ -474,11 +475,11 @@ Run test client command.
 =cut
 
 sub ccmd_test {
-    my ( $self, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env, $cmd_params ) = @_;
 
     my $cmd = 'make test';
     my $cmd_timeout = 5*60; # 5 min
-    return $self->run_cmd( $cmd_name, $cmd_env, $cmd, $cmd_timeout, undef );
+    return $self->run_cmd( $cmd_name, $cmd_env, $cmd, $cmd_params, $cmd_timeout, undef );
 }
 
 
@@ -489,7 +490,7 @@ Run bench client command.
 =cut
 
 sub ccmd_bench {
-    my ( $self, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env, $cmd_params ) = @_;
     print "Client command 'bench' not implemented yet.\n" if $ver >= 2;
     return 1;
 }
@@ -502,7 +503,7 @@ Run install client command.
 =cut
 
 sub ccmd_install {
-    my ( $self, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env, $cmd_params ) = @_;
     print "Client command 'install' not implemented yet.\n" if $ver >= 2;
     return 1;
 }
@@ -515,7 +516,7 @@ Run clean client command.
 =cut
 
 sub ccmd_clean {
-    my ( $self, $cmd_name, $cmd_env ) = @_;
+    my ( $self, $cmd_name, $cmd_env, $cmd_params ) = @_;
     print "Client command 'clean' not implemented yet.\n" if $ver >= 2;
     return 1;
 }
@@ -671,49 +672,51 @@ sub run {
             }
 
             my $cmd_name = $data->{cmd_name};
+            my $cmd_params = undef;
+            $cmd_params = $data->{cmd_params} if exists $data->{cmd_params};
             if ( $cmd_name eq 'get_src' ) {
                 $cmd_env->{rcommit_id} = $data->{rcommit_id};
                 # will set another keys to $cmd_env
-                $ret_code = $self->ccmd_get_src( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_get_src( $cmd_name, $cmd_env, $cmd_params );
                 return $self->cleanup_and_return_zero() unless $ret_code;
                 
                 # change current working directory (cwd, pwd)
                 chdir( $cmd_env->{temp_dir} );
 
             } elsif ( $cmd_name eq 'prepare' ) {
-                $ret_code = $self->ccmd_prepare( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_prepare( $cmd_name, $cmd_env, $cmd_params );
                 return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'patch' ) {
-                $ret_code = $self->ccmd_patch( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_patch( $cmd_name, $cmd_env, $cmd_params );
                 return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'perl_configure' ) {
-                $ret_code = $self->ccmd_perl_configure( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_perl_configure( $cmd_name, $cmd_env, $cmd_params );
                 return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'make' ) {
-                $ret_code = $self->ccmd_make( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_make( $cmd_name, $cmd_env, $cmd_params );
                 return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'trun' ) {
-                $ret_code = $self->ccmd_trun( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_trun( $cmd_name, $cmd_env, $cmd_params );
                 return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'test' ) {
-                $ret_code = $self->ccmd_test( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_test( $cmd_name, $cmd_env, $cmd_params );
                 return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'bench' ) {
-                $ret_code = $self->ccmd_bench( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_bench( $cmd_name, $cmd_env, $cmd_params );
                 return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'install' ) {
-                $ret_code = $self->ccmd_install( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_install( $cmd_name, $cmd_env, $cmd_params );
                 return $self->cleanup_and_return_zero() unless $ret_code;
 
             } elsif ( $cmd_name eq 'clean' ) {
-                $ret_code = $self->ccmd_clean( $cmd_name, $cmd_env );
+                $ret_code = $self->ccmd_clean( $cmd_name, $cmd_env, $cmd_params );
                 return $self->cleanup_and_return_zero() unless $ret_code;
             }
 

@@ -25,6 +25,7 @@ sub index : Path  {
     my $ref_name = undef; # ToDo
     $ref_name = 'master' unless $ref_name;
     my $pr = $self->get_page_params( $params );
+    $self->dumper( $c, { par1 => $par1, par2 => $par2, args => \@args, } );
 
     my $search = { 
         'me.name' => $ref_name,
@@ -48,8 +49,10 @@ sub index : Path  {
 
     my $rref_id = $project_info->{rref_id};
 
-
     my $jobp_id = undef;
+    if ( $par2 ) {
+        ( $jobp_id ) = $par2 =~ /^jp\-(\d+)$/;
+    }
     unless ( $jobp_id ) {
         my $search_wui_build = {
             'project_id' => $project_info->{project_id},
@@ -59,6 +62,12 @@ sub index : Path  {
         return 0 unless $jobp_row;
         $jobp_id = $jobp_row->get_column('jobp_id');
     }
+    
+    my $cmd_id = 5;
+    if ( $args[0] ) {
+        ( $cmd_id ) = $args[0] =~ /^c\-(\d+)$/;
+    }
+    
     $self->dadd( $c, "jobp_id: $jobp_id\n" );
     $self->dadd( $c, "rref_id: $rref_id\n" );
 
@@ -127,7 +136,7 @@ sub index : Path  {
           and rc.committer_time <= str_to_date(?,'%Y-%m-%d %H:%i:%s')
           and jp.jobp_id = ? -- only this job
           and jpc.jobp_id = jp.jobp_id
-          and jpc.cmd_id = 5 -- only make
+          and jpc.cmd_id = ? -- only this cmd
           and mjp.rcommit_id = rc.rcommit_id
           and mjp.jobp_id = jp.jobp_id
           and mjpc.jobp_cmd_id = jpc.jobp_cmd_id
@@ -146,6 +155,7 @@ sub index : Path  {
         $commit_time_from, 
         $commit_time_to,
         $jobp_id, # jp.jobp_id
+        $cmd_id, # jpc.cmd_id
     ];
     my $all_rows = $self->edbi_selectall_arrayref_slice( $c, $cols, $sql, $ba );
     #$self->dumper( $c, $all_rows );

@@ -12,7 +12,7 @@ use Storable;
 use File::Spec::Functions;
 
 sub sys {
-    my ( $cmd, $temp_out_fn ) = @_;
+    my ( $full_cmd, $temp_out_fn ) = @_;
 
     my $output;
     $temp_out_fn = '.out' unless $temp_out_fn;
@@ -25,7 +25,7 @@ sub sys {
     select STDERR; $| = 1;      # make unbuffered
     select STDOUT; $| = 1;      # make unbuffered
 
-    my $status = system($cmd);
+    my $status = system( $full_cmd );
 
     close STDOUT;
     close STDERR;
@@ -48,7 +48,7 @@ sub sys {
 
 
 sub sys_for_watchdog {
-    my ( $cmd, $log_fn, $timeout, $sleep, $dir, $ver ) = @_;
+    my ( $cmd, $cmd_params, $log_fn, $timeout, $sleep, $dir, $ver ) = @_;
 
     carp "cmd is mandatory" unless defined $cmd;
     $log_fn = $cmd . '.log' unless defined $log_fn;
@@ -60,13 +60,15 @@ sub sys_for_watchdog {
         print "found '$ipc_fn', probably already running\n";
 #        exit 0;
     }
-    print "Running '$cmd' ...\n" if $ver;
+    my $full_cmd = $cmd;
+    print "Running '$full_cmd' ...\n" if $ver;
 
+    $full_cmd .= ' ' . $cmd_params if $cmd_params;
     my $info = {
-        'log_fn'  => $log_fn,
-        'pid'     => $$,
-        'cmd'     => $cmd,
-        'timeout' => $timeout,
+        'log_fn'   => $log_fn,
+        'pid'      => $$,
+        'full_cmd' => $full_cmd,
+        'timeout'  => $timeout,
     };
     $info->{'sleep'} = $sleep if defined $sleep;
     store( $info, $ipc_fn ) or carp "store failed\n$!\n$@";
@@ -86,7 +88,7 @@ sub sys_for_watchdog {
     #print dump( \%SIG );
 =cut
 
-    my ( $status, $output ) = sys( $cmd, $log_fn );
+    my ( $status, $output ) = sys( $full_cmd, $log_fn );
 
     unlink $ipc_fn;
     while ( -e $ipc_fn ) {

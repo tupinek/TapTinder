@@ -11,7 +11,6 @@ use File::Copy::Recursive qw(dircopy);
 use File::Path;
 use File::Copy;
 
-use Watchdog qw(sys sys_for_watchdog);
 use GitShell;
 
 

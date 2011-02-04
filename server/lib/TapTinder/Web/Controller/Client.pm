@@ -717,7 +717,8 @@ sub get_next_cmd {
     my $sql = "
         select jp.jobp_id,
                jpc.jobp_cmd_id,
-               c.name as cmd_name
+               c.name as cmd_name,
+               jpc.params as cmd_params
           from jobp jp,
                jobp_cmd jpc,
                cmd c
@@ -808,7 +809,6 @@ sub start_new_job {
 
     my $jobp_id = $next_cmd->{jobp_id};
     my $jobp_cmd_id = $next_cmd->{jobp_cmd_id};
-    my $cmd_name = $next_cmd->{cmd_name};
 
     my $msjob_id = $self->create_msjob( $c, $data, $msproc_id, $job_id );
     return 0 unless $msjob_id;
@@ -828,7 +828,8 @@ sub start_new_job {
     $data->{rcommit_id} = $rcommit_id;
     $data->{msjobp_id} = $msjobp_id;
     $data->{msjobp_cmd_id} = $msjobp_cmd_id;
-    $data->{cmd_name} = $cmd_name;
+    $data->{cmd_name} = $next_cmd->{cmd_name};
+    $data->{cmd_params} = $next_cmd->{cmd_params} if $next_cmd->{cmd_params};
     return 1;
 }
 
@@ -897,7 +898,6 @@ sub cmd_cget {
         # next command in job found (in same jop part or new job part)
         if ( $cmds_data && $cmds_data->{new}->{jobp_cmd_id} ) {
             my $jobp_cmd_id = $cmds_data->{new}->{jobp_cmd_id};
-            my $cmd_name = $cmds_data->{new}->{cmd_name};
 
             # use old msjobp_id or create new
             my $msjobp_id;
@@ -932,7 +932,8 @@ sub cmd_cget {
 
             #$self->dumper( $c, "jobp_cmd_id: $jobp_cmd_id, msjobp_id: $msjobp_id, msjobp_cmd_id: $msjobp_cmd_id" );
             $data->{msjobp_cmd_id} = $msjobp_cmd_id;
-            $data->{cmd_name} = $cmd_name;
+            $data->{cmd_name} = $cmds_data->{new}->{cmd_name};
+            $data->{cmd_params} = $cmds_data->{new}->{cmd_params} if $cmds_data->{new}->{cmd_params};
 
         } else {
             $start_new_job = 1;
