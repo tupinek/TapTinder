@@ -23,7 +23,7 @@ my $client_new_passwd = undef;
 
 # part B) client conf file
 my $client_conf_fpath = undef;
-my $client_project_name = undef;
+my $client_section_name = undef;
 
 # part C) own client's passwd list
 my $client_passwd_list_fpath = undef;
@@ -39,7 +39,7 @@ my $options_ok = GetOptions(
 
     # part B)
     'client_conf_fpath:s' => \$client_conf_fpath,
-    'client_project_name=s' => \$client_project_name,
+    'client_section_name|csn=s' => \$client_section_name,
 
     # part C)
     'client_passwd_list:s' => \$client_passwd_list_fpath,
@@ -50,8 +50,8 @@ my $options_ok = GetOptions(
 # part B)
 if ( defined $client_conf_fpath && !$client_conf_fpath ) {
     $client_conf_fpath = catfile( $RealBin, '..', '..', 'client-conf', 'client-conf.yml' );
-    if ( !$client_project_name ) {
-        $client_project_name = 'tt-tests';
+    if ( !$client_section_name ) {
+        $client_section_name = 'prod';
     }
 }
 
@@ -66,7 +66,7 @@ my $part_a = 0;
 $part_a = 1 if $machine_id || $machine_name || $client_new_passwd;
 
 my $part_b = 0;
-$part_b = 1 if $client_conf_fpath || $client_project_name;
+$part_b = 1 if $client_conf_fpath || $client_section_name;
 
 my $part_c = 0;
 $part_c = 1 if $client_passwd_list_fpath;
@@ -99,10 +99,10 @@ if ( $part_b ) {
     # load client data from configuration file
     croak "Can't find client configuration file '$client_conf_fpath'.\n" unless -f $client_conf_fpath;
     my ( $all_client_conf ) = YAML::LoadFile( $client_conf_fpath );
-    unless ( exists $all_client_conf->{$client_project_name} ) {
-        croak "Project '$client_project_name' configuration not found inside client config file '$client_conf_fpath'."
+    unless ( exists $all_client_conf->{$client_section_name} ) {
+        croak "Project '$client_section_name' configuration section not found inside client config file '$client_conf_fpath'."
     }
-    my $client_conf = $all_client_conf->{$client_project_name};
+    my $client_conf = $all_client_conf->{$client_section_name};
     push @client_passwds, {
         id => $client_conf->{machine_id},
         passwd => $client_conf->{machine_passwd},
@@ -199,7 +199,7 @@ Options:
 
    # part B - Loads client configuration file and sets client (machine) password to database.
    --client_conf_fpath
-   --client_project_name
+   --config_section_name ... Configuration section name. Default 'prod'.
 
    # part C - Set clients passwords using own configuration file.
    --client_passwd_list - yaml file with passwds for clients

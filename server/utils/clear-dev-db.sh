@@ -49,8 +49,8 @@ if [ "$1" = "l" ]; then
     perl ./utils/db-run-sqlscript.pl ./temp/ttdev-dump.sql 1
     echo ""
 
-    echo "Executing utils/set_client_passwd.pl --client_conf_fpath (perl):"
-    perl ./utils/set_client_passwd.pl --client_conf_fpath
+    echo "Executing utils/set_client_passwd.pl --client_conf_fpath --client_section_name=mydev (perl):"
+    perl ./utils/set_client_passwd.pl --client_conf_fpath --client_section_name=mydev
     echo ""
 
     echo "Executing utils/set_client_passwd.pl --client_passwd_list (perl):"
@@ -89,8 +89,8 @@ if [ "$1" = "c" ]; then
     perl ./utils/deploy.pl --drop --deploy --data=dev
     echo ""
 
-    echo "Executing utils/set_client_passwd.pl --client_conf_fpath (perl):"
-    perl ./utils/set_client_passwd.pl --client_conf_fpath
+    echo "Executing utils/set_client_passwd.pl --client_conf_fpath --$client_section_name=mydev (perl):"
+    perl ./utils/set_client_passwd.pl --client_conf_fpath --client_section_name=mydev
     echo ""
 
     echo "Executing utils/set_client_passwd.pl --client_passwd_list (perl):"
