@@ -37,7 +37,7 @@ sub index : Path  {
         {
             join => { 'rcommit_id' => { 'rep_id' => 'project_id', }, },
             'select' => [qw/ me.rref_id me.name   rcommit_id.rcommit_id rep_id.rep_id rep_id.github_url project_id.project_id project_id.name project_id.url /],
-            'as' =>     [qw/ rref_id    rref_name rcommit_id            rep_id        github_url        project_id            project_url    /],
+            'as' =>     [qw/ rref_id    rref_name rcommit_id            rep_id        github_url        project_id            project_name    project_url    /],
         }
     );
     my $project_row = $project_rs->next;
@@ -108,7 +108,7 @@ sub index : Path  {
         rcommit_id
         status_id
         status_name
-        web_fpath
+        msjobp_cmd_id
     / ];
 
     my $sql = "
@@ -117,7 +117,7 @@ sub index : Path  {
               rc.rcommit_id,
               mjpc.status_id,
               cs.name as status_name,
-              concat(fsp.web_path, '/', fsf.name) as web_fpath
+              mjpc.msjobp_cmd_id
          from rref_rcommit rrc,
               rcommit rc,
               jobp jp,
@@ -127,9 +127,7 @@ sub index : Path  {
               cmd_status cs,
               msjob mj,
               msproc msp,
-              msession ms,
-              fsfile fsf,
-              fspath fsp
+              msession ms
         where rrc.rref_id = ?
           and rc.rcommit_id = rrc.rcommit_id
           and rc.committer_time >= str_to_date(?,'%Y-%m-%d %H:%i:%s')
@@ -142,8 +140,6 @@ sub index : Path  {
           and mjpc.jobp_cmd_id = jpc.jobp_cmd_id
           and mjpc.msjobp_id = mjp.msjobp_id
           and cs.cmd_status_id = mjpc.status_id
-          and fsf.fsfile_id = mjpc.output_id
-          and fsp.fspath_id = fsf.fspath_id
           and mj.msjob_id = mjp.msjobp_id
           and msp.msproc_id = mj.msproc_id
           and ms.msession_id = msp.msession_id
