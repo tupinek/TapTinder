@@ -232,8 +232,7 @@ CREATE TABLE jobp (
 CREATE TABLE cmd (
     cmd_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name        VARCHAR(25),
-    descr       TEXT DEFAULT NULL COMMENT 'Description.',
-    params      TEXT DEFAULT NULL
+    descr       TEXT DEFAULT NULL COMMENT 'Description.'
 ) TYPE=InnoDB COMMENT='Possible commands to run on clients. Tag: jobs.';
 </source>
 

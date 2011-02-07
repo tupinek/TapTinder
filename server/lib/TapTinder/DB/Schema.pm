@@ -987,15 +987,6 @@ __PACKAGE__->add_columns(
       'is_nullable' => 1,
       'size' => '65535'
     },
-    'params' => {
-      'data_type' => 'TEXT',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 0,
-      'name' => 'params',
-      'is_nullable' => 1,
-      'size' => '65535'
-    },
 );
 __PACKAGE__->set_primary_key('cmd_id');
 

@@ -113,47 +113,37 @@ return sub {
     # table: cmd
     $schema->resultset('cmd')->delete_all() if $delete_all;
     $schema->resultset('cmd')->populate([
-        [ qw/ cmd_id name descr params / ],
+        [ qw/ cmd_id name descr / ],
         [
             1, 'get_src',
             'clean source code checkout/update, copy clean -> temp, check temp, create dir for results',
-            'rep_id, rcommit_id'
         ], [
             2, 'prepare',
             'preparing project for TapTinder, add new files or apply patches',
-            undef
         ], [
             3, 'patch',
             'applying patch',
-            'patch_id'
         ], [
             4, 'perl_configure',
             'running command - perl Configure.pl',
-            undef
         ], [
             5, 'make',
             'running command - make',
-            undef
         ], [
             6, 'trun',
             'running command - make test, create and upload Test::Harness::Archive',
-            undef
         ], [
             7, 'test',
             'running command - make test',
-            undef
         ], [
             8, 'bench',
             'running command - perl utils/benchmark.pl',
-            undef
         ], [
             9, 'install',
             'running command - make install',
-            undef
         ], [
             10, 'clean',
             'cleaning machine, e.g. after install',
-            undef
         ],
     ]);
 

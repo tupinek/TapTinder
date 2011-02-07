@@ -189,10 +189,10 @@ return sub {
 
 
         # job_id = 9
-        [ 44, 11, 1, 1, 'param1-val' ],
-        [ 45, 11, 2, 2, 'param1-val' ],
-        [ 46, 11, 3, 4, 'param1-val' ],
-        [ 47, 11, 4, 5, 'param1-val' ],
+        [ 44, 11, 1, 1, 'param1-val param2-val' ],
+        [ 45, 11, 2, 2, 'param1-val param2-val' ],
+        [ 46, 11, 3, 4, 'param1-val param2-val' ],
+        [ 47, 11, 4, 5, 'param1-val param2-val' ],
 
     ]);
 
