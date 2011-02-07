@@ -1,0 +1,128 @@
+[% DEFAULT title = 'Job command info' -%]
+
+<div class=nav><a href="javascript:history.back();">Back</a>, <a href="[% c.uri_for('/') %]">homepage</a>.</div>
+
+
+<table>
+<tr>
+  <td>Command</td>
+  <td>
+    <b>[% info.cmd_name %]</b> [% info.cmd_params %]
+  </td>
+</tr>
+<tr>
+  <td>Status</td>
+  <td>
+    <span class="[% status_class %]_bg">[% info.status_name %]</span> - <span class="[% status_class %]">[% info.status_descr %]</span>
+  </td>
+</tr>
+[% IF info.output_fname %]
+<tr>
+  <td>Output tail</td>
+  <td>
+    [% log_tail_html %]
+  </td>
+</tr>
+<tr>
+  <td>Full raw output</td>
+  <td>
+    <a href="[% c.uri_for( '/' _ info.output_fwpath _ '/' _ info.output_fname ) %]">[% info.output_fwpath _ '/' _ info.output_fname %]</a>
+  </td>
+</tr>
+[% END %]
+[% IF info.outdata_fname %]
+  <tr>
+    <td>Output data file</td>
+    <td>
+      <a href="[% c.uri_for( '/' _ info.outdata_fwpath _ '/' _ info.outdata_fname ) %]">[% info.outdata_fname %]</a>
+    </td>
+  </tr>
+[% END %]
+<tr>
+  <td>Run time</td>
+  <td>
+    [% info.cmd_start_time %] - [% info.cmd_end_time %]
+  </td>
+</tr>
+<tr><td colspan=2>&nbsp;</td></tr>
+
+<tr>
+  <td>Machine</td>
+  <td>
+    [% info.machine_name %]
+  </td>
+</tr>
+<tr>
+  <td>Info</td>
+  <td>
+    [% info.machine_cpuarch %], [% info.machine_osname %], [% info.machine_archname %]
+  </td>
+</tr>
+<tr><td colspan=2>&nbsp;</td></tr>
+
+<tr>
+  <td>Commit</td>
+  <td>
+  [% IF info.rep_github_url %]
+    <a href="[% info.rep_github_url %]/commit/[% info.rcommit_sha %]" title="[% info.rcommit_sha | html %]">
+  [% ELSE %]
+    <a href="/cwm/rcommit/id-[% info.rcommit_id %]" title="[% info.rcommit_sha | html %]">
+  [% END %]
+  [% info.rcommit_sha.substr(0,8) %]</a>,
+  [% IF info.rep_github_url %]
+    <a href="[% info.rep_github_url %]" title="[% info.project_descr | html %]">
+  [% ELSE %]
+    <a href="/cwm/project/id-[% info.project_id %]" title="[% info.project_descr | html %]">
+  [% END %]
+  [% info.project_name %]</a>
+  </td>
+</tr>
+<tr>
+  <td>Author</td>
+  <td>
+    [% info.author_login %],
+    [% info.rcommit_author_date %]
+  </td>
+</tr>
+<tr>
+  <td>Committer</td>
+  <td>
+    [% info.committer_login %],
+    [% info.rcommit_committer_date %]
+  </td>
+</tr>
+<tr>
+  <td>Message</td>
+  <td>
+    <div class=pre>[% info.rcommit_msg | html %]</div>
+  </td>
+</tr>
+</table>
+
+<h2>All job commands</h2>
+<table class=data>
+[% FOREACH cmd IN cmds -%]
+  <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %] [% IF info.msjobp_cmd_id == cmd.msjobp_cmd_id %]marked[% END %]">
+    <td>
+      [% cmd.cmd_name %]
+    </td>
+
+    [% IF cmd.status_name == 'error' %]
+  <td align=center class="err">
+    [% ELSIF cmd.status_name == 'ok' %]
+  <td align=center class="ok">
+    [% ELSE %]
+  <td align=center class="unk">
+    [% END %]
+
+    [% IF cmd.status_name %]
+    <a href="[% c.uri_for( '/cmdinfo/' _ cmd.msjobp_cmd_id ) %]">[% cmd.status_name %]</a>
+    [% ELSE %]
+    -
+    [% END %]
+
+   <tr>
+[% END -%]
+</table>
+[% pager_html %]
+

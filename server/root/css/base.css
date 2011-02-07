@@ -133,11 +133,15 @@ table tr.marked {
     background-color:   #FFCC99;
 }
 
+.ok,
+.ok_bg,
 table td.ok,
 table td.ok a {
     color: green;
 }
 
+.err,
+.err_bg,
 table td.err,
 table td.err a {
     font-family: "Courier New", Courier, monospace;
@@ -145,6 +149,7 @@ table td.err a {
     font-weight: bold;
 }
 
+.ok_bg,
 table tr.even td.ok {
     background-color:   #c4ecc3;
 }
@@ -153,6 +158,7 @@ table tr.odd td.ok {
     background-color:   #a7eca6;
 }
 
+.err_bg,
 table tr.even td.err,
 table tr.even_err td.err {
     background-color:   #ffddd3;
@@ -161,6 +167,11 @@ table tr.even_err td.err {
 table tr.odd td.err,
 table tr.odd_err td.err {
     background-color:   #ffcaba;
+}
+
+.err_bg, .ok_bg {
+    padding: 3px;
+    font-weight: bold;
 }
 
 table tr.odd:hover,
@@ -254,3 +265,36 @@ h1.table, h2.table, h3.table {
   margin: 0;
   padding: 0;
 }
+
+.pre {
+  white-space: pre-wrap;
+  font-family: monospace;
+  display: block;
+}
+
+.log_sh {
+  white-space: pre-wrap;
+  font-family: monospace;
+  display: block;
+  border: 1px solid grey;
+  padding: 5px;
+}
+
+.log_sh_ok {
+    border-color: green;
+}
+
+.log_sh_err {
+    border-color: red;
+}
+
+.log_sh .warn {
+    color: orange;
+    font-weight: bold;
+}
+
+.log_sh .err {
+    color: red;
+    font-weight: bold;
+}
+
