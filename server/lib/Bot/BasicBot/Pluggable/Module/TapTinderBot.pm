@@ -168,8 +168,7 @@ SQLEND
         # build report
         if ( $data->{ireport_type_id} == 1 ) {
             $msg .= " $data->{cmd_name} $data->{status_name}";
-            $msg .= " " . $self->{server_base_url} . $data->{web_fpath};
-            $msg .= " (" . $self->{server_base_url} . "buildstatus/pr-" . $data->{project_name} . ")";
+            $msg .= " " . $self->{server_base_url} . 'cmdinfo/' . $data->{msjobp_cmd_id};
             $msg .= " (debug: $self->{loop_num})" if $self->{irc_debug};
             $self->tell( $channel_name, $msg );
 
