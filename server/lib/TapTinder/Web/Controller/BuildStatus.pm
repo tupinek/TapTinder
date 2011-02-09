@@ -19,13 +19,18 @@ Catalyst controller for TapTinder. Shows build status.
 =cut
 
 sub index : Path  {
-    my ( $self, $c, $p_project, $par1, $par2, @args ) = @_;
+    my ( $self, $c, $p_project_name, $p_ref_name, $p_jobp_id, @args ) = @_;
 
-    my ( $is_index, $project_name, $params ) = $self->get_projname_params( $c, $p_project, $par1, $par2 );
-    my $ref_name = undef; # ToDo
+    my $project_name = $p_project_name;
+    $c->stash->{project_name} = $project_name;
+        
+    my $ref_name = $p_ref_name;
+    $c->stash->{ref_name} = $ref_name;
     $ref_name = 'master' unless $ref_name;
-    my $pr = $self->get_page_params( $params );
-    $self->dumper( $c, { par1 => $par1, par2 => $par2, args => \@args, } );
+
+    my $jobp_id = $p_jobp_id;
+
+    $self->dumper( $c, { project_name => $project_name, ref_name => $ref_name, jobp_id => $jobp_id, args => \@args } );
 
     my $search = { 
         'me.name' => $ref_name,
@@ -49,10 +54,6 @@ sub index : Path  {
 
     my $rref_id = $project_info->{rref_id};
 
-    my $jobp_id = undef;
-    if ( $par2 ) {
-        ( $jobp_id ) = $par2 =~ /^jp\-(\d+)$/;
-    }
     unless ( $jobp_id ) {
         my $search_wui_build = {
             'project_id' => $project_info->{project_id},
