@@ -1,5 +1,14 @@
 #! perl
 
+=pod
+
+This script is using mk-parallel-dump and mk-parallel-restore 
+L<http://www.maatkit.org/doc/> to copy data from one database 
+to another one. It is used to copy production data to development/copy 
+database.
+
+=cut
+
 $| = 1;
 
 use strict;
@@ -13,34 +22,50 @@ use File::Spec::Functions;
 
 use lib "$RealBin/../lib";
 use TapTinder::Utils::Cmd qw(run_cmd_ipc);
-use TapTinder::Utils::DB qw(get_connected_schema);
 
 
+sub dbutil_parallen_dump {
+    my ( $src_conf, $dest_conf, $hotcopy_conf, $dump_path ) = @_;
 
-sub dbutil_hotcopy {
-    my ( $src_conf, $dest_conf, $hotcopy_dpath ) = @_;
-
-    unless ( -d $hotcopy_dpath ) {
-        print "Creating directory '$hotcopy_dpath'.\n";
-        mkdir($hotcopy_dpath) or return 0;
+    unless ( -d $dump_path ) {
+        print "Creating directory '$dump_path'.\n";
+        mkdir($dump_path) or return 0;
     }
 
-    my $cmd_dump = 'mysqlhotcopy';
-    $cmd_dump .= " --noindices --allowold";
-    $cmd_dump .= " -u '" . $src_conf->{db}->{user} . "'";
-    $cmd_dump .= " -p '" . $src_conf->{db}->{pass} . "'";
-
-    $cmd_dump .= " '" . $src_conf->{db}->{name} . "'";
-    $cmd_dump .= " '" . $hotcopy_dpath . "'";
-
+    my $cmd_dump = 'mk-parallel-dump';
+    $cmd_dump .= " --databases '" . $src_conf->{db}->{name} . "'";
+    $cmd_dump .= " --user '" . $src_conf->{db}->{user} . "'";
+    $cmd_dump .= " --password '" . $src_conf->{db}->{pass} . "'";
+    $cmd_dump .= " --base-dir '" . $dump_path . "'";
+    $cmd_dump .= " --threads 4";
+    $cmd_dump .= " --lock-tables --chunk-size 500k";
     #print "cmd_dump: $cmd_dump\n";
 
-    print "Running mysqlhotcopy '$src_conf->{db}->{name}' -> '$hotcopy_dpath':\n";
+    print "Running mk-parallel-dump '$src_conf->{db}->{name}' -> '$dump_path':\n";
     my $dump_rc = TapTinder::Utils::Cmd::run_cmd_ipc( $cmd_dump, 1, undef );
     return $dump_rc;
 }
 
 
+sub dbutil_parallen_restore {
+    my ( $src_conf, $dest_conf, $hotcopy_conf, $dump_path ) = @_;
+
+    croak "Dump directory '$dump_path' not found.\n" unless -d $dump_path;
+
+    my $cmd_dump = 'mk-parallel-restore';
+    $cmd_dump .= " --create-databases --database '" . $dest_conf->{db}->{name} . "'";
+    $cmd_dump .= " --user '" . $hotcopy_conf->{user} . "'";
+    $cmd_dump .= " --password '" . $hotcopy_conf->{pass} . "'";
+    $cmd_dump .= " --base-dir '" . $dump_path . "'";
+    $cmd_dump .= " --threads 4";
+    $cmd_dump .= " --tab --fast-index";
+    $cmd_dump .= " '$dump_path'";
+    #print "cmd_dump: $cmd_dump\n";
+
+    print "Running mk-parallel-restore '$dump_path' -> '$dest_conf->{db}->{name}':\n";
+    my $dump_rc = TapTinder::Utils::Cmd::run_cmd_ipc( $cmd_dump, 1, undef );
+    return $dump_rc;
+}
 
 
 my $src_conf_fpath  = $ARGV[0] || catfile( $RealBin, '..', '..', '..', 'tt', 'server', 'conf', 'web_db.yml' );
@@ -62,39 +87,18 @@ croak "Configuration for destination database loaded from '$dest_conf_fpath' is 
 my ( $hotcopy_conf ) = YAML::LoadFile( $hotcopy_conf_fpath );
 croak "Configuration for destination database loaded from '$hotcopy_conf_fpath' is empty.\n" unless $hotcopy_conf->{user};
 
-exit;
-
-my $dest_schema = get_connected_schema( $dest_conf->{db} );
-croak "Connection to destination DB failed." unless $dest_schema;
 
 my $rc = undef;
 
-# Hotcopy.
-my $dest_dpath =  '/var/lib/mysql-backup';
-$rc = dbutil_hotcopy( $src_conf, $dest_conf, $dest_dpath );
+# Dump.
+my $dest_dpath = catdir( $RealBin, '..', 'temp', 'db-dump-' . $src_conf->{db}->{name} );
+$rc = dbutil_parallen_dump( $src_conf, $dest_conf, $hotcopy_conf, $dest_dpath );
 unless ( $rc ) {
-    croak "Drop all tables failed.";
+    croak "dbutil_parallen_dump failed.";
 }
 
-# Drop all tables.
-$dest_schema->storage->txn_begin;
-$rc = TapTinder::Utils::DB::do_drop_all_existing_tables( $dest_schema );
+# Restore.
+$rc = dbutil_parallen_restore( $src_conf, $dest_conf, $hotcopy_conf, $dest_dpath );
 unless ( $rc ) {
-    croak "Drop all tables failed.";
-}
-$dest_schema->storage->txn_commit;
-$dest_schema = undef;
-
-
-
-my $dest_hotcopy_conf = $dest_conf->{db};
-$dest_hotcopy_conf->{user} = $hotcopy_conf->{user};
-$dest_hotcopy_conf->{pass} = $hotcopy_conf->{pass};
-my $dest_schema_hotcopy_user = get_connected_schema( $dest_hotcopy_conf );
-
-
-my $source_path = '/var/lib/mysql-backup/' . $src_conf->{db}->{name};
-$rc = TapTinder::Utils::DB::restore_all_tables_from( $dest_schema_hotcopy_user, $source_path );
-unless ( $rc ) {
-    croak "Restore all tables failed.";
+    croak "dbutil_parallen_restore failed.";
 }
