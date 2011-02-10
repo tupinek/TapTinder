@@ -36,10 +36,10 @@ Connect to DB. Take list of DB tables. Return list of sql statements to drop all
 
 sub get_drop_sql_list {
     my ( $schema ) = @_;
-    
+
     my $dbh = $schema->storage->dbh;
     my @tables = $dbh->tables();
-    
+
     my @sql_list = ();
     push @sql_list, "SET foreign_key_checks=0;";
     foreach my $table_name ( @tables ) {
@@ -79,6 +79,42 @@ sub do_drop_all_existing_tables {
     my $dbh = $schema->storage->dbh;
     foreach my $statement ( @sql_list ) {
         $dbh->do($statement) or croak $dbh->errstr;
+    }
+    return 1;
+}
+
+
+=head2 restore_all_tables_from
+
+Run restore table ... from ... for each *.frm file inside $source_path.
+
+=cut
+
+sub restore_all_tables_from {
+    my ( $schema, $source_path ) = @_;
+
+    my $dirh;
+    my @files = glob($source_path . '/*.frm');
+    #print Dumper( \@files );
+
+    my $rest_sql = 'RESTORE TABLE ';
+    my $num = 0;
+    foreach my $file ( @files ) {
+        if ( my ( $table ) = $file =~ /([^\/]+)\.frm/ ) {
+            $num++;
+            $rest_sql .= ', ' if $num > 1;
+            $rest_sql .= '`' . $table . '`';
+        } else {
+            die "Can't get table name from '$file' path.";
+        }
+    }
+    $rest_sql .= " FROM '$source_path';";
+
+
+    if ( $num > 0 ) {
+        print "restore SQL: '$rest_sql'\n";
+        my $dbh = $schema->storage->dbh;
+        $dbh->do($rest_sql) or croak $dbh->errstr;
     }
     return 1;
 }
@@ -124,12 +160,12 @@ Run $sql, $ba on $schema throug dbh_do (DBI do).
 
 sub do_dbh_sql {
     my ( $schema, $sql, $ba ) = @_;
-    
+
     my $data = $schema->storage->dbh_do(
-        sub { 
+        sub {
             my $data = undef;
-            eval { 
-                $data = $_[1]->do( $_[2], {}, @{$_[3]} ); 
+            eval {
+                $data = $_[1]->do( $_[2], {}, @{$_[3]} );
             };
             return $data;
         },
