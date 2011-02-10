@@ -32,7 +32,7 @@
     <td>[% st.msstatus_name %]</td>
     <td>[% st.mslog_change_time %]</td>
 
-    <td>[% st.last_cmd_name %] - [% st.last_cmd_rcommit_sha.substr(0,8) %] [% st.last_cmd_project_name %] [% st.last_cmd_rep_path %]</td>
+    <td><a href="[% c.uri_for( '/cmdinfo/' _ st.last_finished_msjobp_cmd_id ) %]">[% st.last_cmd_name %]</a> - [% st.last_cmd_rcommit_sha.substr(0,8) %] [% st.last_cmd_project_name %] [% st.last_cmd_rep_path %]</td>
     <td>[% st.last_cmd_end_time %]</td>
   </tr>
 [% END -%]
