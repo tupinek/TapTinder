@@ -270,12 +270,12 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'order' => {
+    'rorder' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'order',
+      'name' => 'rorder',
       'is_nullable' => 0,
       'size' => '11'
     },
@@ -1488,12 +1488,12 @@ __PACKAGE__->add_columns(
       'is_nullable' => 1,
       'size' => '11'
     },
-    'order' => {
+    'rorder' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'order',
+      'name' => 'rorder',
       'is_nullable' => 0,
       'size' => '11'
     },

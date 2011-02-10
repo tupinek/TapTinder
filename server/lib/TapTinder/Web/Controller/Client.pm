@@ -483,7 +483,7 @@ sub get_new_job {
                 on wcj.wconf_session_id = wcs.wconf_session_id
               join jobp jp
                 on jp.job_id = wcj.job_id
-               and jp.order = 1
+               and jp.rorder = 1
               join wconf_rref wcr
                 on wcr.rref_id = wcj.rref_id
               join rref rr
@@ -507,7 +507,7 @@ sub get_new_job {
                and wcj.rref_id is null
               join jobp jp
                 on jp.job_id = wcj.job_id
-               and jp.order = 1
+               and jp.rorder = 1
               join rep as r
                 on r.rep_id = wcj.rep_id
               join wconf_rref as wcr
@@ -724,11 +724,11 @@ sub get_next_cmd {
                cmd c
          where jp.job_id = ?
            and jpc.jobp_id = jp.jobp_id
-           and (    ( ? is null or jpc.order > ? )
-                 or ( ? is null or jp.order > ? )
+           and (    ( ? is null or jpc.rorder > ? )
+                 or ( ? is null or jp.rorder > ? )
                )
            and c.cmd_id = jpc.cmd_id
-         order by jp.order, jpc.order
+         order by jp.rorder, jpc.rorder
     "; # end sql
 
     my $ba = [
@@ -757,8 +757,8 @@ sub get_next_cmd_pmcid {
         'msjobp_cmd_id' => $msjobp_cmd_id,
         'msjob_id.msproc_id' => $msproc_id,
     }, {
-        select => [ 'msjobp_id.msjob_id', 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.jobp_id', 'msjobp_id.rcommit_id', 'jobp_id.order', 'jobp_cmd_id.order', ],
-        as =>     [ 'msjob_id',           'msjobp_id',           'job_id',         'jobp_id',         'rcommit_id',           'jobp_order',    'jobp_cmd_order',    ],
+        select => [ 'msjobp_id.msjob_id', 'msjobp_id.msjobp_id', 'jobp_id.job_id', 'jobp_id.jobp_id', 'msjobp_id.rcommit_id', 'jobp_id.rorder', 'jobp_cmd_id.rorder', ],
+        as =>     [ 'msjob_id',           'msjobp_id',           'job_id',         'jobp_id',         'rcommit_id',           'jobp_order',    'jobp_cmd_order',     ],
         join => [ { 'msjobp_id' => [ 'msjob_id', 'jobp_id', ] }, 'jobp_cmd_id', ],
     } );
     #$self->dump_rs( $c, $rs );
@@ -803,7 +803,7 @@ sub start_new_job {
     my $job_id = $new_job->{job_id};
     my $rcommit_id = $new_job->{rcommit_id};
 
-    # TODO, use SQL with jobp.order=1, jobp_cmd.order=1
+    # TODO, use SQL with jobp.rorder=1, jobp_cmd.rorder=1
     my $next_cmd = $self->get_next_cmd( $c, $data, $job_id, undef, undef );
     return $next_cmd unless $next_cmd; # undef isn't error
 

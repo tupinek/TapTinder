@@ -61,7 +61,7 @@ sub index : Path  {
             'select' => [qw/
                 me.msjobp_cmd_id
                 me.start_time           me.end_time
-                cmd_id.name             jobp_cmd_id.params      jobp_cmd_id.order
+                cmd_id.name             jobp_cmd_id.params      jobp_cmd_id.rorder
                 status_id.name          status_id.descr
                 output_id.name          fspath_id.web_path      fspath_id.path
                 outdata_id.name         fspath_id_2.web_path    
@@ -157,10 +157,10 @@ sub index : Path  {
                 },
                 'status_id',
             ],
-            'order_by' => [qw/ jobp_id.order jobp_cmd_id.order /],
+            'order_by' => [qw/ jobp_id.rorder jobp_cmd_id.rorder /],
             'select' => [qw/
                 me.msjobp_cmd_id
-                cmd_id.name             jobp_cmd_id.params      jobp_cmd_id.order
+                cmd_id.name             jobp_cmd_id.params      jobp_cmd_id.rorder
                 status_id.name          status_id.descr
                 rep_id.name             rep_id.github_url
                 project_id.project_id   project_id.name
@@ -170,7 +170,7 @@ sub index : Path  {
             /],
             'as' => [qw/ 
                 msjobp_cmd_id
-                cmd_name                cmd_params              cmd_order
+                cmd_name                cmd_params              cmd_rorder
                 status_name             status_descr
                 rep_name                rep_github_url
                 project_id              project_name            

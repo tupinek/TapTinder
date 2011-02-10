@@ -54,7 +54,7 @@ return sub {
     # table: jobp
     $schema->resultset('jobp')->delete_all() if $delete_all;
     $schema->resultset('jobp')->populate([
-        [ qw/ jobp_id  job_id  project_id   `order`             name    descr    max_age  depends_on_id  extends /  ],
+        [ qw/ jobp_id  job_id  project_id    rorder             name    descr    max_age  depends_on_id  extends /  ],
         [           1,      1,          4,       1,     'sole Parrot',  undef,      3*24,         undef,       0    ],
         [           2,      2,          5,       1,     'sole Rakudo',  undef,      3*24,         undef,       0    ],
     ]);
@@ -63,7 +63,7 @@ return sub {
     # table: jobp_cmd
     $schema->resultset('jobp_cmd')->delete_all() if $delete_all;
     $schema->resultset('jobp_cmd')->populate([
-        [ qw/ jobp_cmd_id jobp_id `order` cmd_id / ],
+        [ qw/ jobp_cmd_id jobp_id rorder cmd_id / ],
 
         # job_id = 1
         [  1, 1, 1, 1 ],
