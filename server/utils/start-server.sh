@@ -34,6 +34,7 @@ function start_fastcgi {
         # devel debugging
         if [ "$TYPE" == "dev" ]; then
             export DBIC_TRACE=1
+            export DBIC_TRACE_PROFILE=console
             export CATALYST_DEBUG=1
         fi
     
