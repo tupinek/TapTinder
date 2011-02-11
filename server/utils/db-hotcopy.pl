@@ -2,6 +2,9 @@
 
 =pod
 
+Warning! Stop server or all clients on ttcopy instance before starting 
+this script.
+
 This script is using mk-parallel-dump and mk-parallel-restore 
 L<http://www.maatkit.org/doc/> to copy data from one database 
 to another one. It is used to copy production data to development/copy 
@@ -22,6 +25,7 @@ use File::Spec::Functions;
 
 use lib "$RealBin/../lib";
 use TapTinder::Utils::Cmd qw(run_cmd_ipc);
+use TapTinder::Utils::DB;
 
 
 sub dbutil_parallen_dump {
@@ -90,15 +94,35 @@ croak "Configuration for destination database loaded from '$hotcopy_conf_fpath' 
 
 my $rc = undef;
 
-# Dump.
-my $dest_dpath = catdir( $RealBin, '..', 'temp', 'db-dump-' . $src_conf->{db}->{name} );
-$rc = dbutil_parallen_dump( $src_conf, $dest_conf, $hotcopy_conf, $dest_dpath );
-unless ( $rc ) {
-    croak "dbutil_parallen_dump failed.";
+# Dump and restore.
+if ( 1 ) {
+
+    # Dump.
+    my $dest_dpath = catdir( $RealBin, '..', 'temp', 'db-dump-' . $src_conf->{db}->{name} );
+    $rc = dbutil_parallen_dump( $src_conf, $dest_conf, $hotcopy_conf, $dest_dpath );
+    unless ( $rc ) {
+        croak "dbutil_parallen_dump failed.";
+    }
+
+    # Restore.
+    $rc = dbutil_parallen_restore( $src_conf, $dest_conf, $hotcopy_conf, $dest_dpath );
+    unless ( $rc ) {
+        croak "dbutil_parallen_restore failed.";
+    }
 }
 
-# Restore.
-$rc = dbutil_parallen_restore( $src_conf, $dest_conf, $hotcopy_conf, $dest_dpath );
-unless ( $rc ) {
-    croak "dbutil_parallen_restore failed.";
+
+# Update some data to finish ttcopy instance.
+if ( 1 ) {
+    my $base_fname = 'data-copy-after-hotcopy';
+    my $after_copy_sql_fpath = catfile( $RealBin, '..', 'sql', $base_fname.'.pl' );
+
+    my $dest_schema = get_connected_schema( $dest_conf->{db} );
+    croak "Connection to destination DB failed." unless $dest_schema;
+    $rc = TapTinder::Utils::DB::run_perl_sql_file_trans( $after_copy_sql_fpath, $dest_schema );
+    print "After hotcopy script return code: $rc\n";
 }
+
+
+
+

@@ -12,6 +12,16 @@ return sub {
     my $server_data_dir = abs_path( 
         File::Spec->catdir( $FindBin::Bin, '..', '..', 'server-data' )
     );
+
+
+    # table: params
+    $schema->resultset('param')->search({
+        'param_type_id' => 2, # delete all old 'instance-name' rows
+    })->delete_all;
+    $schema->resultset('param')->populate([
+        [ qw/ param_type_id value / ],
+        [ 2, 'ttprod' ],
+    ]);
     
 
     # table: user
