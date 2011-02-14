@@ -8,15 +8,15 @@ use Cwd 'abs_path';
 
 return sub {
     my ( $schema, $delete_all, $data ) = @_;
-    
-    
+
+
     my $project_name = 'Parrot';
     my $project_rs = $schema->resultset('project')->single({
         'me.name' => $project_name,
     });
     my $project_id = $project_rs->id;
     print "Project $project_name id $project_id\n";
-    
+
 
     my $master_rref_rs = $schema->resultset('rref')->search(
         {
@@ -35,8 +35,8 @@ return sub {
     }
     my $master_rref_id = $master_rref_row->id;
     print "Master rref_id $master_rref_id\n";
-    
-    
+
+
     my $job_priority = undef;
     unless ( defined $job_priority ) {
         my $rs = $schema->resultset('job')->search();
@@ -44,8 +44,8 @@ return sub {
         $job_priority = $max_priority + 1;
         print "new job priority: $job_priority\n";
     }
-    
-    
+
+
     # table: job
     my $job_rs = $schema->resultset('job')->create({
         'client_min_ver' => 257,
@@ -56,7 +56,7 @@ return sub {
     my $job_id = $job_rs->id;
     print "job_id $job_id\n";
 
- 
+
     # table: jobp
     my $jobp_rs = $schema->resultset('jobp')->create({
         'job_id' => $job_id,
@@ -70,7 +70,7 @@ return sub {
     });
     my $jobp_id = $jobp_rs->id;
     print "jobp_id $jobp_id\n";
- 
+
 
     # table: jobp_cmd
     $schema->resultset('jobp_cmd')->populate([
@@ -80,7 +80,7 @@ return sub {
         [  $jobp_id, 2, 2, undef ],
         [  $jobp_id, 3, 4, '--optimize' ],
         [  $jobp_id, 4, 5, undef ],
-    ]);    
+    ]);
 
     return 1;
 };
