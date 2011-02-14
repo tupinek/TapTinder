@@ -1,6 +1,6 @@
 
 for ((i=1;1;i++)); do
-    perl ./ttclient.pl $1
+    perl ./ttclient.pl $@
     if [ ! -f './.do_ttclient_upgrade' ]; then
         exit;
     fi
