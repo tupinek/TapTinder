@@ -14,6 +14,16 @@ return sub {
     );
     
 
+    # table: params
+    $schema->resultset('param')->search({
+        'param_type_id' => 2, # delete all old 'instance-name' rows
+    })->delete_all;
+    $schema->resultset('param')->populate([
+        [ qw/ param_type_id value / ],
+        [ 2, 'ttdev' ],
+    ]);
+    
+    
     # table: user
     $schema->resultset('user')->delete_all() if $delete_all;
     $schema->resultset('user')->populate([

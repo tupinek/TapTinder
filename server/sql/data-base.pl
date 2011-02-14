@@ -10,6 +10,7 @@ return sub {
     $schema->resultset('param_type')->populate([
         [ qw/ param_type_id name descr / ],
         [ 1,  'db_version', 'Version number of TapTinder database.'  ],
+        [ 2,  'instance-name', 'Name of instance (ttprod, ttdev, ttcopy).' ],
     ]);
 
 

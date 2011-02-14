@@ -103,6 +103,35 @@ sub run_perl_sql_file {
     return $do_sub->( @_ );
 }
 
+
+=head2 run_perl_sql_file_trans
+
+Run script to fill data to database (sql/data-*.pl) in transaction.
+
+=cut
+
+sub run_perl_sql_file_trans {
+    my $req_fpath = shift;
+    my $schema = shift;
+
+    $schema->storage->txn_begin;
+
+    my $rc = TapTinder::Utils::DB::run_perl_sql_file(
+        $req_fpath,
+        $schema,
+        @_  # all other params given        
+    );
+
+    if ( $rc ) {
+        print "Finished ok. Doing commit.\n";
+        $schema->storage->txn_commit;
+    } else {
+        print "Error. Doing rollback.\n";
+        $schema->storage->txn_rollback;
+    }    
+}
+
+
 =head2 get_dbh_errstr
 
 Return dbh error string;
