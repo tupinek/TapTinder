@@ -80,11 +80,11 @@ if [ "$TYPE" == "dev" ]; then
 fi
 
 if [ "$TYPE" == "copy" ]; then
-    start_fastcgi "$TYPE" "$CMD" "$CMD_PAR" 2000 4000 "temp/ttcopy.pid"
+    start_fastcgi "$TYPE" "$CMD" "$CMD_PAR" 2100 4000 "temp/ttcopy.pid"
 fi
 
 if [ "$TYPE" == "prod" ]; then
-    start_fastcgi "$TYPE" "$CMD" "$CMD_PAR" 2000 5000 "temp/tt.pid"
+    start_fastcgi "$TYPE" "$CMD" "$CMD_PAR" 2200 5000 "temp/ttprod.pid"
 fi
 
 
