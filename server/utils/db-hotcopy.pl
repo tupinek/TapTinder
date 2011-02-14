@@ -92,6 +92,22 @@ my ( $hotcopy_conf ) = YAML::LoadFile( $hotcopy_conf_fpath );
 croak "Configuration for destination database loaded from '$hotcopy_conf_fpath' is empty.\n" unless $hotcopy_conf->{user};
 
 
+# Try to save from fatal misuse.
+if ( 1 ) {
+    my $dest_schema = get_connected_schema( $dest_conf->{db} );
+    my $instance_params_rs = $dest_schema->resultset('param')->search({
+        'param_type_id' => 2, # delete all old 'instance-name' rows
+    });
+    while ( my $row = $instance_params_rs->next ) {
+        my $instance_name = $row->get_column('value');
+        if ( $instance_name ne 'ttcopy' ) {
+            croak "Check destination database failed. Parameter 'instance-name' has value '$instance_name' (value 'ttcopy' required)";
+        }
+    }
+}
+
+
+
 my $rc = undef;
 
 # Dump and restore.
@@ -122,7 +138,3 @@ if ( 1 ) {
     $rc = TapTinder::Utils::DB::run_perl_sql_file_trans( $after_copy_sql_fpath, $dest_schema );
     print "After hotcopy script return code: $rc\n";
 }
-
-
-
-
