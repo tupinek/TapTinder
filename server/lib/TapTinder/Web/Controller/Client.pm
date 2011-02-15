@@ -496,7 +496,7 @@ sub get_new_job {
 
             select wcj.wconf_job_id,
                    wcj.rep_id,
-                   wcj.rref_id,
+                   wcr.rref_id,
                    wcj.job_id,
                    wcj.priority as wcj_priority,
                    wcr.priority as wcr_priority,
@@ -576,6 +576,10 @@ sub get_new_job {
             $ba = [ $row->{jobp_id}, $rref_id, $machine_id, $job_id ];
 
         } else {
+            # ToDo - Is this part usefull? 
+            next;
+
+            # No rref_id given. Doing for all refs.
             next if exists $rref_done_list->{ $done_key };
             $rref_done_list->{ $done_key } = 1;
 
