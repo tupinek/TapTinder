@@ -105,10 +105,22 @@
 
 <h2>All job commands</h2>
 <table class=data>
+<tr>
+<th>Command</th>
+<th>Params</th>
+<th><span title="Command status">&nbsp;</a></th>
+</tr>
 [% FOREACH cmd IN cmds -%]
   <tr class="[% IF loop.count() % 2 %]even[% ELSE %]odd[% END %] [% IF info.msjobp_cmd_id == cmd.msjobp_cmd_id %]marked[% END %]">
     <td>
-      [% cmd.cmd_name %]
+     <span title="[% cmd.cmd_descr %]">[% cmd.cmd_name %]</span>
+    </td>
+    <td>
+      [% IF cmd.cmd_params -%]
+        [% cmd.cmd_params %]
+      [% ELSE -%]
+        &nbsp;
+      [% END -%]
     </td>
 
     [% IF cmd.status_name == 'error' %]
