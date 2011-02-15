@@ -35,36 +35,114 @@ sub index : Path  {
     my $date_from_str = $date_from->ymd . ' ' . $date_from->hms;
     #$self->dumper( $c, $date_from_str );
 
-    my $plus_rows = [ qw/
-        msession_id client_rev start_time machine_id machine_name
-        cpuarch osname archname last_finished_msjobp_cmd_id
-        max_mslog_id
-        mslog_id mslog_change_time msstatus_name
+    my $cols = [ qw/ 
+        machine_id machine_name
+        cpuarch osname archname 
+        msession_id client_rev msession_start_time 
+        last_finished_msjobp_cmd_id
+        msproc_id msproc_start_time
+        max_mslog_id 
+        max_msproc_log_id
+        last_finished_msjobp_cmd_id
+        msproc_log_id msproc_log_change_time msproc_status_name
+        mslog_id mslog_change_time mslog_status_name
         last_cmd_name last_cmd_end_time
         last_cmd_rcommit_id last_cmd_rcommit_sha
         last_cmd_author last_cmd_project_name
-    /];
-    # $mslog{mslog_change_time} gt $date_from_str
-    my $search_conf = {
-        'select' => $plus_rows,
-        'as'     => $plus_rows,
-        bind   => [ $date_from_str ],
-        page => $pr->{page},
-        rows => $pr->{rows} || 50,
-        offset => $pr->{offset} || 0,
-        result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-    };
+    / ];
 
-    my $rs = $c->model('WebDB')->schema->resultset( 'MSessionStatus' )->search( {}, $search_conf );
+    my $sql = "
+        from (
+            select xm.*,
+                   mspl.msproc_log_id,
+                   mspl.change_time as msproc_log_change_time,
+                   msps.name as msproc_status_name,
+                   msl.mslog_id,
+                   msl.change_time as mslog_change_time,
+                   mss.name as mslog_status_name,
+                   c.name as last_cmd_name,
+                   mjpc.end_time as last_cmd_end_time,
+                   rc.rcommit_id as last_cmd_rcommit_id,
+                   s.sha as last_cmd_rcommit_sha,
+                   ra.rep_login as last_cmd_author,
+                   project.name as last_cmd_project_name
+              from (
+                select ma.machine_id,
+                       ma.name as machine_name,
+                       ma.cpuarch,
+                       ma.osname,
+                       ma.archname,
+                       ms.msession_id,
+                       ms.client_rev,
+                       ms.start_time as msession_start_time,
+                       msp.msproc_id,
+                       msp.start_time as msproc_start_time,
+                       ( select max(i_ml.mslog_id)
+                           from mslog i_ml
+                          where i_ml.msession_id = ms.msession_id
+                       ) as max_mslog_id,
+                       ( select max(i_mpl.msproc_log_id)
+                           from msproc_log i_mpl
+                          where i_mpl.msproc_id = msp.msproc_id
+                       ) as max_msproc_log_id,
+                       ( select max(msjpc.msjobp_cmd_id)
+                           from msjob msj,
+                                msjobp msjp,
+                                msjobp_cmd msjpc
+                          where msp.msession_id = ms.msession_id
+                            and msj.msproc_id = msp.msproc_id
+                            and msjp.msjob_id = msj.msjob_id
+                            and msjpc.msjobp_id = msjp.msjobp_id
+                       ) as last_finished_msjobp_cmd_id
+                  from msproc msp,
+                       msession ms,
+                       machine ma
+                 where ma.machine_id = ms.machine_id
+                   and ms.end_time is null
+                   and ms.abort_reason_id is null
+              ) xm,
+              mslog msl,
+              msstatus mss,
+              msproc_log mspl,
+              msproc_status msps,
+              msjobp_cmd mjpc,
+              msjobp mjp,
+              jobp_cmd jpc,
+              jobp jp,
+              cmd c,
+              rcommit rc,
+              sha s,
+              rauthor ra,
+              rep,
+              project
+            where msl.mslog_id = xm.max_mslog_id
+              and mss.msstatus_id = msl.msstatus_id
+              and mspl.msproc_log_id = xm.max_msproc_log_id
+              and mspl.change_time > ?
+              and msps.msproc_status_id = mspl.msproc_status_id
+              and mjpc.msjobp_cmd_id = last_finished_msjobp_cmd_id
+              and mjp.msjobp_id = mjpc.msjobp_id
+              and jpc.jobp_cmd_id = mjpc.jobp_cmd_id
+              and jp.jobp_id = jpc.jobp_id
+              and c.cmd_id = jpc.cmd_id
+              and rc.rcommit_id = mjp.rcommit_id
+              and s.sha_id = rc.sha_id
+              and ra.rauthor_id = rc.author_id
+              and rep.rep_id = rc.rep_id
+              and rep.project_id = jp.project_id
+              and project.project_id = rep.project_id
+            order by xm.machine_id, xm.msession_start_time, xm.msproc_start_time
+            limit 100
+        ) a_f
+    "; # end sql
 
-    my @states = $rs->all;
-    $c->stash->{states} = \@states;
+    my $ba = [ $date_from_str ];
+    my $all_rows = $self->edbi_selectall_arrayref_slice( $c, $cols, $sql, $ba );
+    $self->dumper( $c, $all_rows );
 
-    my $base_uri = '/' . $c->action->namespace . '/page-';
-    my $page_uri_prefix = $c->uri_for( $base_uri )->as_string;
-
-    $c->stash->{pager_html} = $self->get_pager_html( $rs->pager, $page_uri_prefix );
+    $c->stash->{states} = $all_rows;
 }
+
 
 
 =head1 SEE ALSO

@@ -12,11 +12,16 @@ Usage:
   d ... http server, normal engine
   dp ... http server, Prefork::Engine
   f ... FastCGI
+  
+  start ... start FastCGI
+  stop ... stop FastCGI
+  debug ... run normal engine in debug mode
 
 Example:
   utils/start-server.sh dev d
   utils/start-server.sh dev f start
   utils/start-server.sh dev f stop
+  utils/start-server.sh copy d debug
 
 USAGE_END
 }
@@ -32,7 +37,8 @@ function start_fastcgi {
 
     if [ "$CMD" == "d" -o "$CMD" == "dp" ]; then 
         # devel debugging
-        if [ "$TYPE" == "dev" ]; then
+        if [ "$CMD" == "d" -a "$CMD_PAR" == "debug" ]; then
+            echo "Starting in debug mode."
             export DBIC_TRACE=1
             export DBIC_TRACE_PROFILE=console
             export CATALYST_DEBUG=1
