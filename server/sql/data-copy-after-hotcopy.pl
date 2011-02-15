@@ -77,8 +77,7 @@ return sub {
         });
     }
 
-
-
+    
     # New bot.
     $schema->resultset('ibot_log')->delete_all();
     $schema->resultset('ichannel_conf')->delete_all();
@@ -101,6 +100,11 @@ return sub {
         [  1, 1, 1, 1, 1, 4,   7*24  ],
         [  2, 1, 2, 1, 1, 4,   7*24  ],
     ]);
+
+
+    # Set new passwords and other private data.
+    # ToDo
+
 
     return 1;
 };
