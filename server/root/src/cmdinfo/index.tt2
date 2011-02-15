@@ -141,7 +141,7 @@
 <span title="msjobp_cmd"><a href="[% c.uri_for( '/cwm/msjobp_cmd/id-' _ info.msjobp_cmd_id ) %]">[% info.msjobp_cmd_id %]</a></span>
 (<span title="jobp_cmd"><a href="[% c.uri_for( '/cwm/jobp_cmd/id-' _ info.jobp_cmd_id ) %]">[% info.jobp_cmd_id %]</a></span>),
 
-[% IF info.outdata_fsfile_id -%]
+[% IF info.output_fsfile_id -%]
 <span title="output (fsfile)"><a href="[% c.uri_for( '/cwm/fsfile/id-' _ info.output_fsfile_id ) %]">[% info.output_id %]</a></span>
 (<span title="output (fspath)"><a href="[% c.uri_for( '/cwm/fspath/id-' _ info.output_fspath_id ) %]">[% info.output_fspath_id %]</a></span>)
 [% ELSE -%]
