@@ -1,6 +1,10 @@
 [% DEFAULT title = 'Job command info' -%]
 
-<div class=nav><a href="javascript:history.back();">Back</a>, <a href="[% c.uri_for('/') %]">homepage</a>.</div>
+<div class=nav>
+  <a href="javascript:history.back();">Back</a>, 
+  <a href="javascript:history.back();">same job</a>, 
+  <a href="[% c.uri_for('/') %]">homepage</a>.
+</div>
 
 
 <table>
@@ -124,5 +128,40 @@
    <tr>
 [% END -%]
 </table>
+
+<h2>IDs</h2>
+<span title="machine"><a href="[% c.uri_for( '/cwm/machine/id-' _ info.machine_id ) %]">[% info.machine_id %]</a></span>, 
+<span title="msession"><a href="[% c.uri_for( '/cwm/msession/id-' _ info.msession_id ) %]">[% info.msession_id %]</a></span>, 
+<span title="msproc"><a href="[% c.uri_for( '/cwm/msproc/id-' _ info.msproc_id ) %]">[% info.msproc_id %]</a></span>, 
+
+<span title="msjob"><a href="[% c.uri_for( '/cwm/msjob/id-' _ info.msjob_id ) %]">[% info.msjob_id %]</a></span>
+(<span title="job"><a href="[% c.uri_for( '/cwm/job/id-' _ info.job_id ) %]">[% info.job_id %]</a></span>),
+<span title="msjobp"><a href="[% c.uri_for( '/cwm/msjobp/id-' _ info.msjobp_id ) %]">[% info.msjobp_id %]</a></span> 
+(<span title="jobp"><a href="[% c.uri_for( '/cwm/jobp/id-' _ info.jobp_id ) %]">[% info.jobp_id %]</a></span>),
+<span title="msjobp_cmd"><a href="[% c.uri_for( '/cwm/msjobp_cmd/id-' _ info.msjobp_cmd_id ) %]">[% info.msjobp_cmd_id %]</a></span>
+(<span title="jobp_cmd"><a href="[% c.uri_for( '/cwm/jobp_cmd/id-' _ info.jobp_cmd_id ) %]">[% info.jobp_cmd_id %]</a></span>),
+
+[% IF info.outdata_fsfile_id -%]
+<span title="output (fsfile)"><a href="[% c.uri_for( '/cwm/fsfile/id-' _ info.output_fsfile_id ) %]">[% info.output_id %]</a></span>
+(<span title="output (fspath)"><a href="[% c.uri_for( '/cwm/fspath/id-' _ info.output_fspath_id ) %]">[% info.output_fspath_id %]</a></span>)
+[% ELSE -%]
+<span title="output"> - </span>
+[% END -%],
+
+[% IF info.outdata_fsfile_id -%]
+<span title="outdata (fsfile)"><a href="[% c.uri_for( '/cwm/fsfile/id-' _ info.outdata_fsfile_id ) %]">[% info.outdata_fsfile_id %]</a></span>
+(<span title="outdata (fspath)"><a href="[% c.uri_for( '/cwm/fspath/id-' _ info.outdata_fspath_id ) %]">[% info.outdata_fspath_id %]</a></span>)
+[% ELSE -%]
+<span title="outdata"> - </span>
+[% END -%],
+
+<span title="rcommit"><a href="[% c.uri_for( '/cwm/rcommit/id-' _ info.rcommit_id ) %]">[% info.rcommit_id %]</a></span>
+(<span title="sha"><a href="[% c.uri_for( '/cwm/sha/id-' _ info.sha_id ) %]">[% info.sha_id %]</a></span>,
+<span title="author (rauthor)"><a href="[% c.uri_for( '/cwm/rauthor/id-' _ info.author_rauthor_id ) %]">[% info.author_rauthor_id %]</a></span>,
+<span title="committer (rauthor)"><a href="[% c.uri_for( '/cwm/rauthor/id-' _ info.committer_rauthor_id ) %]">[% info.committer_rauthor_id %]</a></span>),  
+<span title="rep"><a href="[% c.uri_for( '/cwm/rep/id-' _ info.rep_id ) %]">[% info.rep_id %]</a></span>,
+<span title="project"><a href="[% c.uri_for( '/cwm/project/id-' _ info.project_id ) %]">[% info.project_id %]</a></span>
+
+
 [% pager_html %]
 
