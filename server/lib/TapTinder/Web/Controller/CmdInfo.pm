@@ -165,7 +165,8 @@ sub index : Path  {
             'order_by' => [qw/ jobp_id.rorder jobp_cmd_id.rorder /],
             'select' => [qw/
                 me.msjobp_cmd_id
-                cmd_id.name             jobp_cmd_id.params      jobp_cmd_id.rorder
+                cmd_id.name             cmd_id.descr
+                jobp_cmd_id.params      jobp_cmd_id.rorder      
                 status_id.name          status_id.descr
                 rep_id.name             rep_id.github_url
                 project_id.project_id   project_id.name
@@ -175,7 +176,8 @@ sub index : Path  {
             /],
             'as' => [qw/ 
                 msjobp_cmd_id
-                cmd_name                cmd_params              cmd_rorder
+                cmd_name                cmd_descr
+                cmd_params              cmd_rorder              
                 status_name             status_descr
                 rep_name                rep_github_url
                 project_id              project_name            
