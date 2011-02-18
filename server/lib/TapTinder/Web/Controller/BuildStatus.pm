@@ -25,6 +25,8 @@ sub index : Path  {
     $c->stash->{project_name} = $project_name;
         
     my $ref_name = $p_ref_name;
+    # Replace -- to /. Allow / in url path.
+    $ref_name =~ s{--}{\/}g; # ToDo
     $c->stash->{ref_name} = $ref_name;
     $ref_name = 'master' unless $ref_name;
 
