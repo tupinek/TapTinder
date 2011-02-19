@@ -7,7 +7,7 @@
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 
--- Tags_order: project, rfile, machine, user, patch, wconfA, wconfA, fspath_select, jobs, machine_sessions, test_runs, benchmark_runs, files_paths, irc_robot, config, wui.
+-- Tags_order: project, machine, user, patch, wconfA, wconfA, fspath_select, jobs, machine_sessions, test_runs, benchmark_runs, files_paths, irc_robot, config, wui.
 </source>
 
 === Tables ===
@@ -184,7 +184,7 @@ CREATE TABLE rfile (
     INDEX i_rcommit_id (rcommit_id),
     CONSTRAINT fk_rfile_rcommit_id FOREIGN KEY (rcommit_id) REFERENCES rcommit (rcommit_id),
     CONSTRAINT fk_rfile_rpath_id FOREIGN KEY (rpath_id) REFERENCES rpath (rpath_id)
-) TYPE=InnoDB COMMENT='Files in repository path. Tag: rfile.';
+) TYPE=InnoDB COMMENT='Files in repository path. Tag: test_runs.';
 </source>
 
 ==== Table rpath ====
@@ -193,7 +193,7 @@ CREATE TABLE rpath (
     rpath_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     path        VARCHAR(1000) NOT NULL,
     INDEX i_path (path)
-) TYPE=InnoDB COMMENT='All file paths in repositories. Tag: rfile.';
+) TYPE=InnoDB COMMENT='All file paths in repositories. Tag: test_runs.';
 </source>
 
 ==== Table job ====
