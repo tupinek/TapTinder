@@ -121,5 +121,17 @@ return sub {
     ]);
 
 
+    # table: wui_project
+    $schema->resultset('wui_project')->delete_all() if $delete_all;
+    $schema->resultset('wui_project')->populate([
+        [ qw/ wui_project_id project_id main_page_order / ],
+        [ 1, 4, 1 ],
+        [ 2, 5, 2 ],
+        [ 3, 1, 3 ],
+        [ 4, 2, 4 ],
+        [ 5, 3, 5 ],
+    ]);
+
+
     return 1;
 };

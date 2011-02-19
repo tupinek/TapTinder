@@ -7,7 +7,7 @@
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 
--- Tags_order: project, machine, user, patch, wconfA, wconfA, fspath_select, jobs, machine_sessions, test_runs, benchmark_runs, files_paths, irc_robot, config, wui.
+-- Tags_order: project, machine, user, patch, wconfA, wconfA, fspath_select, jobs, machine_sessions, rfile, test_runs, benchmark_runs, files_paths, irc_robot, config, wui.
 </source>
 
 === Tables ===
@@ -184,7 +184,7 @@ CREATE TABLE rfile (
     INDEX i_rcommit_id (rcommit_id),
     CONSTRAINT fk_rfile_rcommit_id FOREIGN KEY (rcommit_id) REFERENCES rcommit (rcommit_id),
     CONSTRAINT fk_rfile_rpath_id FOREIGN KEY (rpath_id) REFERENCES rpath (rpath_id)
-) TYPE=InnoDB COMMENT='Files in repository path. Tag: test_runs.';
+) TYPE=InnoDB COMMENT='Files in repository path. Tag: rfile.';
 </source>
 
 ==== Table rpath ====
@@ -193,7 +193,7 @@ CREATE TABLE rpath (
     rpath_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     path        VARCHAR(1000) NOT NULL,
     INDEX i_path (path)
-) TYPE=InnoDB COMMENT='All file paths in repositories. Tag: test_runs.';
+) TYPE=InnoDB COMMENT='All file paths in repositories. Tag: rfile.';
 </source>
 
 ==== Table job ====
@@ -521,6 +521,16 @@ CREATE TABLE trun_status (
 ) TYPE=InnoDB COMMENT='Test run loading status. Tag: test_runs.';
 </source>
 
+==== Table wui_project ====
+<source lang=sql>
+CREATE TABLE wui_project (
+    wui_project_id  INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    project_id      INT UNSIGNED NOT NULL,
+    main_page_order INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_wui_project_project_id FOREIGN KEY (project_id) REFERENCES project (project_id)
+) TYPE=InnoDB COMMENT='Web UI project configuration. Tag: wui.';
+</source>
+
 ==== Table wui_build ====
 <source lang=sql>
 CREATE TABLE wui_build (
@@ -529,7 +539,18 @@ CREATE TABLE wui_build (
     jobp_id         INT UNSIGNED NOT NULL,
     CONSTRAINT fk_wui_build_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),
     CONSTRAINT fk_wui_build_jobp_id FOREIGN KEY (jobp_id) REFERENCES jobp (jobp_id)
-) TYPE=InnoDB COMMENT='Web BuildStatus configuration. Tag: wui.';
+) TYPE=InnoDB COMMENT='Web UI BuildStatus configuration. Tag: wui.';
+</source>
+
+==== Table wui_test ====
+<source lang=sql>
+CREATE TABLE wui_test (
+    wui_test_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    project_id      INT UNSIGNED NOT NULL,
+    jobp_id         INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_wui_test_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),
+    CONSTRAINT fk_wui_test_jobp_id FOREIGN KEY (jobp_id) REFERENCES jobp (jobp_id)
+) TYPE=InnoDB COMMENT='Web UI TestReport configuration. Tag: wui.';
 </source>
 
 ==== Table trun ====
