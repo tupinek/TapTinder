@@ -5,6 +5,7 @@ use warnings;
 use base 'TapTinder::Web::ControllerBase';
 
 use File::ReadBackwards;
+use HTML::Entities;
 
 =head1 NAME
 
@@ -138,6 +139,7 @@ sub index : Path  {
     }
     $c->stash->{status_class} = $status_class;
     
+    $log_tail = encode_entities( $log_tail );
     $log_tail = '<div class="log_sh log_sh_' . $status_class . '">' . $log_tail . '</div>';
     $log_tail =~ s{(warning)}{\<span class\=\'warn\'>$1\<\/span\>}ig;
     $log_tail =~ s{(error)}{\<span class\=\'err\'>$1\<\/span\>}ig;
