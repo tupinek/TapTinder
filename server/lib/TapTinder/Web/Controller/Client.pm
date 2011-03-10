@@ -523,7 +523,7 @@ sub get_new_job {
 
     my $ba = [ $machine_id, $machine_id ];
     my $sr_job_data = $self->edbi_selectall_arrayref_slice( $c, $cols, $sql, $ba );
-    print STDERR Data::Dumper::Dumper( $sr_job_data );
+    #print STDERR Data::Dumper::Dumper( $sr_job_data );
     
     my $job_id = undef;
     my $rc_data = undef;
