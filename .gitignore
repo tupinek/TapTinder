@@ -1,12 +1,1 @@
-/client-conf/*.yml
-/server/conf/*.yml
-/server/temp/*
-/server/root/lib/config/main
-/server-data/*
-/server/conf/*-dump.pl
-/server/conf/*-state.pl
-/server-repos/*
-/server/root/dbdoc/*
-/client-data/*
-/server/root/file/*
-/server/cron/bot-basicbot.sqlite
+/temp/*
