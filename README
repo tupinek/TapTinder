@@ -25,8 +25,9 @@ Clone server and client repositories
 
 use pod2text command to see how to setup and start server
 
-  pod2text tt-server/docs/overview.pod
-  pod2text tt-server/docs/install.pod
+  cd ~/ttdev/tt-server
+  pod2text docs/overview.pod
+  pod2text docs/install.pod
 
 use ttclient and follow instructions
 

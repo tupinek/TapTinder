@@ -1,0 +1,3 @@
+ToDo
+
+See http://dev.taptinder.org/wiki/Dev-tt_setup for outdated instructions.

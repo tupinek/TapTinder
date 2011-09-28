@@ -1,0 +1,43 @@
+=head1 NAME
+
+docs/overview.pod - A TapTinder Overview
+
+=head1 Mission
+
+Let computers do their work. Doubled each 18 months. Allow engineers
+to be more productive and enjoying their work.
+
+=head1 Architectural overview
+
+=head2 Server
+
+The brain of TapTinder infrastructure is server and its database. There is minimal set
+of configuration files and utils outside database. Mainly to start server. 
+
+Server has RESTfull API for clients, workers and frontends (rest-utils, web user interface). 
+Clients poll server to get job definitions composed from command (e.g. git pull, configure, 
+make, test) and send results to server. 
+
+Workers (mainly running on server) do jobs as pulling git repositories, processing TAP result
+archives, announcing failures to irc channels.
+
+=head2 Workers
+
+=head3 repo-up
+
+In loop fetch Git repositories, processing log and insert info about commits to database.
+
+=head3 ttbot
+
+Watch new test results in database and sends notifications to developers. E.g. make failures
+to irc channel.
+
+=head3 tap-proc
+
+Process TAP archives uploaded by clients and puts data to database.
+
+=head2 Clients
+
+Only one (Perl 5) client is implemented now. See https://github.com/mj41/TapTinder-Client
+repository and pull repository from git://github.com/mj41/TapTinder-Client.git . Clients 
+log on to server, ask for job, do job commands, report results and send artifacts to server.
