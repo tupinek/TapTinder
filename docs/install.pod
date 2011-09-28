@@ -1,3 +1,13 @@
 ToDo
 
 See http://dev.taptinder.org/wiki/Dev-tt_setup for outdated instructions.
+
+=head1 Fedora 15
+
+=head2 Devel prerequsities
+
+ su
+ yum install perl-App-cpanminus
+ cpanm Test::NoTabs
+ cpanm Test::Pod
+ cpanm Test::Pod::Coverage

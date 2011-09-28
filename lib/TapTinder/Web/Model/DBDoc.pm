@@ -18,7 +18,6 @@ See L<MyApp>
 =head1 DESCRIPTION
 
 L<Catalyst::Model::File> Model storing files under
-L<>
 
 =head1 AUTHOR
 
