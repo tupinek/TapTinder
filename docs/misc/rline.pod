@@ -36,6 +36,7 @@ Commits ordered by 'committer date' are c1, c2, c3, c4, c5x, c6x, c7, c8, c9, c1
 
 
 =head1 Metacode
+
  To fill rline table and rcommit.rline_id
  * no parent -> add rline (see below)
  * one parent without descendant -> inherit rline
@@ -51,6 +52,7 @@ Commits ordered by 'committer date' are c1, c2, c3, c4, c5x, c6x, c7, c8, c9, c1
  * Update rline.to_rcommit_id values from cache.
 
 =head1 Table rref_rcommit
+
  * rref_id
  * rcommit_id
 
@@ -61,6 +63,7 @@ Commits ordered by 'committer date' are c1, c2, c3, c4, c5x, c6x, c7, c8, c9, c1
 
 
 =head1 Tables content for example
+
  Table rline
  rline_id  first_rcommit_id  last_rcommit_id
  1 (v1),   c1,               c12y
@@ -70,6 +73,7 @@ Commits ordered by 'committer date' are c1, c2, c3, c4, c5x, c6x, c7, c8, c9, c1
 
 
 =head1 Used to
+
  These rline table is used to get some ancestors for given rcommit_id (rcommit_idA):
  * for rcommit_idA get rcommit rline_idA ( rcommit.rline_id )
  * get all rcommits where rcommit.rline_id = rline_idA and commmitter_time <= commmitter_time of rcommit_idA
