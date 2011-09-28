@@ -1,0 +1,30 @@
+=head1 Documentation targeting
+
+=head2 TapTinder developers, admins
+
+For TapTinder developers and admins there are source code and pod files 
+in server/docs dir.
+
+=head3 POD from command line
+
+Use pod2text command to see Perl POD files on console. Example
+ 
+ pod2text docs/RoadMap.pod
+
+=head2 Volunters running clients
+
+Client README file and help options.
+
+=head3 Users (consuming alerts and reports)
+
+Intuitive web user interface and alert messages should be enought.
+
+=head1 Other sources
+
+L<www.taptinder.org|http://www.taptinder.org> will be transformed to base
+web/blog engine.
+
+On GitHub wiki there should be minimal documentation probably with hyperlinks 
+to GitHub pages (server/docs files) and to dev.taptinder.org.
+
+Site L<dev.taptinder.org|http://dev.taptinder.org> should be removed.
