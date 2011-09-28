@@ -36,7 +36,7 @@ along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 
 =head1 BUGS
 
-L<http://dev.taptinder.org/>
+L<http://www.taptinder.org/>
 
 =head1 SEE ALSO
 
