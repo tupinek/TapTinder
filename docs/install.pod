@@ -1,6 +1,6 @@
-ToDo
+=head1 ToDo
 
-See http://dev.taptinder.org/wiki/Dev-tt_setup for outdated instructions.
+Not YET here. See http://dev.taptinder.org/wiki/Dev-tt_setup for outdated instructions.
 
 =head1 Fedora 15
 

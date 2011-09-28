@@ -3,7 +3,7 @@
 =head2 TapTinder developers, admins
 
 For TapTinder developers and admins there are source code and pod files 
-in server/docs dir.
+in tt-server/docs dir.
 
 =head3 POD from command line
 
