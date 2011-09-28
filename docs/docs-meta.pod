@@ -21,10 +21,10 @@ Intuitive web user interface and alert messages should be enought.
 
 =head1 Other sources
 
-L<www.taptinder.org|"http://www.taptinder.org"> will be transformed to base
+www.taptinder.org [L<http://www.taptinder.org>] will be transformed to base
 web/blog engine.
 
 On GitHub wiki there should be minimal documentation probably with hyperlinks 
 to GitHub pages (server/docs files) and to dev.taptinder.org.
 
-Site L<dev.taptinder.org|"http://dev.taptinder.org"> should be removed.
+Site dev.taptinder.org [L<http://dev.taptinder.org>] should be removed.

@@ -2,5 +2,5 @@ New in 2011.10
 * New documentation - docs directory
 * New tests t/author
 * Client code moved to separate repository - https://github.com/mj41/TapTinder-Client
-* 
-
+* Fix all POD to make Pod::Simple::HTMl (used by GitHub) happy.
+* ...

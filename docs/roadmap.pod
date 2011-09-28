@@ -1,16 +1,15 @@
 =head1 Present
 
-We are L<building Parrot|"http://tt.taptinder.org/"> (on some platforms, build 
+We are building Parrot [L<http://tt.taptinder.org/>] (on some platforms, build 
 configurations and git branches) and reporting to IRC 
-(L<[1]|"http://irclog.perlgeek.de/search.pl?channel=parrot&nick=ttbot&q=">, 
-L<[2]|"http://irclog.perlgeek.de/search.pl?channel=parrot&nick=&q=ttbot">). Many 
+(L<http://ttbot.eu/ttbots1>, L<http://ttbot.eu/ttbots2>). Many 
 of processes and configurations are manually maintained.
 
 =head1 Near future
 
-Continuous integration for L<Parrot|"https://github.com/parrot"> and 
-L<Perl 6|"http://modules.perl6.org/"> related projects with source code 
-on GitHub and L<TAP|"http://en.wikipedia.org/wiki/Test_Anything_Protocol"> 
+Continuous integration for Parrot [L<https://github.com/parrot>] and 
+Perl 6 [L<http://modules.perl6.org/>] related projects with source code 
+on GitHub and TAP [L<http://en.wikipedia.org/wiki/Test_Anything_Protocol>] 
 (Test Anything Protocol) support. Report build failures and test cases 
 failures in diff format to email list and IRC on many platforms and 
 configurations. Have same really fast machines to nearly real-time 
@@ -21,8 +20,8 @@ real development team (three or more hackers).
 =head1 Future
 
 ... a long list in our heads, we should reduce our
-L<issue list|"https://github.com/mj41/TapTinder/issues"> before planning 
+issue list [L<https://github.com/mj41/TapTinder/issues>] before planning 
 too much.
 
 See also our 
-L<TapTinder's milestones|"https://github.com/mj41/TapTinder/issues/milestones">.
+TapTinder's milestones [L<https://github.com/mj41/TapTinder/issues/milestones>].
