@@ -1,4 +1,0 @@
-#!perl
-
-print "1..1\n";
-print "ok - taptinder_harness run ok\n";
