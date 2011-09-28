@@ -1,0 +1,6 @@
+New in 2011.10
+* New documentation - docs directory
+* New tests t/author
+* Client code moved to separate repository - https://github.com/mj41/TapTinder-Client
+* 
+
