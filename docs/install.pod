@@ -11,3 +11,6 @@ Not YET here. See http://dev.taptinder.org/wiki/Dev-tt_setup for outdated instru
  cpanm Test::NoTabs
  cpanm Test::Pod
  cpanm Test::Pod::Coverage
+ cpanm Dist::Zilla
+ dzil authordeps | cpanm
+ cpanm Archive::Tar::Wrapper

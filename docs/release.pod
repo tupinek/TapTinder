@@ -1,0 +1,15 @@
+=head1 Commands
+
+ dzil authordeps | cpanm
+ dzil build
+ dzil test
+
+=head1 Dist::Zilla plugins
+
+=head2 PodWeaver
+
+This will add sections for each module's name, abstract, version, authors,
+license, and a bunch of other bits in the middle like the synopsis and methods.
+It will let you use the commands =method, =attr, and =func to set up self-organizing
+sections for methods, attributes, and functions.
+

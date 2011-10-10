@@ -3,4 +3,5 @@ New in 2011.10
 * New tests t/author
 * Client code moved to separate repository - https://github.com/mj41/TapTinder-Client
 * Fix all POD to make Pod::Simple::HTMl (used by GitHub) happy.
+* Add Dist::Zilla configuratio file (dist.ini) and update some POD to PodWeawer plugin.
 * ...
