@@ -1,5 +1,7 @@
 package TapTinder::Utils::DB;
 
+# ABSTRACT: TapTinder database utilities.
+
 use strict;
 use warnings;
 use Carp qw(carp croak verbose);
@@ -9,9 +11,9 @@ our @EXPORT = qw(get_connected_schema do_dbh_sql get_dbh_errstr);
 
 use TapTinder::DB::SchemaAdd;
 
-=head2 get_connected_schema
+=func get_connected_schema
 
- TapTinder::DB::SchemaAdd->connect(...)
+ TapTinder::DB::SchemaAdd->connect( $db_conf );
 
 =cut
 
@@ -28,7 +30,7 @@ sub get_connected_schema {
 }
 
 
-=head2 get_drop_sql_list
+=func get_drop_sql_list
 
 Connect to DB. Take list of DB tables. Return list of sql statements to drop all these tables.
 
@@ -50,7 +52,7 @@ sub get_drop_sql_list {
 }
 
 
-=head2 get_drop_all_existing_tables_sql
+=func get_drop_all_existing_tables_sql
 
 Connect to DB. Take list of DB tables. Return sql to drop all these tables.
 
@@ -65,7 +67,7 @@ sub get_drop_all_existing_tables_sql {
 }
 
 
-=head2 do_drop_all_existing_tables
+=func do_drop_all_existing_tables
 
 Connect to DB. Take list of DB tables. Drop all these tables.
 
@@ -84,7 +86,7 @@ sub do_drop_all_existing_tables {
 }
 
 
-=head2 run_perl_sql_file
+=func run_perl_sql_file
 
 Run script to fill data to database (sql/data-*.pl).
 
@@ -104,7 +106,7 @@ sub run_perl_sql_file {
 }
 
 
-=head2 run_perl_sql_file_trans
+=func run_perl_sql_file_trans
 
 Run script to fill data to database (sql/data-*.pl) in transaction.
 
@@ -132,7 +134,7 @@ sub run_perl_sql_file_trans {
 }
 
 
-=head2 get_dbh_errstr
+=func get_dbh_errstr
 
 Return dbh error string;
 
@@ -145,7 +147,7 @@ sub get_dbh_errstr {
 }
 
 
-=head2 do_dbh_sql
+=func do_dbh_sql
 
 Run $sql, $ba on $schema throug dbh_do (DBI do).
 

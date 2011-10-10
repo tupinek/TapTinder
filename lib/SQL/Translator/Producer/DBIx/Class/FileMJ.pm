@@ -1,9 +1,7 @@
 package SQL::Translator::Producer::DBIx::Class::FileMJ;
 
-=head1 NAME
-
-SQL::Translator::Producer::DBIx::Class::FileMJ - DBIx::Class file producer by mj41
-
+# ABSTRACT: DBIx::Class file producer - by mj41.
+ 
 =head1 SYNOPSIS
 
   use SQL::Translator;

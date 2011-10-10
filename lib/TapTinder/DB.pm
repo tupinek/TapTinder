@@ -1,5 +1,7 @@
 package TapTinder::DB;
 
+# ABSTRACT: TapTinder database functions.
+
 use strict;
 use warnings;
 
@@ -11,15 +13,6 @@ use DBI;
 
 use Data::Dumper;
 use Devel::StackTrace;
-
-
-=head1 NAME
-
-TapTinder::DB - TapTinder database functions
-
-=head1 SYNOPSIS
-
-See L<TapTinder::DB>
 
 =head1 DESCRIPTION
 
@@ -983,15 +976,6 @@ sub prepare_others_and_insert_ttest {
 
 L<TapTinder>, L<TapTinder::Web>
 
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This file is part of TapTinder. See L<TapTinder> license.
-
 =cut
-
 
 1;

@@ -1,25 +1,20 @@
 package TapTinder::Web::ControllerBase;
 
+# ABSTRACT: TapTinder::Web base class for controllers.
+
+use base 'Catalyst::Controller';
 use strict;
 use warnings;
-use base 'Catalyst::Controller';
 
 use Data::Page::HTML qw();
 use DBIx::Dumper qw();
 use Data::Dumper qw();
 
-=head1 NAME
-
-TapTinder::Web::Controller::Report - Catalyst Controller
-
 =head1 DESCRIPTION
 
 Base class for some TapTinder::Web::Controller::*.
 
-=head1 METHODS
-
-
-=head2 dadd
+=method dadd
 
 Add string to stash->{ot}.
 
@@ -33,7 +28,7 @@ sub dadd {
 }
 
 
-=head2 dumper
+=method dumper
 
 Dumper to stash->{ot} or directly to STDERR.
 
@@ -67,7 +62,7 @@ sub dumper {
 }
 
 
-=head2 get_select_mdata
+=method get_select_mdata
 
 Return meta data for SQL select part.
 
@@ -112,7 +107,7 @@ sub edbi_get_select_mdata {
 }
 
 
-=head2 edbi_run_dbh_do
+=method edbi_run_dbh_do
 
 eDBI run dbh_do method.
 
@@ -200,7 +195,7 @@ sub edbi_run_dbh_do {
 }
 
 
-=head2 edbi_selectall_arrayref
+=method edbi_selectall_arrayref
 
 Run eDBI selectall_arrayref.
 
@@ -215,7 +210,7 @@ sub edbi_selectall_arrayref {
 }
 
 
-=head2 edbi_selectall_arrayref_slice
+=method edbi_selectall_arrayref_slice
 
 Run eDBI edbi_selectall_arrayref with { Slice => 1 }.
 
@@ -231,7 +226,7 @@ sub edbi_selectall_arrayref_slice {
 }
 
 
-=head2 edbi_selectrow_hashref
+=method edbi_selectrow_hashref
 
 Run eDBI selectrow_hashref.
 
@@ -246,7 +241,7 @@ sub edbi_selectrow_hashref {
 }
 
 
-=head2 edbi_selectall_hashref
+=method edbi_selectall_hashref
 
 Run eDBI edbi_selectall_hashref.
 
@@ -261,7 +256,7 @@ sub edbi_selectall_hashref {
 }
 
 
-=head2 get_projname_params
+=method get_projname_params
 
 ...
 
@@ -335,7 +330,7 @@ sub get_pager_html {
 }
 
 
-=head2 get_fspath_select_row
+=method get_fspath_select_row
 
 Return fspath_select columns hash for fsfile_type_id and rep_id.
 
@@ -359,18 +354,9 @@ sub get_fspath_select_row {
 }
 
 
-
 =head1 SEE ALSO
 
 L<TapTinder::Web>, L<Catalyst::Controller>
-
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This file is part of TapTinder. See L<TapTinder> license.
 
 =cut
 

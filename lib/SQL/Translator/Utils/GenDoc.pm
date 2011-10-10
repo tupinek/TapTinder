@@ -1,5 +1,7 @@
 package SQL::Translator::Utils::GenDoc;
 
+# ABSTRACT: Generate database schema images.
+
 use Exporter;
 use base qw(Exporter);
 

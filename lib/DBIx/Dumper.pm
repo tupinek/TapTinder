@@ -1,16 +1,14 @@
 package DBIx::Dumper;
 
+# ABSTRACT: Dump DBIx::Class::ResultSet.
+
 use strict;
 use warnings;
-our $VERSION = '0.22';
 
 our @EXPORT_OK = qw/dump_row/;
 
 use Data::Dumper;
 
-=head1 NAME
-
-DBIx::Dumper
 
 =head1 SYNOPSIS
 
@@ -24,6 +22,10 @@ DBIx::Dumper
 =head1 DESCRIPTION
 
 Dump DBIx::Class::ResultSet data.
+
+=method dump_row
+
+Dump DBIx::Class row.
 
 =cut
 
@@ -62,15 +64,6 @@ sub dump_row {
 =head1 SEE ALSO
 
 L<DBIx::Class>
-
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This library is free software, you can redistribute it and/or modify
-it under the same terms as Perl itself.
 
 =cut
 

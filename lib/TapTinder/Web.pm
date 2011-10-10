@@ -1,5 +1,7 @@
 package TapTinder::Web;
 
+# ABSTRACT: Web user interface for TapTinder Server.
+
 use strict;
 use warnings;
 
@@ -17,8 +19,6 @@ use Catalyst qw/
     Session::Store::FastMmap
     Session::State::Cookie
 /;
-
-our $VERSION = '0.22';
 
 
 # Note that settings in web_*.yml take precedence over this.
@@ -48,15 +48,6 @@ TapTinder::Web->config(
 
 TapTinder::Web->setup;
 
-
-=head1 NAME
-
-TapTinder::Web - TapTinder web server.
-
-=head1 SYNOPSIS
-
-See L<TapTinder::Web>
-
 =head1 DESCRIPTION
 
 TapTinder Web server base class based on Catalyst::Runtime.
@@ -64,14 +55,6 @@ TapTinder Web server base class based on Catalyst::Runtime.
 =head1 SEE ALSO
 
 L<TapTinder>, L<Catalyst::Runtime>
-
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This file is part of TapTinder. See L<TapTinder> license.
 
 =cut
 

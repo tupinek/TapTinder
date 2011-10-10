@@ -1,5 +1,7 @@
 package TapTinder::Web::Model::WebDB;
 
+# ABSTRACT: TapTinder::Web base model class.
+
 use strict;
 use warnings;
 use base 'Catalyst::Model::DBIC::Schema';

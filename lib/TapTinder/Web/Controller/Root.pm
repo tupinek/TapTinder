@@ -1,8 +1,10 @@
 package TapTinder::Web::Controller::Root;
 
+# ABSTRACT: TapTinder::Web root controller.
+
+use base 'Catalyst::Controller';
 use strict;
 use warnings;
-use base 'Catalyst::Controller';
 
 
 # Sets the actions in this controller to be registered with no prefix
@@ -10,19 +12,12 @@ use base 'Catalyst::Controller';
 
 __PACKAGE__->config->{namespace} = '';
 
-=head1 NAME
-
-TapTinder::Web::Controller::Root - Root Controller for TapTinder::Web
 
 =head1 DESCRIPTION
 
 TapTinder root path action.
 
-=head1 METHODS
-
-=cut
-
-=head2 default
+=method default
 
 =cut
 
@@ -32,7 +27,7 @@ sub default : Private {
     $c->stash->{template} =  'index.tt2';
 }
 
-=head2 end
+=method end
 
 Attempt to render a view, if needed.
 
@@ -44,14 +39,6 @@ sub end : ActionClass('RenderView') {}
 =head1 SEE ALSO
 
 L<TapTinder::Web>, L<Catalyst::Controller>
-
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This file is part of TapTinder. See L<TapTinder> license.
 
 =cut
 

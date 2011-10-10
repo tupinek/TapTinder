@@ -1,10 +1,17 @@
 package TapTinder::Utils::Cmd;
 
+# ABSTRACT: TapTinder utilities for command line.
+
 use strict;
 use warnings;
 
 our @EXPORT_OK = qw(run_cmd_ipc);
 
+=func run_cmd_ipc
+
+Run system command using 'system'. Write debug messages. Return 1 on success.
+
+=cut
 
 sub run_cmd_ipc {
     my ( $cmd, $noipc, $msg ) = @_;

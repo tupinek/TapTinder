@@ -1,21 +1,16 @@
 package TapTinder::Web::Controller::Report;
 
+# ABSTRACT: TapTinder::Web report controller.
+
+use base 'TapTinder::Web::ControllerBase';
 use strict;
 use warnings;
-use base 'TapTinder::Web::ControllerBase';
-
-=head1 NAME
-
-TapTinder::Web::Controller::Report - Catalyst Controller
 
 =head1 DESCRIPTION
 
 Catalyst controller for TapTinder web reports. The actions for reports browsing.
 
-=head1 METHODS
-
 =cut
-
 
 sub action_do {
     my ( $self, $c ) = @_;
@@ -589,14 +584,6 @@ sub index : Path  {
 =head1 SEE ALSO
 
 L<TapTinder::Web>, L<Catalyst::Controller>
-
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This file is part of TapTinder. See L<TapTinder> license.
 
 =cut
 

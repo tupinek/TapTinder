@@ -1,8 +1,10 @@
 package TapTinder::Web::Controller::Client;
 
+# ABSTRACT: TapTinder::Web client controller.
+
+use base 'TapTinder::Web::ControllerBase';
 use strict;
 use warnings;
-use base 'TapTinder::Web::ControllerBase';
 
 use Digest::MD5 qw(md5);
 use DateTime;
@@ -12,18 +14,11 @@ use File::Copy;
 use constant SUPPORTED_REVISION => 331; # ToDo
 
 
-=head1 NAME
-
-TapTinder::Web::Controller::Client - Catalyst Controller
-
 =head1 DESCRIPTION
 
 Catalyst controller for TapTinder client services.
 
-=head1 METHODS
-
-
-=head2 dump_rs
+=method dump_rs
 
 Dump result set.
 
@@ -40,7 +35,7 @@ sub dump_rs {
 }
 
 
-=head2 txn_begin
+=method txn_begin
 
 Start transaction.
 
@@ -52,7 +47,7 @@ sub txn_begin {
 }
 
 
-=head2 txn_end
+=method txn_end
 
 Commit or rollback transaction.
 
@@ -77,7 +72,7 @@ sub txn_end {
 }
 
 
-=head2 get_lock_for_machine_action
+=method get_lock_for_machine_action
 
 Try to obtain lock for $machine_id and $action_name.
 
@@ -93,7 +88,7 @@ sub get_lock_for_machine_action {
 }
 
 
-=head2 release_lock_for_machine_action
+=method release_lock_for_machine_action
 
 Try to release lock for $machine_id and $action_name.
 
@@ -108,7 +103,7 @@ sub release_lock_for_machine_action {
     return $ra_row->[0];
 }
 
-=head2 login_ok
+=method login_ok
 
 Check and log login params - machine_id and password.
 
@@ -134,7 +129,7 @@ sub login_ok {
 }
 
 
-=head2 msession_ok
+=method msession_ok
 
 Check msession_id param.
 
@@ -177,7 +172,7 @@ sub msession_ok {
 }
 
 
-=head2 access_allowed
+=method access_allowed
 
 Default method for all actions. Do base checks (L<login_ok|login_ok>, L<msession_ok|msession_ok>);
 
@@ -221,7 +216,7 @@ sub access_allowed {
 }
 
 
-=head2 check_param
+=method check_param
 
 Method checks mandatory param. Sets error message if value is empty.
 
@@ -239,7 +234,7 @@ sub check_param {
 }
 
 
-=head2 check_client_rev
+=method check_client_rev
 
 Check if client revision is supported by server.
 
@@ -257,7 +252,7 @@ sub check_client_rev {
 }
 
 
-=head2 create_mslog
+=method create_mslog
 
 Create new machine session log (mslog) entry.
 
@@ -286,7 +281,7 @@ sub create_mslog {
 }
 
 
-=head2 cmd_mscreate
+=method cmd_mscreate
 
 Create new machine session (msession).
 
@@ -334,7 +329,7 @@ sub cmd_mscreate {
 }
 
 
-=head2 cmd_msdestroy
+=method cmd_msdestroy
 
 Destroy machine session (msession).
 
@@ -380,7 +375,7 @@ sub cmd_msdestroy {
 }
 
 
-=head2 create_msproc_log
+=method create_msproc_log
 
 Create new machine session process log (msproc_log) entry.
 
@@ -409,7 +404,7 @@ sub create_msproc_log {
 }
 
 
-=head2 cmd_mspcreate
+=method cmd_mspcreate
 
 Create new machine session process (msproc).
 
@@ -451,7 +446,7 @@ sub cmd_mspcreate {
 }
 
 
-=head2 get_new_job
+=method get_new_job
 
 Return new job description for client.
 
@@ -628,7 +623,7 @@ sub get_new_job {
 }
 
 
-=head2 create_msjob
+=method create_msjob
 
 Insert new row to msjob table.
 
@@ -654,7 +649,7 @@ sub create_msjob {
 }
 
 
-=head2 create_msjobp
+=method create_msjobp
 
 Insert new row to msjobp table.
 
@@ -680,7 +675,7 @@ sub create_msjobp {
 }
 
 
-=head2 create_msjobp_cmd
+=method create_msjobp_cmd
 
 Insert new row to msjobp_cmd table.
 
@@ -709,7 +704,7 @@ sub create_msjobp_cmd {
 
 
 
-=head2 get_next_cmd
+=method get_next_cmd
 
 Get next cmd info.
 
@@ -748,7 +743,7 @@ sub get_next_cmd {
 }
 
 
-=head2 get_next_cmd_mcid
+=method get_next_cmd_mcid
 
 Get next cmd info for previous $msjobp_cmd_id.
 
@@ -791,7 +786,7 @@ sub get_next_cmd_pmcid {
 }
 
 
-=head2 start_new_job
+=method start_new_job
 
 Get new job and insert new rows to apropriate tables.
 
@@ -838,7 +833,7 @@ sub start_new_job {
 }
 
 
-=head2 get_jobp_master_ref_rcommit_id
+=method get_jobp_master_ref_rcommit_id
 
 Return master ref rcommit_id for jobp_id.project_id.
 
@@ -872,7 +867,7 @@ sub get_jobp_master_ref_rcommit_id {
 }
 
 
-=head2 cmd_cget
+=method cmd_cget
 
 Get command to run on client. Insert new row to msjob_command table and new
 row to msjob table if needed.
@@ -989,7 +984,7 @@ sub cmd_cget {
 }
 
 
-=head2 get_msjobp_cmd_info
+=method get_msjobp_cmd_info
 
 Return info for $msproc_id and $msjobp_cmd_id.
 
@@ -1018,7 +1013,7 @@ sub get_msjobp_cmd_info {
 }
 
 
-=head2 get_fspath_info
+=method get_fspath_info
 
 Select fspath info for fsfile_type_id and rep_id.
 
@@ -1038,7 +1033,7 @@ sub get_fspath_info {
 }
 
 
-=head2 move_uploaded_file
+=method move_uploaded_file
 
 Create new machine session log (mslog) entry.
 
@@ -1075,7 +1070,7 @@ sub move_uploaded_file {
 }
 
 
-=head2 uploaded_file_found
+=method uploaded_file_found
 
 Do all around file uploading.
 
@@ -1127,7 +1122,7 @@ sub uploaded_file_found {
 }
 
 
-=head2 update_msjobp_cmd
+=method update_msjobp_cmd
 
 Update row with $msjobp_cmd_id in msjobp_cmd table. New values are in $to_set hash ref.
 
@@ -1153,7 +1148,7 @@ sub update_msjobp_cmd {
 }
 
 
-=head2 cmd_sset
+=method cmd_sset
 
 Set msjobp_cmd.status_id.
 
@@ -1207,7 +1202,7 @@ sub cmd_sset {
 }
 
 
-=head2 get_rcommit_info
+=method get_rcommit_info
 
 Select rep info and rcommit info for given rcommit_id.
 
@@ -1234,7 +1229,7 @@ sub get_rcommit_info {
 }
 
 
-=head2 rh_copy_kv_to
+=method rh_copy_kv_to
 
 Copy (rewrite/add) input hash ref keys/values to output hash ref.
 
@@ -1251,7 +1246,7 @@ sub rh_copy_kv_to {
 }
 
 
-=head2 cmd_rciget
+=method cmd_rciget
 
 Get info for rep_path_id an rev_id.
 
@@ -1288,7 +1283,7 @@ sub cmd_rciget {
 }
 
 
-=head2 cmd_mevent
+=method cmd_mevent
 
 Machine event occured.
 
@@ -1359,7 +1354,7 @@ sub cmd_mevent {
 }
 
 
-=head2 process_action
+=method process_action
 
 Process all params but 'ot'.
 
@@ -1429,7 +1424,9 @@ sub process_action {
 }
 
 
-=head2 index
+=method index
+
+Base index method.
 
 Use params:
 
@@ -1454,14 +1451,6 @@ sub index : Path  {
 =head1 SEE ALSO
 
 L<TapTinder::Web>, L<Catalyst::Controller>
-
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This file is part of TapTinder. See L<TapTinder> license.
 
 =cut
 

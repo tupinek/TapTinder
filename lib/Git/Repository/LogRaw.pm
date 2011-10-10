@@ -1,5 +1,7 @@
 package Git::Repository::LogRaw;
 
+# ABSTRACT: Raw processing/parsing of Git log command.
+
 use strict;
 use warnings;
 use Data::Dumper;

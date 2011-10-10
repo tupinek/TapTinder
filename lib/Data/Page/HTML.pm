@@ -1,14 +1,11 @@
 package Data::Page::HTML;
 
+# ABSTRACT: Generating html code for data paging.
+
 use strict;
 use warnings;
-our $VERSION = '0.11';
 
 our @EXPORT_OK = qw/get_pager_html/;
-
-=head1 NAME
-
-Data::Page::HTML
 
 =head1 SYNOPSIS
 
@@ -111,15 +108,6 @@ sub get_pager_html {
 =head1 SEE ALSO
 
 L<Data::Page>, L<CatalystX::Controller::TableBrowser>
-
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This library is free software, you can redistribute it and/or modify
-it under the same terms as Perl itself.
 
 =cut
 

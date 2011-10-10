@@ -1,20 +1,18 @@
 package TapTinder::Web::Controller::DBDoc;
 
+# ABSTRACT: TapTinder::Web dbdoc controller.
+
+use base 'TapTinder::Web::ControllerBase';
 use strict;
 use warnings;
-use base 'TapTinder::Web::ControllerBase';
-
-=head1 NAME
-
-TapTinder::Web::Controller::DBDoc - Catalyst Controller
 
 =head1 DESCRIPTION
 
 Catalyst controller for TapTinder. Shows static documentation files.
 
-=head1 METHODS
+=method index
 
-=head2 index
+Base index method.
 
 =cut
 
@@ -49,18 +47,9 @@ sub index : Args(0)  {
 }
 
 
-
 =head1 SEE ALSO
 
 L<TapTinder::Web>, L<Catalyst::Controller>
-
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This file is part of TapTinder. See L<TapTinder> license.
 
 =cut
 

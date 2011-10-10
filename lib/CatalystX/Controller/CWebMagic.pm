@@ -1,17 +1,13 @@
 package CatalystX::Controller::CWebMagic;
 
+# ABSTRACT: CWebMagic CatalysX Controller
+
 use strict;
 use warnings;
 use base 'Catalyst::Controller';
 
-our $VERSION = '0.11';
-
 use Data::Page::HTML;
 use Data::Dumper; # TODO - needed only for debug mode
-
-=head1 NAME
-
-CatalystX::Controller::CWebMagic - Base CWebMagic CatalysX Controller
 
 =head1 SYNOPSIS
 
@@ -1209,15 +1205,6 @@ sub col_names_to_titles {
 =head1 SEE ALSO
 
 L<Catalyst::Controller>, L<DBIx::Class::CWebMagic>
-
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This library is free software, you can redistribute it and/or modify
-it under the same terms as Perl itself.
 
 =cut
 

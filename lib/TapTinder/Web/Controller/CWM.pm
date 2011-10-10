@@ -1,21 +1,16 @@
 package TapTinder::Web::Controller::CWM;
 
+# ABSTRACT: TapTinder::Web cwm (See Web Magic) controller.
+
 use strict;
 use warnings;
 use base 'CatalystX::Controller::CWebMagic';
-
-=head1 NAME
-
-TapTinder::Web::Controller::CWM - See web magic Catalyst Controller
 
 =head1 DESCRIPTION
 
 Catalyst Controller to see web magic on TapTinder.
 
-=head1 METHODS
-
 =cut
-
 
 sub db_schema_base_class_name {
   return 'WebDB';
@@ -33,9 +28,9 @@ sub get_prepare_conf {
 }
 
 
-=head2 index
+=method index
 
-Base table browser action.
+Base index method.
 
 =cut
 
@@ -48,14 +43,6 @@ sub index : Path  {
 =head1 SEE ALSO
 
 L<TapTinder::Web>, L<Catalyst::Controller>
-
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This file is part of TapTinder. See L<TapTinder> license.
 
 =cut
 

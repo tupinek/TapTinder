@@ -1,5 +1,7 @@
 package TapTinder::Utils::Conf;
 
+# ABSTRACT: TapTinder utilities for config file processing.
+
 use strict;
 use warnings;
 use Carp qw(carp croak verbose);
@@ -11,7 +13,7 @@ use Config::Multi;
 use File::Spec::Functions;
 
 
-=head2 load_conf_multi
+=func load_conf_multi
 
 Use same way as to load config as TapTinder::Web and then delete all but required parts (keys).
 

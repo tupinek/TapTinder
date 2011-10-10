@@ -1,8 +1,9 @@
 package DBIx::Class::CWebMagic;
 
+# ABSTRACT: DBIx::Class extension for CwebMagfic (See Web Magic module).
+
 use strict;
 use warnings;
-our $VERSION = '0.11';
 
 BEGIN {
     use base qw/DBIx::Class::Row Class::Accessor::Grouped/;
@@ -12,11 +13,6 @@ BEGIN {
         cwm_conf
     /);
 };
-
-
-=head1 NAME
-
-DBIx::Class::CWebMagic
 
 =head1 SYNOPSIS
 
@@ -61,15 +57,6 @@ Store database schema metadata for CWebMagic application interface.
 =head1 SEE ALSO
 
 L<DBIx::Class>, L<CatalystX::Controller::CWebMagic>
-
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This library is free software, you can redistribute it and/or modify
-it under the same terms as Perl itself.
 
 =cut
 

@@ -1,11 +1,9 @@
 package TapTinder::Web::View::TT;
 
+# ABSTRACT:  TapTinder TT (TemplateToolkit) site view.
+
 use base 'Catalyst::View::TT';
 use strict;
-
-=head1 NAME
-
-TapTinder::Web::View::TT - TapTinder TT (TemplateToolkit) Site View
 
 =head1 SYNOPSIS
 
@@ -31,14 +29,5 @@ __PACKAGE__->config({
     #COMPILE_DIR => '/tmp/taptinder/cache',
 });
 
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This file is part of TapTinder. See L<TapTinder> license.
-
-=cut
 
 1;

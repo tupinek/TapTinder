@@ -1,5 +1,7 @@
 package TapTinder::Web::Controller::CmdInfo;
 
+# ABSTRACT: TapTinder::Web cmdinfo controller.
+
 use strict;
 use warnings;
 use base 'TapTinder::Web::ControllerBase';
@@ -7,18 +9,14 @@ use base 'TapTinder::Web::ControllerBase';
 use File::ReadBackwards;
 use HTML::Entities;
 
-=head1 NAME
-
-TapTinder::Web::Controller::CmdInfo - Catalyst Controller
-
 =head1 DESCRIPTION
 
 Catalyst controller for TapTinder. Shows detail informations 
 about machine session job part command (by msjobp_cmd_id).
 
-=head1 METHODS
+=method index
 
-=head2 index
+Base index method.
 
 =cut
 
@@ -205,14 +203,6 @@ sub index : Path  {
 =head1 SEE ALSO
 
 L<TapTinder::Web>, L<Catalyst::Controller>
-
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This file is part of TapTinder. See L<TapTinder> license.
 
 =cut
 

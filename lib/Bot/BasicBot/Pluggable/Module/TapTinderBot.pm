@@ -1,5 +1,7 @@
 package Bot::BasicBot::Pluggable::Module::TapTinderBot;
 
+#ABSTRACT: Report TapTinder status updates.
+
 use base qw(Bot::BasicBot::Pluggable::Module);
 use warnings;
 use strict;
@@ -9,15 +11,6 @@ use Carp qw(carp croak verbose);
 
 our $tick_counter = 0;
 
-=head1 NAME
-
-Bot::BasicBot::Pluggable::Module::TapTinderBot - report status
-
-=head1 IRC USAGE
-
-...
-
-=cut
 
 sub init {
     my $self = shift;
@@ -205,14 +198,6 @@ sub _my_init {
 =head1 SEE ALSO
 
 L<TapTinder>, L<Bot::BasicBot::Pluggable>
-
-=head1 AUTHOR
-
-Michal Jurosz <mj@mj41.cz>
-
-=head1 LICENSE
-
-This file is part of TapTinder. See L<TapTinder> license.
 
 =cut
 
