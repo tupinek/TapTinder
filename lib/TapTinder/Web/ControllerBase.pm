@@ -91,7 +91,7 @@ sub edbi_get_select_mdata {
             $cols_sql_str .= $col;
             if ( $conf->{with_prefix} ) {
                 my $esc_col = $col;
-                $esc_col =~ tr{\.}{\__};
+                $esc_col =~ s{\.}{\__}g;
                 $cols_sql_str .= ' as ' . $esc_col;
                 $name_to_pos->{ $esc_col } = $col_num;
                 $pos_to_name->[ $col_num ] = $esc_col;
