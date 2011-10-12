@@ -2,6 +2,14 @@
 
 Not YET here. See http://dev.taptinder.org/wiki/Dev-tt_setup for outdated instructions.
 
+=head1 With dzil and cpanm
+
+=head2 As root
+
+ curl -L http://cpanmin.us | perl - --sudo App::cpanminus
+ cpanm Dist::Zilla Dist::Zilla::Plugin::AutoPrereqs
+ dzil listdeps --missing | cpanm
+
 =head1 Fedora 15
 
 =head2 Devel prerequsities
@@ -14,3 +22,9 @@ Not YET here. See http://dev.taptinder.org/wiki/Dev-tt_setup for outdated instru
  cpanm Dist::Zilla
  dzil authordeps | cpanm
  cpanm Archive::Tar::Wrapper
+
+=head1 Start server
+
+ mkdir root/dbdoc
+ perl script/taptinder_web_server.pl -r -d
+ 
