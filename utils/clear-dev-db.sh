@@ -49,8 +49,8 @@ if [ "$1" = "l" ]; then
     perl ./utils/db-run-sqlscript.pl ./temp/ttdev-dump.sql 1
     echo ""
 
-    echo "Executing utils/set_client_passwd.pl --client_conf_fpath --client_section_name=mydev (perl):"
-    perl ./utils/set_client_passwd.pl --client_conf_fpath --client_section_name=mydev
+    echo "Executing utils/set_client_passwd.pl --client_conf_fpath --client_section_name=dev (perl):"
+    perl ./utils/set_client_passwd.pl --client_conf_fpath --client_section_name=dev
     echo ""
 
     echo "Executing utils/set_client_passwd.pl --client_passwd_list (perl):"
@@ -89,13 +89,15 @@ if [ "$1" = "c" ]; then
     perl ./utils/deploy.pl --drop --deploy --data=dev
     echo ""
 
-    echo "Executing utils/set_client_passwd.pl --client_conf_fpath --$client_section_name=mydev (perl):"
-    perl ./utils/set_client_passwd.pl --client_conf_fpath --client_section_name=mydev
+    echo "Executing utils/set_client_passwd.pl --client_conf_fpath --$client_section_name=dev (perl):"
+    perl ./utils/set_client_passwd.pl --client_conf_fpath --client_section_name=dev
     echo ""
 
-    echo "Executing utils/set_client_passwd.pl --client_passwd_list (perl):"
-    perl ./utils/set_client_passwd.pl --client_passwd_list
-    echo ""
+	if [ -f 'conf/client-passwds.yml' ]; then
+	  echo "Executing utils/set_client_passwd.pl --client_passwd_list (perl):"
+	  perl ./utils/set_client_passwd.pl --client_passwd_list
+	  echo ""
+	fi
 
     echo "Executing utils/rm_uploaded_files.pl --remove (perl):"
     perl ./utils/rm_uploaded_files.pl --remove

@@ -1,30 +1,85 @@
-=head1 ToDo
+=head1 Setup ttdev
 
-Not YET here. See http://dev.taptinder.org/wiki/Dev-tt_setup for outdated instructions.
+=head2 Warning
 
-=head1 With dzil and cpanm
+Absolutly no warranty for this software.
 
-=head2 As root
+Tested on Fedora 15 only.
+
+=head1 Perl modules
+
+=head2 dzil and cpanm
 
  curl -L http://cpanmin.us | perl - --sudo App::cpanminus
  cpanm Dist::Zilla Dist::Zilla::Plugin::AutoPrereqs
  dzil listdeps --missing | cpanm
 
-=head1 Fedora 15
-
 =head2 Devel prerequsities
 
- su
- yum install perl-App-cpanminus
  cpanm Test::NoTabs
  cpanm Test::Pod
  cpanm Test::Pod::Coverage
- cpanm Dist::Zilla
- dzil authordeps | cpanm
  cpanm Archive::Tar::Wrapper
+ dzil authordeps | cpanm
 
-=head1 Start server
+=head1 Mysql
 
- mkdir root/dbdoc
- perl script/taptinder_web_server.pl -r -d
+=head2 Base install
+
+ yum -y install mysql-server 
+ service mysqld start
+ /usr/bin/mysql_secure_installation
+
+=head2 Create ttdev database
  
+ mysql -u root -p
+ 
+ CREATE USER 'ttdev'@'localhost' IDENTIFIED BY 'mysql-secret-ttdev-passwd';
+ CREATE DATABASE IF NOT EXISTS ttdev;
+ use ttdev;
+ GRANT ALL ON ttdev.* to 'ttdev'@'localhost';
+ exit
+ 
+ service mysqld restart
+
+=head1 TapTinder Server
+
+=head2 Create directories
+
+ mkdir temp/dbdoc
+ ln -s -T ../temp/dbdoc root/dbdoc
+ mkdir ../server-repos
+ mkdir ../server-data/
+ mkdir ../server-data/cmdout
+ mkdir ../server-data/archive
+ mkdir ../server-data/patch
+ 
+=head2 Setup
+
+ # Create empty MySQL database and then
+ cp conf/web_db.yml.example conf/web_db.yml
+ vim conf/web_db.yml 
+ 
+ cp conf/web_project.yml.example conf/web_project.yml
+ vim conf/web_project.yml
+ 
+ cp conf/web.yml.example conf/web.yml
+ vim conf/web.yml
+ 
+ cp root/lib/config/main.example root/lib/config/main
+ vim root/lib/config/main
+
+=head2 Initialize and start
+
+ utils/clear-dev-db.sh
+ 
+ utils/clear-dev-db.sh c uu ld
+ 
+ # Next time use 'u' instead of 'uu', its faster.
+ # utils/clear-dev-db.sh c uu ld
+
+ ./utils/start-server.sh dev d debug
+
+=head2 Test
+ 
+ curl http://localhost:2000/
