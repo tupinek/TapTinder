@@ -76,7 +76,7 @@ Tested on Fedora 15 only.
  utils/clear-dev-db.sh c uu ld
  
  # Next time use 'u' instead of 'uu', its faster.
- # utils/clear-dev-db.sh c uu ld
+ # utils/clear-dev-db.sh c u ld
 
  ./utils/start-server.sh dev d debug
 
