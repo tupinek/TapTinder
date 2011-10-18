@@ -43,8 +43,10 @@ th {
 }
 
 hr {
-    color:              #666666;
-    background-color:   #666666;
+
+    color: #9cb3c5;
+    background-color:   #9cb3c5;
+    height: 1px;
     border:             0;
     height:             1px;
 }

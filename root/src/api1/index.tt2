@@ -1,0 +1,13 @@
+[% DEFAULT title = 'TapTinder Web API v1' -%]
+
+<div class=nav>
+  <a href="[% c.uri_for('/') %]">Home</a>.
+</div>
+
+<hr>
+<pre>
+[% rest_html_dump(rest) %]
+</pre>
+<hr>
+
+[% INCLUDE 'inc/rest-ct.tt2' %]

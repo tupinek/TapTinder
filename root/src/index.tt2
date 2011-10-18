@@ -11,6 +11,7 @@
 <h2>Browsing:</h2>
 <ul class=menu>
 <li><a href="/clientmonitor">Client monitor</a></li>
+<li><a href="/api1">API</a></li>
 </ul>
 
 <h2>Documentation:</h2>

@@ -1,0 +1,3 @@
+Content-type:
+<a href="[% c.uri_for() _ '?content-type=application/json' %]">json</a>,
+<a href="[% c.uri_for() _ '?content-type=text/x-yaml' %]">yaml</a>
