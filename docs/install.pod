@@ -6,12 +6,23 @@ Absolutly no warranty for this software.
 
 Tested on Fedora 15 only.
 
-=head1 Perl modules
+=head1 Clone a Perl packages
 
 =head2 dzil and cpanm
 
  curl -L http://cpanmin.us | perl - --sudo App::cpanminus
  cpanm Dist::Zilla Dist::Zilla::Plugin::AutoPrereqs
+
+=head2 Clone TapTinder Server repo from GitHub
+
+ mkdir ~/ttdev
+ mkdir ~/ttdev/tt-server
+ cd ~/ttdev/tt-server
+ git clone git://github.com/mj41/TapTinder.git .
+
+=head2 Required packages
+
+ dzil authordeps | cpanm
  dzil listdeps --missing | cpanm
 
 =head2 Devel prerequsities
@@ -20,7 +31,6 @@ Tested on Fedora 15 only.
  cpanm Test::Pod
  cpanm Test::Pod::Coverage
  cpanm Archive::Tar::Wrapper
- dzil authordeps | cpanm
 
 =head1 Mysql
 
@@ -42,10 +52,12 @@ Tested on Fedora 15 only.
  
  service mysqld restart
 
-=head1 TapTinder Server
+=head1 TapTinder Server configuration
 
 =head2 Create directories
 
+ cd ~/ttdev/tt-server
+ mkdir temp
  mkdir temp/dbdoc
  ln -s -T ../temp/dbdoc root/dbdoc
  mkdir ../server-repos
@@ -56,7 +68,7 @@ Tested on Fedora 15 only.
  
 =head2 Setup
 
- # Create empty MySQL database and then
+ # Create empty MySQL database (see above) and then
  cp conf/web_db.yml.example conf/web_db.yml
  vim conf/web_db.yml 
  
@@ -82,4 +94,4 @@ Tested on Fedora 15 only.
 
 =head2 Test
  
- curl http://localhost:2000/
+ curl --header "Content-Type: text/x-yaml" http://localhost:2000/api1/check
