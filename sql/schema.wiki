@@ -28,6 +28,28 @@ CREATE TABLE user (
 ) TYPE=InnoDB COMMENT='User info. Tag: user.';
 </source>
 
+==== Table role ====
+<source lang=sql>
+CREATE TABLE role (
+    role_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'Primary key',
+    role 		VARCHAR(32) DEFAULT NULL,
+    descr       TEXT DEFAULT NULL COMMENT 'Description.',
+    INDEX i_role (role)
+) TYPE=InnoDB COMMENT='Role info. Tag: user.';
+</source>
+
+==== Table user_roles (m) ====
+<source lang=sql>
+CREATE TABLE user_roles (
+    user_id         INT UNSIGNED NOT NULL,
+    role_id			INT UNSIGNED NOT NULL,
+    PRIMARY KEY (user_id,role_id),
+    CONSTRAINT fk_user_roles_user_id FOREIGN KEY (user_id) REFERENCES user (user_id),
+    CONSTRAINT fk_user_roles_role_id FOREIGN KEY (role_id) REFERENCES role (role_id)
+) TYPE=InnoDB COMMENT='User roles. Tag: user.';
+</source>
+
+
 ==== Table machine (m) ====
 <source lang=sql>
 CREATE TABLE machine (
@@ -159,7 +181,7 @@ CREATE TABLE rref (
     CONSTRAINT fk_rref_rcommit_id FOREIGN KEY (rcommit_id) REFERENCES rcommit (rcommit_id)
 ) TYPE=InnoDB COMMENT='Repository referencies. Tag: project.';
 </source>
- 
+
  ToDo
    add 'rtag_id' and 'rtag' table
 
@@ -174,7 +196,7 @@ CREATE TABLE rref_rcommit (
     CONSTRAINT fk_rref_rcommit_rcommit_id FOREIGN KEY (rcommit_id) REFERENCES rcommit (rcommit_id)
 ) TYPE=InnoDB COMMENT='Repository referencies to rcommits mapping. Cache for last 500 rcommit in each rref. Tag: project.';
 </source>
-   
+
 ==== Table rfile ====
 <source lang=sql>
 CREATE TABLE rfile (

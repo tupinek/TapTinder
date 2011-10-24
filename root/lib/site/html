@@ -9,6 +9,14 @@
   <link rel="stylesheet" type="text/css" href="[%+ site.r_url.base %]css/base.css" />
 </head>
 <body>
+<div id="header">
+[% IF c.user_exists() %]
+<a href="[% c.uri_for('/user') %]">You</a>
+| <a href="[% c.uri_for('/user/logout') %]">Logout</a>
+[% ELSE %]
+<a href="[% c.uri_for('/user/login') %]">Login</a>
+[% END %]
+</div>
 <h1 class="title">[% title or site.title %]</h1>
 [% IF error %]
 <div class="error_bar">
@@ -17,10 +25,20 @@
 </ul>
 </div>
 [% END -%]
+
+[% IF notice %]
+<div class="notice_bar">
+<ul>
+<li><div class=notice>[% notice %]</div></li>
+</ul>
+</div>
+[% END -%]
+
 [% content %]
 [% IF c.debug && ot  # TODO %]
 <pre>[% ot | html %]</pre>
 [% END %]
+
 <div id="footer">[% site.poweredby %]</div>
 [% site.before_body_end %]
 </body>

@@ -1,0 +1,7 @@
+[% DEFAULT title = 'Login' -%]
+
+<h3>You are logged out</h3>
+
+<div class=nav>
+  Go to <a href="[% c.uri_for('/') %]">homepage</a>.
+</div>

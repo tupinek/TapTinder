@@ -28,9 +28,18 @@ return sub {
     $schema->resultset('user')->delete_all() if $delete_all;
     $schema->resultset('user')->populate([
         [ qw/ user_id login passwd first_name last_name irc_nick active created last_login / ],
-        [ 1, 'mj41', \'substring(MD5(RAND()), -8)', 'Michal', 'Jurosz', 'mj41', 1, \'NOW()', undef ],
+        [ 1, 'adm', 'baxXrXtQl0c6Y', 'Admin', 'User',  'adm', 1, \'NOW()', undef ], # passwd: 'bar123'
+        [ 2, 'kn',  'baxXrXtQl0c6Y', 'Karel', 'Novak', 'kn',  1, \'NOW()', undef ], # passwd: 'bar123'
     ]);
 
+    # table: user_roles
+    $schema->resultset('user_roles')->delete_all() if $delete_all;
+    $schema->resultset('user_roles')->populate([
+        [ qw/ user_id role_id / ],
+        [ 1, 1 ], # admin
+        [ 1, 2 ], # add_machine
+        [ 1, 3 ], # add_branch
+    ]);
 
     # table: farm
     $schema->resultset('farm')->delete_all() if $delete_all;

@@ -15,9 +15,12 @@ use Catalyst qw/
     Config::Multi
     Static::Simple
 
+    Authentication
+    Authorization::Roles
     Session
     Session::Store::FastMmap
     Session::State::Cookie
+
 /;
 
 
@@ -43,6 +46,24 @@ TapTinder::Web->config(
         },
     },
     'root' => TapTinder::Web->path_to('root'),
+
+    'Plugin::Authentication' => {
+        default => {
+            credential => {
+                class => 'Password',
+                password_type => 'crypted',
+                password_field => 'passwd'
+            },
+            store => {
+                class => 'DBIx::Class',
+                user_model => 'WebDB::User',
+                role_relation => 'roles',
+                role_field => 'role',
+                use_userdata_from_session => '1',
+            }
+        }
+    }
+
 );
 
 

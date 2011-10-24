@@ -194,5 +194,30 @@ __PACKAGE__->cwm_conf( {
     },
 } );
 
+__PACKAGE__->many_to_many( roles => 'get_user_roles', 'role_id');
+
+
+package TapTinder::DB::Schema::role;
+
+__PACKAGE__->many_to_many( users => 'get_user_roles', 'user_id');
+
+__PACKAGE__->cwm_conf( {
+    col_type => {
+        'role' => 'G',
+    },
+} );
+
+
+package TapTinder::DB::Schema::user_roles;
+# ToDo SQL::Translator...
+__PACKAGE__->set_primary_key('user_id', 'role_id');
+__PACKAGE__->add_unique_constraint(
+    'primary' => [ qw/ user_id role_id / ],
+);
+
+__PACKAGE__->cwm_conf( {
+     max_deep => 2,
+} );
+
 
 1;

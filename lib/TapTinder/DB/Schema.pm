@@ -395,98 +395,6 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('rref_id');
 
 
-package TapTinder::DB::Schema::user;
-use base 'TapTinder::DB::DBIxClassBase';
-
-__PACKAGE__->table('user');
-
-
-__PACKAGE__->add_columns(
-    'user_id' => {
-      'data_type' => 'int',
-      'is_auto_increment' => 1,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'user_id',
-      'is_nullable' => 0,
-      'size' => '11'
-    },
-    'login' => {
-      'data_type' => 'VARCHAR',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'login',
-      'is_nullable' => 0,
-      'size' => '20'
-    },
-    'passwd' => {
-      'data_type' => 'VARCHAR',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'passwd',
-      'is_nullable' => 0,
-      'size' => '20'
-    },
-    'first_name' => {
-      'data_type' => 'VARCHAR',
-      'is_auto_increment' => 0,
-      'default_value' => '',
-      'is_foreign_key' => 0,
-      'name' => 'first_name',
-      'is_nullable' => 0,
-      'size' => '255'
-    },
-    'last_name' => {
-      'data_type' => 'VARCHAR',
-      'is_auto_increment' => 0,
-      'default_value' => '',
-      'is_foreign_key' => 0,
-      'name' => 'last_name',
-      'is_nullable' => 0,
-      'size' => '255'
-    },
-    'irc_nick' => {
-      'data_type' => 'VARCHAR',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 0,
-      'name' => 'irc_nick',
-      'is_nullable' => 1,
-      'size' => '25'
-    },
-    'active' => {
-      'data_type' => 'BOOLEAN',
-      'is_auto_increment' => 0,
-      'default_value' => '1',
-      'is_foreign_key' => 0,
-      'name' => 'active',
-      'is_nullable' => 0,
-      'size' => 0
-    },
-    'created' => {
-      'data_type' => 'DATETIME',
-      'is_auto_increment' => 0,
-      'default_value' => undef,
-      'is_foreign_key' => 0,
-      'name' => 'created',
-      'is_nullable' => 0,
-      'size' => 0
-    },
-    'last_login' => {
-      'data_type' => 'DATETIME',
-      'is_auto_increment' => 0,
-      'default_value' => 'NULL',
-      'is_foreign_key' => 0,
-      'name' => 'last_login',
-      'is_nullable' => 1,
-      'size' => 0
-    },
-);
-__PACKAGE__->set_primary_key('user_id');
-
-
 package TapTinder::DB::Schema::rcommit;
 use base 'TapTinder::DB::DBIxClassBase';
 
@@ -595,6 +503,98 @@ __PACKAGE__->add_columns(
     },
 );
 __PACKAGE__->set_primary_key('rcommit_id');
+
+
+package TapTinder::DB::Schema::user;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('user');
+
+
+__PACKAGE__->add_columns(
+    'user_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'user_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'login' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'login',
+      'is_nullable' => 0,
+      'size' => '20'
+    },
+    'passwd' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'passwd',
+      'is_nullable' => 0,
+      'size' => '20'
+    },
+    'first_name' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => '',
+      'is_foreign_key' => 0,
+      'name' => 'first_name',
+      'is_nullable' => 0,
+      'size' => '255'
+    },
+    'last_name' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => '',
+      'is_foreign_key' => 0,
+      'name' => 'last_name',
+      'is_nullable' => 0,
+      'size' => '255'
+    },
+    'irc_nick' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'irc_nick',
+      'is_nullable' => 1,
+      'size' => '25'
+    },
+    'active' => {
+      'data_type' => 'BOOLEAN',
+      'is_auto_increment' => 0,
+      'default_value' => '1',
+      'is_foreign_key' => 0,
+      'name' => 'active',
+      'is_nullable' => 0,
+      'size' => 0
+    },
+    'created' => {
+      'data_type' => 'DATETIME',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'created',
+      'is_nullable' => 0,
+      'size' => 0
+    },
+    'last_login' => {
+      'data_type' => 'DATETIME',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'last_login',
+      'is_nullable' => 1,
+      'size' => 0
+    },
+);
+__PACKAGE__->set_primary_key('user_id');
 
 
 package TapTinder::DB::Schema::msproc_log;
@@ -1770,6 +1770,44 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('msproc_status_id');
 
 
+package TapTinder::DB::Schema::role;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('role');
+
+
+__PACKAGE__->add_columns(
+    'role_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'role_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'role' => {
+      'data_type' => 'VARCHAR',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'role',
+      'is_nullable' => 1,
+      'size' => '32'
+    },
+    'descr' => {
+      'data_type' => 'TEXT',
+      'is_auto_increment' => 0,
+      'default_value' => 'NULL',
+      'is_foreign_key' => 0,
+      'name' => 'descr',
+      'is_nullable' => 1,
+      'size' => '65535'
+    },
+);
+__PACKAGE__->set_primary_key('role_id');
+
+
 package TapTinder::DB::Schema::msproc;
 use base 'TapTinder::DB::DBIxClassBase';
 
@@ -2675,6 +2713,35 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('brun_conf_id');
 
 
+package TapTinder::DB::Schema::user_roles;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('user_roles');
+
+
+__PACKAGE__->add_columns(
+    'user_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'user_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'role_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'role_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+);
+__PACKAGE__->set_primary_key('user_id', 'role_id');
+
+
 package TapTinder::DB::Schema::mswatch_log;
 use base 'TapTinder::DB::DBIxClassBase';
 
@@ -3282,6 +3349,7 @@ __PACKAGE__->has_many('get_wconf_rref', 'TapTinder::DB::Schema::wconf_rref', 'rr
 
 package TapTinder::DB::Schema::user;
 
+__PACKAGE__->has_many('get_user_roles', 'TapTinder::DB::Schema::user_roles', 'user_id');
 __PACKAGE__->has_many('get_machine', 'TapTinder::DB::Schema::machine', 'user_id');
 __PACKAGE__->has_many('get_rauthor', 'TapTinder::DB::Schema::rauthor', 'user_id');
 __PACKAGE__->has_many('get_ibot', 'TapTinder::DB::Schema::ibot', 'operator_id');
@@ -3445,6 +3513,10 @@ package TapTinder::DB::Schema::msproc_status;
 
 __PACKAGE__->has_many('get_msproc_log', 'TapTinder::DB::Schema::msproc_log', 'msproc_status_id');
 
+package TapTinder::DB::Schema::role;
+
+__PACKAGE__->has_many('get_user_roles', 'TapTinder::DB::Schema::user_roles', 'role_id');
+
 package TapTinder::DB::Schema::msproc;
 
 __PACKAGE__->belongs_to('msession_id','TapTinder::DB::Schema::msession','msession_id');
@@ -3577,6 +3649,13 @@ __PACKAGE__->belongs_to('alias_conf_id','TapTinder::DB::Schema::brun_conf','alia
 __PACKAGE__->has_many('get_brun_conf', 'TapTinder::DB::Schema::brun_conf', 'alias_conf_id');
 __PACKAGE__->has_many('get_brun', 'TapTinder::DB::Schema::brun', 'conf_id');
 
+package TapTinder::DB::Schema::user_roles;
+
+__PACKAGE__->belongs_to('user_id','TapTinder::DB::Schema::user','user_id');
+
+__PACKAGE__->belongs_to('role_id','TapTinder::DB::Schema::role','role_id');
+
+
 package TapTinder::DB::Schema::mswatch_log;
 
 __PACKAGE__->belongs_to('msession_id','TapTinder::DB::Schema::msession','msession_id');
@@ -3669,9 +3748,9 @@ __PACKAGE__->register_class('jobp_cmd', 'TapTinder::DB::Schema::jobp_cmd');
 
 __PACKAGE__->register_class('rref', 'TapTinder::DB::Schema::rref');
 
-__PACKAGE__->register_class('user', 'TapTinder::DB::Schema::user');
-
 __PACKAGE__->register_class('rcommit', 'TapTinder::DB::Schema::rcommit');
+
+__PACKAGE__->register_class('user', 'TapTinder::DB::Schema::user');
 
 __PACKAGE__->register_class('msproc_log', 'TapTinder::DB::Schema::msproc_log');
 
@@ -3721,6 +3800,8 @@ __PACKAGE__->register_class('mslog', 'TapTinder::DB::Schema::mslog');
 
 __PACKAGE__->register_class('msproc_status', 'TapTinder::DB::Schema::msproc_status');
 
+__PACKAGE__->register_class('role', 'TapTinder::DB::Schema::role');
+
 __PACKAGE__->register_class('msproc', 'TapTinder::DB::Schema::msproc');
 
 __PACKAGE__->register_class('fsfile', 'TapTinder::DB::Schema::fsfile');
@@ -3752,6 +3833,8 @@ __PACKAGE__->register_class('tdiag_msg', 'TapTinder::DB::Schema::tdiag_msg');
 __PACKAGE__->register_class('wui_project', 'TapTinder::DB::Schema::wui_project');
 
 __PACKAGE__->register_class('brun_conf', 'TapTinder::DB::Schema::brun_conf');
+
+__PACKAGE__->register_class('user_roles', 'TapTinder::DB::Schema::user_roles');
 
 __PACKAGE__->register_class('mswatch_log', 'TapTinder::DB::Schema::mswatch_log');
 

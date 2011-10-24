@@ -22,6 +22,16 @@ return sub {
     ]);
 
 
+    # table: role
+    $schema->resultset('role')->delete_all() if $delete_all;
+    $schema->resultset('role')->populate([
+        [ qw/ role_id role   descr / ],
+        [ 1, 'admin',       'Can do admin tasks.' ],
+        [ 2, 'add_machine', 'Can add new machine' ],
+        [ 3, 'add_branch',  'Can add new branch for testing on all projects' ],
+    ]);
+
+
     # table: trun_status
     $schema->resultset('trun_status')->delete_all() if $delete_all;
     $schema->resultset('trun_status')->populate([
