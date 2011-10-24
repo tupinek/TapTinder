@@ -41,10 +41,13 @@ if ( $to eq 'dbix' || $to eq 'ALL' ) {
             prefix => $producer_prefix,
             base_class_name => $producer_base_class_name,
         },
-    ) or die SQL::Translator->error;
+    ) or croak SQL::Translator->error;
 
     my $out_fn = './lib/TapTinder/DB/Schema.pm';
     my $content = $translator->translate;
+
+    croak $translator->error if $translator->error;
+
     if ( $content ) {
         my $fh;
         open ( $fh, '>', $out_fn ) || die $!;
