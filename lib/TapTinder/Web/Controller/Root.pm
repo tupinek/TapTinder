@@ -21,7 +21,7 @@ TapTinder root path action.
 
 =cut
 
-sub default : Private {
+sub homepage :Path :Args(0) {
     my ( $self, $c ) = @_;
 
     $c->stash->{template} =  'index.tt2';
