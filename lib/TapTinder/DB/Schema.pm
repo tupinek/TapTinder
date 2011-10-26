@@ -2653,12 +2653,12 @@ __PACKAGE__->add_columns(
       'is_nullable' => 0,
       'size' => '11'
     },
-    'main_page_order' => {
+    'wui_order' => {
       'data_type' => 'int',
       'is_auto_increment' => 0,
       'default_value' => undef,
       'is_foreign_key' => 0,
-      'name' => 'main_page_order',
+      'name' => 'wui_order',
       'is_nullable' => 0,
       'size' => '11'
     },
@@ -2852,6 +2852,44 @@ __PACKAGE__->add_columns(
     },
 );
 __PACKAGE__->set_primary_key('job_id');
+
+
+package TapTinder::DB::Schema::wui_rref;
+use base 'TapTinder::DB::DBIxClassBase';
+
+__PACKAGE__->table('wui_rref');
+
+
+__PACKAGE__->add_columns(
+    'wui_rref_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 1,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'wui_rref_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'rref_id' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 1,
+      'name' => 'rref_id',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+    'wui_order' => {
+      'data_type' => 'int',
+      'is_auto_increment' => 0,
+      'default_value' => undef,
+      'is_foreign_key' => 0,
+      'name' => 'wui_order',
+      'is_nullable' => 0,
+      'size' => '11'
+    },
+);
+__PACKAGE__->set_primary_key('wui_rref_id');
 
 
 package TapTinder::DB::Schema::trun;
@@ -3346,6 +3384,7 @@ __PACKAGE__->belongs_to('rcommit_id','TapTinder::DB::Schema::rcommit','rcommit_i
 __PACKAGE__->has_many('get_rref_rcommit', 'TapTinder::DB::Schema::rref_rcommit', 'rref_id');
 __PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'rref_id');
 __PACKAGE__->has_many('get_wconf_rref', 'TapTinder::DB::Schema::wconf_rref', 'rref_id');
+__PACKAGE__->has_many('get_wui_rref', 'TapTinder::DB::Schema::wui_rref', 'rref_id');
 
 package TapTinder::DB::Schema::user;
 
@@ -3667,6 +3706,11 @@ __PACKAGE__->has_many('get_jobp', 'TapTinder::DB::Schema::jobp', 'job_id');
 __PACKAGE__->has_many('get_wconf_job', 'TapTinder::DB::Schema::wconf_job', 'job_id');
 __PACKAGE__->has_many('get_msjob', 'TapTinder::DB::Schema::msjob', 'job_id');
 
+package TapTinder::DB::Schema::wui_rref;
+
+__PACKAGE__->belongs_to('rref_id','TapTinder::DB::Schema::rref','rref_id');
+
+
 package TapTinder::DB::Schema::trun;
 
 __PACKAGE__->belongs_to('trun_status_id','TapTinder::DB::Schema::trun_status','trun_status_id');
@@ -3839,6 +3883,8 @@ __PACKAGE__->register_class('user_roles', 'TapTinder::DB::Schema::user_roles');
 __PACKAGE__->register_class('mswatch_log', 'TapTinder::DB::Schema::mswatch_log');
 
 __PACKAGE__->register_class('job', 'TapTinder::DB::Schema::job');
+
+__PACKAGE__->register_class('wui_rref', 'TapTinder::DB::Schema::wui_rref');
 
 __PACKAGE__->register_class('trun', 'TapTinder::DB::Schema::trun');
 

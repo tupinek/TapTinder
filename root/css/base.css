@@ -308,3 +308,28 @@ h1.table, h2.table, h3.table {
     font-weight: bold;
 }
 
+.mcell_row {
+    margin: 0px;
+    display: table-cell;
+}
+
+.mcell {
+    min-width: 250px;
+    margin: 0px 30px 0px 0px;
+    padding: 0px;
+    border: dotted 1px #D5D5D5;
+}
+
+.mcell h2 {
+   line-height: 150%;
+   background: #D3DCE3;
+   margin: 0px;
+   padding: 4px 2px 4px 10px;
+}
+
+
+.mcell_content {
+    line-height: 150%;
+    margin: 0px;
+    padding: 10px;
+}

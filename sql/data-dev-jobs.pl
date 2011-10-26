@@ -28,6 +28,17 @@ return sub {
     )->id;
     return 0 unless $master_tr1_rref_id;
 
+    my $b1_tr1_rref_id = $schema->resultset('rref')->find(
+        {
+            'me.name' => 'b1',
+            'rcommit_id.rep_id' => 1, # default repo for tt-tr1 project, see data-dev.pl
+        },
+        {
+            join => 'rcommit_id',
+        }
+    )->id;
+    return 0 unless $b1_tr1_rref_id;
+
     my $master_tr2_rref_id = $schema->resultset('rref')->find(
         {
             'me.name' => 'master',
@@ -259,6 +270,16 @@ return sub {
         });
     }
 
+
+    # table: wui_rref
+    $schema->resultset('wui_rref')->delete_all() if $delete_all;
+    $schema->resultset('wui_rref')->populate([
+        [ qw/ wui_rref_id              rref_id  wui_order /  ],
+        [               1, $b1_tr1_rref_id,             1,   ],
+        [               2, $master_tr1_rref_id,         2,   ],
+        [               3, $master_tr2_rref_id,         3,   ],
+        [               4, $master_tr3_rref_id,         4,   ],
+    ]);
 
     # table: wui_build
     $schema->resultset('wui_build')->delete_all() if $delete_all;

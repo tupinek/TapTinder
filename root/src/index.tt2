@@ -1,22 +1,26 @@
-<h2>Bookmarks:</h2>
-<ul class=menu>
-<li><a href="/buildstatus/tt-tr1/master">tt-tr1 build status</a></li>
-<li><a href="/buildstatus/tt-tr2/master">tt-tr2 build status</a></li>
-<li><a href="/buildstatus/tt-tr3/master">tt-tr3 build status</a></li>
-<li><a href="/buildstatus/parrot/master">Parrot build status</a></li>
-<li><a href="/buildstatus/rakudo/master">Rakudo build status</a></li>
-</ul>
+<br>
 
+[% FOREACH pr IN projects -%]
+<div class=mcell_row>
+ <div class=mcell>
+  <h2>[% pr.name %]</h2>
+  <div class="mcell_content">
+  [% FOREACH rr IN rref -%]
+    [% IF rr.project_id == pr.project_id %]
+      <a href="[% c.uri_for( '/buildstatus/' _ pr.name _ '/' _ rr.rref_name.replace('/','--') ) %]">[% rr.rref_name %]</a>
+      <br>
+    [% END %]
+  [% END %]
+  </div>
+ </div>
+</div>
+[% IF loop.count() % 3 == 0 %]<br style="clear:both;">[% END %]
+[% END %]
+</div>
 
-<h2>Browsing:</h2>
-<ul class=menu>
-<li><a href="/clientmonitor">Client monitor</a></li>
-<li><a href="/api1">API</a></li>
-</ul>
-
-<h2>Documentation:</h2>
-<ul class=menu>
+<br>
+<ul style="margin:10px; padding:5px;">
+<li><a href="/clientmonitor">Client monitor</a> - status of clients (slow)</li>
 <li><a href="/cwm">See web magic</a> - browse tables</li>
 <li><a href="/dbdoc">DBdoc</a> - database schema images</li>
 </ul>
-
