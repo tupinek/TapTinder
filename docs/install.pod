@@ -57,6 +57,7 @@ Tested on Fedora 15 only.
 =head2 Create directories
 
  cd ~/ttdev/tt-server
+ 
  mkdir temp
  mkdir temp/dbdoc
  ln -s -T ../temp/dbdoc root/dbdoc
@@ -64,7 +65,9 @@ Tested on Fedora 15 only.
  mkdir ../server-data/
  mkdir ../server-data/cmdout
  mkdir ../server-data/archive
- mkdir ../server-data/patch
+ mkdir root/file
+ ln -s -T ../../../server-data/cmdout root/file/cmdout
+ ln -s -T ../../../server-data/archive root/file/archive
  
 =head2 Setup
 
