@@ -9,6 +9,6 @@
   to you: <span class="error">[% error %]</span>
 </p>
 <p>
-  Try to send useful report to <a href="mailto:bug@taptinder.org">bug@taptinder.org</a>
-  or patch to <a href="mailto:patch@taptinder.org">patch@taptinder.org</a> . Thank you.
+  Try to send useful bug report or patch to <a href="https://github.com/mj41/TapTinder/issues/">TapTinder issues</a>. 
+  Thank you.
 </p>

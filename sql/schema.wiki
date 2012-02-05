@@ -7,7 +7,7 @@
 SET FOREIGN_KEY_CHECKS=0;
 start transaction;
 
--- Tags_order: project, machine, user, patch, wconfA, wconfB, fspath_select, jobs, machine_sessions, rfile, test_runs, benchmark_runs, files_paths, irc_robot, config, wui.
+-- Tags_order: project, machine, user, wconfA, wconfB, fspath_select, jobs, machine_sessions, rfile, test_runs, benchmark_runs, files_paths, irc_robot, config, wui.
 </source>
 
 === Tables ===
@@ -130,7 +130,7 @@ CREATE TABLE rauthor (
     INDEX i_user_id (user_id),
     CONSTRAINT fk_user_rep_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
     CONSTRAINT fk_user_rep_user_id FOREIGN KEY (user_id) REFERENCES user (user_id)
-) TYPE=InnoDB COMMENT='Repository and patch authors. Some authors are also users. Tag: project.';
+) TYPE=InnoDB COMMENT='Repository authors. Some authors are also users. Tag: project.';
 </source>
 
 ==== Table rcommit ====
@@ -734,7 +734,7 @@ CREATE TABLE bfile (
 <source lang=sql>
 CREATE TABLE fspath (
     fspath_id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    path            VARCHAR(1023) COMMENT 'Full path from root, e.g. /tmp/taptinder/patches/parrot-01/.',
+    path            VARCHAR(1023) COMMENT 'Full path from filesystem root.',
     web_path        VARCHAR(255),
     public          BOOLEAN DEFAULT 0,
     created         DATETIME NOT NULL,
