@@ -96,12 +96,14 @@ __PACKAGE__->table('${tname}');
         foreach my $f (@fields)
         {
             local $Data::Dumper::Terse = 1;
+            local $Data::Dumper::Pad = '    ';
             $output .= "\n    '" . (keys %$f)[0] . "' => " ;
             my $colinfo =
                 Data::Dumper->Dump([values %$f],
                                    [''] # keys   %$f]
                                    );
             chomp($colinfo);
+            $colinfo =~ s{^\s+}{};
             $output .= $colinfo . ",";
         }
         $output .= "\n);\n";
