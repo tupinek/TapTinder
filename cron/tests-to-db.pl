@@ -43,7 +43,7 @@ croak "Configuration for database is empty.\n" unless $conf->{db};
 
 my $schema = get_connected_schema( $conf->{db} );
 
-my $plus_rows = [ qw/ msjobp_cmd_id file_path file_name rev_id rev_num rep_path_id /];
+my $plus_rows = [ qw/ msjobp_cmd_id file_path file_name rcommit_id project_id /];
 my $search_cond = {};
 if ( defined $msjobp_cmd_id ) {
      $search_cond->{msjobp_cmd_id} = $msjobp_cmd_id;
@@ -128,42 +128,51 @@ sub trun_update {
 }
 
 
-sub rep_file_find {
-    my ( $schema, $rep_path_id, $sub_path, $rev_num ) = @_;
+sub rfile_find {
+    my ( $schema, $rcommit_id, $file_path ) = @_;
 
-    my $rs = $schema->resultset('rep_file')->search( {
-        rep_path_id => $rep_path_id,
-        sub_path => $sub_path,
-        rev_num_from => { '<=', $rev_num },
-        -or => [
-            rev_num_to => { 'is', undef },
-            rev_num_to => { '>=', $rev_num },
-        ],
-    } );
+    my $rs = $schema->resultset('rfile')->search(
+        {
+            'me.rcommit_id' => $rcommit_id,
+            'rpath_id.path' => $file_path,
+        },
+        { join => 'rpath_id' },
+    );
     my $row = $rs->next;
-    return undef unless $row;
-    my $row_data = { $row->get_columns };
-    my $rep_file_id = $row_data->{rep_file_id};
-    return $rep_file_id;
+
+    # Return existing.
+    if ( $row ) {
+        my $row_data = { $row->get_columns };
+        my $rfile_id = $row_data->{rfile_id};
+        return $rfile_id;
+    }
+
+    # Create new.
+    my $rpath = $schema->resultset('rpath')->find_or_create({ path => $file_path });
+    my $new_rs = $schema->resultset('rfile')->create({
+        rcommit_id => $rcommit_id,
+        rpath_id => $rpath->id,
+    });
+    return $new_rs->id;
 }
 
 
-sub create_rep_test {
-    my ( $schema, $rep_file_id, $number, $name ) = @_;
+sub create_rtest {
+    my ( $schema, $rfile_id, $number, $name ) = @_;
 
-    return create_new_table_row( $schema, 'rep_test',  {
-        rep_file_id => $rep_file_id,
+    return create_new_table_row( $schema, 'rtest',  {
+        rfile_id => $rfile_id,
         number => $number,
         name => $name,
     } );
 }
 
 
-sub my_find_or_create_rep_test {
-    my ( $schema, $rep_file_id, $number, $name ) = @_;
+sub my_find_or_create_rtest {
+    my ( $schema, $rfile_id, $number, $name ) = @_;
 
-    my $rs = $schema->resultset('rep_test')->search( {
-        rep_file_id => $rep_file_id,
+    my $rs = $schema->resultset('rtest')->search( {
+        rfile_id => $rfile_id,
         number => $number
     } );
 
@@ -179,15 +188,15 @@ sub my_find_or_create_rep_test {
     }
 
     # Not found.
-    return create_rep_test( $schema, $rep_file_id, $number, $name ) unless defined $row;
+    return create_rtest( $schema, $rfile_id, $number, $name ) unless defined $row;
 
     # Found and has the same name.
-    return $row->rep_test_id if $has_another_name;
+    return $row->rtest_id if $has_another_name;
 
     # Found, has another name, but has_another_name already set.
-    return $row->rep_test_id if $row->has_another_name;
+    return $row->rtest_id if $row->has_another_name;
 
-    # Has another name and has_another_name == 1. Update rep_test.
+    # Has another name and has_another_name == 1. Update rtest.
     # set has_another_name=1.
     my $new_vals = { has_another_name => 1 };
 
@@ -197,27 +206,27 @@ sub my_find_or_create_rep_test {
     my $ret_val = $row->update( $new_vals );
     return undef unless $ret_val;
 
-    return $row->rep_test_id;
+    return $row->rtest_id;
 }
 
 
 sub insert_ttest_and_msgs {
-    my ( $schema, $ver, $trun_id, $rep_file_id, $test_number, $test_description, $trest_id ) = @_;
+    my ( $schema, $ver, $trun_id, $rfile_id, $test_number, $test_description, $trest_id ) = @_;
 
     my $test_name = $test_description;
     $test_name =~ s{^\s*-\s*}{};
 
-    my $rep_test_id = my_find_or_create_rep_test(
+    my $rtest_id = my_find_or_create_rtest(
         $schema,
-        $rep_file_id,
+        $rfile_id,
         $test_number, # $number
         $test_name    # $name
     );
-    unless ( $rep_test_id ) {
-        carp "Can't find or create rep_test for rep_file_id:$rep_file_id, number:'$test_number', name:'$test_name'\n";
+    unless ( $rtest_id ) {
+        carp "Can't find or create rtest for rfile_id:$rfile_id, number:'$test_number', name:'$test_name'\n";
         return 0;
     }
-    print "    rep_test_id: $rep_test_id\n" if $ver >= 5;
+    print "    rtest_id: $rtest_id\n" if $ver >= 5;
 
     # Do not save results with ok status.
     if ( $trest_id == 6 ) {
@@ -227,27 +236,31 @@ sub insert_ttest_and_msgs {
 
     my $ttest_id = create_new_table_row( $schema, 'ttest',  {
         trun_id => $trun_id,
-        rep_test_id => $rep_test_id,
+        rtest_id => $rtest_id,
         trest_id => $trest_id,
     } );
     unless ( $ttest_id ) {
-        carp "Can't create ttest for trun_id:$trun_id, rep_test_id:$rep_test_id, trest_id:$trest_id\n";
+        carp "Can't create ttest for trun_id:$trun_id, rtest_id:$rtest_id, trest_id:$trest_id\n";
         return 0;
     }
     print "    ttest_id: $ttest_id\n" if $ver >= 5;
     return 1;
 }
 
+print "Starting transaction.\n" if $ver >= 3;
+$schema->storage->txn_begin;
 
 my $archiv_num = 0;
+my $new_archive_num = 0;
 ARCHIVE: while ( my $row = $rs->next ) {
     $archiv_num++;
+    $new_archive_num++;
+
     my $rdata = { $row->get_columns };
     print Dumper( $rdata ) if $ver >= 4;
     my $fpath = catfile( $rdata->{file_path}, $rdata->{file_name} );
     my $msjobp_cmd_id = $rdata->{msjobp_cmd_id};
-    my $rep_path_id = $rdata->{rep_path_id};
-    my $rev_num = $rdata->{rev_num};
+    my $rcommit_id = $rdata->{rcommit_id};
     print "Archive file: '$fpath':\n" if $ver >= 1;
 
     my $tar = Archive::Tar->new();
@@ -283,13 +296,12 @@ ARCHIVE: while ( my $row = $rs->next ) {
         my $tap_source = $file->{data};
 
         print "Test file: '$tap_file_path'\n" if $ver >= 3;
-        my $rep_file_id = rep_file_find( $schema, $rep_path_id, $tap_file_path, $rev_num );
-        # ToDo - dynamically generated files?
-        unless ( $rep_file_id ) {
-            carp "Can't find rep_file_id for rep_path_id:$rep_path_id, sub_path:'$tap_file_path', rev_num:$rev_num\n";
+        my $rfile_id = rfile_find( $schema, $rcommit_id, $tap_file_path );
+        unless ( $rfile_id ) {
+            carp "Can't find rfile_id for rcommit_id:$rcommit_id, file_path:'$tap_file_path'\n";
             next TAP_FILE;
         }
-        print "  rep_file_id: $rep_file_id\n" if $ver >= 5;
+        print "  rfile_id: $rfile_id\n" if $ver >= 5;
 
         my $tap_parser = TAP::Parser->new( { tap => $tap_source } );
         my $prev_num = 0;
@@ -330,7 +342,7 @@ ARCHIVE: while ( my $row = $rs->next ) {
                                 $schema,
                                 $ver,
                                 $trun_id,
-                                $rep_file_id,
+                                $rfile_id,
                                 $not_seen_num,  # $test_number,
                                 '',             # $test_description,
                                 $trest_id
@@ -365,7 +377,7 @@ ARCHIVE: while ( my $row = $rs->next ) {
                         $schema,
                         $ver,
                         $trun_id,
-                        $rep_file_id,
+                        $rfile_id,
                         $actual_num, # $test_number,
                         $result->description, # $test_description,
                         $trest_id
@@ -389,7 +401,7 @@ ARCHIVE: while ( my $row = $rs->next ) {
                     $schema,
                     $ver,
                     $trun_id,
-                    $rep_file_id,
+                    $rfile_id,
                     $not_seen_num,  # $test_number,
                     '',             # $test_description,
                     $trest_id
@@ -407,13 +419,13 @@ ARCHIVE: while ( my $row = $rs->next ) {
         # Insert tfile.
         my $tfile_id = create_new_table_row( $schema, 'tfile',  {
             trun_id => $trun_id,
-            rep_file_id => $rep_file_id,
+            rfile_id => $rfile_id,
             all_passed => $all_passed,
             tskipall_msg_id => $tskipall_msg_id,
             hang => $hang,
         } );
         unless ( $tfile_id ) {
-            carp "Can't create tfile for trun_id:$trun_id, rep_file_id:$rep_file_id, all_passed:$all_passed, tskipall_msg_id: $tskipall_msg_id, hang: $hang\n";
+            carp "Can't create tfile for trun_id:$trun_id, rfile_id:$rfile_id, all_passed:$all_passed, tskipall_msg_id: $tskipall_msg_id, hang: $hang\n";
         }
         print "  tfile_id: $tfile_id\n" if $ver >= 5;
 
@@ -478,12 +490,27 @@ ARCHIVE: while ( my $row = $rs->next ) {
     my $ret_val = trun_update( $schema, $trun_id, $new_trun_values );
 
     last ARCHIVE if $first_archive_only;
-
-    if ( $archiv_num >= $archive_num_limit ) {
-        print "Archive number limit $archive_num_limit reached." if $ver >= 2;
+    if ( defined($archive_num_limit) && $archiv_num >= $archive_num_limit ) {
+        print "Archive number limit $archive_num_limit reached.\n" if $ver >= 2;
         last ARCHIVE;
     }
+
+    # Commit transaction.
+    if ( $new_archive_num >= 1 ) {
+        print "Commiting transaction.\n" if $ver >= 3;
+        $schema->storage->txn_commit;
+        print "Already added $new_archive_num archives.\n" if $ver >= 3;
+
+        print "Starting new transaction.\n" if $ver >= 3;
+        $schema->storage->txn_begin;
+
+        $new_archive_num = 0;
+    }
 }
+
+print "Commiting transaction.\n" if $ver >= 3;
+$schema->storage->txn_commit;
+#$schema->storage->txn_rollback;
 
 
 =head1 NAME
