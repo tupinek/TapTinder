@@ -27,16 +27,17 @@ Tested on Fedora 15 only.
 
 =head2 Devel prerequsities
 
- cpanm Test::NoTabs
- cpanm Test::Pod
- cpanm Test::Pod::Coverage
+ cpanm Catalyst::Devel
+ cpanm DBD::mysql
  cpanm Archive::Tar::Wrapper
+ cpanm Git::Repository
 
 =head1 Mysql
 
 =head2 Base install
 
- yum -y install mysql-server 
+ yum -y install mysql mysql-server mysql-devel
+ yum -y install libzdb-devel
  service mysqld start
  /usr/bin/mysql_secure_installation
 

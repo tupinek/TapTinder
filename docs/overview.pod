@@ -7,6 +7,8 @@ docs/overview.pod - A TapTinder Overview
 Let computers do their work. Doubled each 18 months. Allow engineers
 to be more productive and enjoying their work.
 
+Fast and accurate response to each commit.
+
 =head1 Architectural overview
 
 =head2 Server
