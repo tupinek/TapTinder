@@ -1,0 +1,27 @@
+=head1 Present
+
+We are building Parrot [L<http://tt.taptinder.org/>] (on some platforms, build 
+configurations and git branches) and reporting to IRC 
+(L<http://ttbot.eu/ttbots1>, L<http://ttbot.eu/ttbots2>). Many 
+of processes and configurations are manually maintained.
+
+=head1 Near future
+
+Continuous integration for Parrot [L<https://github.com/parrot>] and 
+Perl 6 [L<http://modules.perl6.org/>] related projects with source code 
+on GitHub and TAP [L<http://en.wikipedia.org/wiki/Test_Anything_Protocol>] 
+(Test Anything Protocol) support. Report build failures and test cases 
+failures in diff format to email list and IRC on many platforms and 
+configurations. Have same really fast machines to nearly real-time 
+response after each commit. Be free - use build farms dedicated too 
+open source and programmers' machines. Be more public visible and have 
+real development team (three or more hackers).
+
+=head1 Future
+
+... a long list in our heads, we should reduce our
+issue list [L<https://github.com/mj41/TapTinder/issues>] before planning 
+too much.
+
+See also our 
+TapTinder's milestones [L<https://github.com/mj41/TapTinder/issues/milestones>].

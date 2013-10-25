@@ -1,6 +1,0 @@
----
-db:
-    name : 'taptinder'
-    dbi_dsn: 'dbi:mysql:database=taptinder;host=localhost'
-    user: 'taptinder-user'
-    pass: 'taptinder-passwd'

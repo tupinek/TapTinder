@@ -1,0 +1,101 @@
+=head1 Setup ttdev
+
+=head2 Warning
+
+Absolutly no warranty for this software.
+
+Tested on Fedora 15 only.
+
+=head1 Clone a Perl packages
+
+=head2 dzil and cpanm
+
+ curl -L http://cpanmin.us | perl - --sudo App::cpanminus
+ cpanm Dist::Zilla Dist::Zilla::Plugin::AutoPrereqs
+
+=head2 Clone TapTinder Server repo from GitHub
+
+ mkdir ~/ttdev
+ mkdir ~/ttdev/tt-server
+ cd ~/ttdev/tt-server
+ git clone git://github.com/mj41/TapTinder.git .
+
+=head2 Required packages
+
+ dzil authordeps | cpanm
+ dzil listdeps --missing | cpanm
+
+=head2 Devel prerequsities
+
+ cpanm Catalyst::Devel
+ cpanm DBD::mysql
+ cpanm Archive::Tar::Wrapper
+ cpanm Git::Repository
+
+=head1 Mysql
+
+=head2 Base install
+
+ yum -y install mysql mysql-server mysql-devel
+ yum -y install libzdb-devel
+ service mysqld start
+ /usr/bin/mysql_secure_installation
+
+=head2 Create ttdev database
+ 
+ mysql -u root -p
+ 
+ CREATE USER 'ttdev'@'localhost' IDENTIFIED BY 'mysql-secret-ttdev-passwd';
+ CREATE DATABASE IF NOT EXISTS ttdev;
+ use ttdev;
+ GRANT ALL ON ttdev.* to 'ttdev'@'localhost';
+ exit
+ 
+ service mysqld restart
+
+=head1 TapTinder Server configuration
+
+=head2 Create directories
+
+ cd ~/ttdev/tt-server
+ 
+ mkdir temp
+ mkdir temp/dbdoc
+ ln -s -T ../temp/dbdoc root/dbdoc
+ mkdir ../server-repos
+ mkdir ../server-data/
+ mkdir ../server-data/cmdout
+ mkdir ../server-data/archive
+ mkdir root/file
+ ln -s -T ../../../server-data/cmdout root/file/cmdout
+ ln -s -T ../../../server-data/archive root/file/archive
+ 
+=head2 Setup
+
+ # Create empty MySQL database (see above) and then
+ cp conf/web_db.yml.example conf/web_db.yml
+ vim conf/web_db.yml 
+ 
+ cp conf/web_project.yml.example conf/web_project.yml
+ vim conf/web_project.yml
+ 
+ cp conf/web.yml.example conf/web.yml
+ vim conf/web.yml
+ 
+ cp root/lib/config/main.example root/lib/config/main
+ vim root/lib/config/main
+
+=head2 Initialize and start
+
+ utils/clear-dev-db.sh
+ 
+ utils/clear-dev-db.sh c uu ld
+ 
+ # Next time use 'u' instead of 'uu', its faster.
+ # utils/clear-dev-db.sh c u ld
+
+ ./utils/start-server.sh dev d debug
+
+=head2 Test
+ 
+ curl --header "Content-Type: text/x-yaml" http://localhost:2000/api1/check

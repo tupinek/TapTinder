@@ -1,0 +1,6 @@
+---
+db:
+    name : 'taptinder'
+    dbi_dsn: 'dbi:mysql:database=ttdev;host=localhost'
+    user: 'ttdev'
+    pass: 'mysql-secret-ttdev-passwd'

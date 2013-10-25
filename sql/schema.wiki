@@ -1,0 +1,884 @@
+=== Header ===
+
+<!-- perl utils\wiki_schema.pl sql\schema.wiki 1 > sql\schema.sql -->
+<!-- PARSE PART DBCREATE BEGIN -->
+<source lang=sql>
+-- schema revision: $LastChangedRevision$
+SET FOREIGN_KEY_CHECKS=0;
+start transaction;
+
+-- Tags_order: project, machine, user, wconfA, wconfB, fspath_select, jobs, machine_sessions, rfile, test_runs, benchmark_runs, files_paths, irc_robot, config, wui.
+</source>
+
+=== Tables ===
+
+==== Table user ====
+<source lang=sql>
+CREATE TABLE user (
+    user_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'Primary key',
+    login       VARCHAR(20) NOT NULL,
+    passwd      VARCHAR(20) NOT NULL,
+    first_name  VARCHAR(255) NOT NULL DEFAULT '',
+    last_name   VARCHAR(255) NOT NULL DEFAULT '',
+    irc_nick    VARCHAR(25) DEFAULT NULL,
+    active      BOOLEAN NOT NULL DEFAULT 1 COMMENT 'Zero means historical data.',
+    created     DATETIME NOT NULL COMMENT 'Account creation time.',
+    last_login  DATETIME DEFAULT NULL,
+    INDEX i_login (login)
+) TYPE=InnoDB COMMENT='User info. Tag: user.';
+</source>
+
+==== Table role ====
+<source lang=sql>
+CREATE TABLE role (
+    role_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'Primary key',
+    role 		VARCHAR(32) DEFAULT NULL,
+    descr       TEXT DEFAULT NULL COMMENT 'Description.',
+    INDEX i_role (role)
+) TYPE=InnoDB COMMENT='Role info. Tag: user.';
+</source>
+
+==== Table user_roles (m) ====
+<source lang=sql>
+CREATE TABLE user_roles (
+    user_id         INT UNSIGNED NOT NULL,
+    role_id			INT UNSIGNED NOT NULL,
+    PRIMARY KEY (user_id,role_id),
+    CONSTRAINT fk_user_roles_user_id FOREIGN KEY (user_id) REFERENCES user (user_id),
+    CONSTRAINT fk_user_roles_role_id FOREIGN KEY (role_id) REFERENCES role (role_id)
+) TYPE=InnoDB COMMENT='User roles. Tag: user.';
+</source>
+
+
+==== Table machine (m) ====
+<source lang=sql>
+CREATE TABLE machine (
+    machine_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id         INT UNSIGNED NOT NULL,
+    name            VARCHAR(20) NOT NULL,
+    passwd          VARCHAR(20) NOT NULL,
+    descr           TEXT DEFAULT NULL COMMENT 'Description.',
+    ip              VARCHAR(15) DEFAULT NULL,
+    cpuarch         VARCHAR(50) DEFAULT NULL,
+    osname          VARCHAR(50) DEFAULT NULL,
+    archname        VARCHAR(255) DEFAULT NULL,
+    disabled        BOOLEAN NOT NULL DEFAULT 0,
+    created         DATETIME NOT NULL,
+    prev_machine_id INT UNSIGNED DEFAULT NULL,
+    farm_id         INT UNSIGNED DEFAULT NULL,
+    CONSTRAINT fk_machine_user_id FOREIGN KEY (user_id) REFERENCES user (user_id),
+    CONSTRAINT fk_machine_prev_machine_id FOREIGN KEY (prev_machine_id) REFERENCES machine (machine_id),
+    CONSTRAINT fk_machine_farm_id FOREIGN KEY (farm_id) REFERENCES farm (farm_id)
+) TYPE=InnoDB COMMENT='Machine (computer or virtual machine) info. Tag: machine.';
+</source>
+
+==== Table farm ====
+<source lang=sql>
+CREATE TABLE farm (
+    farm_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(30) NOT NULL,
+    has_same_hw     BOOLEAN NOT NULL DEFAULT 0,
+    has_same_sw     BOOLEAN NOT NULL DEFAULT 0,
+    descr           TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Group of machines with same HW, SW or both configurations working in farm. Tag: machine.';
+</source>
+
+==== Table project ====
+<source lang=sql>
+CREATE TABLE project (
+    project_id  INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(255) NOT NULL,
+    url         VARCHAR(255) NOT NULL,
+    descr       TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Project. Tag: project.';
+</source>
+
+==== Table rep ====
+<source lang=sql>
+CREATE TABLE rep (
+    rep_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    project_id      INT UNSIGNED NOT NULL,
+    name            VARCHAR(255) NOT NULL,
+    repo_url        VARCHAR(255) NOT NULL,
+    github_url      VARCHAR(255) NOT NULL,
+    descr           TEXT DEFAULT NULL COMMENT 'Description.',
+    active          BOOLEAN NOT NULL DEFAULT 1 COMMENT '1 .. repository is active, 0 .. old (deprecated) repository',
+    CONSTRAINT fk_rep_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),
+    UNIQUE KEY unique_rep_id_path (rep_id, path)
+) TYPE=InnoDB COMMENT='Project repository. Each project can has only one active repository. Tag: project.';
+</source>
+
+==== Table sha ====
+<source lang=sql>
+CREATE TABLE sha (
+    sha_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    sha       VARCHAR(40),
+    INDEX i_sha (sha)
+) TYPE=InnoDB COMMENT='All checksums. Tag: project.';
+</source>
+
+==== Table rauthor ====
+<source lang=sql>
+CREATE TABLE rauthor (
+    rauthor_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    rep_id          INT UNSIGNED NOT NULL,
+    rep_login       VARCHAR(255) DEFAULT NULL COMMENT 'Can be null (see Parrot rev 1346 created by cvs2svn).',
+    email           VARCHAR(255) DEFAULT NULL,
+    user_id         INT UNSIGNED DEFAULT NULL COMMENT 'Some authors has TapTinder user_id too.',
+    INDEX i_rep_id (rep_id),
+    INDEX i_rep_login (rep_login),
+    INDEX i_user_id (user_id),
+    CONSTRAINT fk_user_rep_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
+    CONSTRAINT fk_user_rep_user_id FOREIGN KEY (user_id) REFERENCES user (user_id)
+) TYPE=InnoDB COMMENT='Repository authors. Some authors are also users. Tag: project.';
+</source>
+
+==== Table rcommit ====
+<source lang=sql>
+CREATE TABLE rcommit (
+    rcommit_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    rep_id          INT UNSIGNED NOT NULL,
+    sha_id          INT UNSIGNED NOT NULL,
+    tree_id	        INT UNSIGNED NOT NULL,
+    parents_num	    INT UNSIGNED NOT NULL,
+    parent_id       INT UNSIGNED DEFAULT NULL,
+    author_id       INT UNSIGNED NOT NULL,
+    author_time     DATETIME NOT NULL,
+    committer_id    INT UNSIGNED NOT NULL,
+    committer_time  DATETIME NOT NULL,
+    msg             TEXT,
+    CONSTRAINT fk_rcommit_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
+    CONSTRAINT fk_rcommit_sha_id FOREIGN KEY (sha_id) REFERENCES sha (sha_id),
+    CONSTRAINT fk_rcommit_tree_id FOREIGN KEY (tree_id) REFERENCES sha (sha_id),
+    CONSTRAINT fk_rcommit_parent_id FOREIGN KEY (parent_id) REFERENCES rcommit (rcommit_id),
+    CONSTRAINT fk_rcommit_author_id FOREIGN KEY (author_id) REFERENCES rauthor (rauthor_id),
+    CONSTRAINT fk_rcommit_committer_id FOREIGN KEY (committer_id) REFERENCES rauthor (rauthor_id)
+) TYPE=InnoDB COMMENT='Commit info. Tag: project.';
+</source>
+
+==== Table rcparent ====
+<source lang=sql>
+CREATE TABLE rcparent (
+    rcparent_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    child_id        INT UNSIGNED NOT NULL,
+    parent_id       INT UNSIGNED NOT NULL,
+    num             INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_rcparent_child_id FOREIGN KEY (child_id) REFERENCES rcommit (rcommit_id),
+    CONSTRAINT fk_rcparent_parent_id FOREIGN KEY (parent_id) REFERENCES rcommit (rcommit_id)
+) TYPE=InnoDB COMMENT='Other parents of merge commits. Tag: project.';
+</source>
+
+==== Table rref ====
+<source lang=sql>
+CREATE TABLE rref (
+    rref_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(500) NOT NULL,
+    fullname        VARCHAR(500) NOT NULL,
+    rcommit_id      INT UNSIGNED NOT NULL,
+    active          BOOLEAN NOT NULL DEFAULT 1,
+    INDEX i_rep_id (rep_id),
+    INDEX i_name (name),
+    CONSTRAINT fk_rref_rcommit_id FOREIGN KEY (rcommit_id) REFERENCES rcommit (rcommit_id)
+) TYPE=InnoDB COMMENT='Repository referencies. Tag: project.';
+</source>
+
+ ToDo
+   add 'rtag_id' and 'rtag' table
+
+==== Table rref_rcommit ====
+<source lang=sql>
+CREATE TABLE rref_rcommit (
+    rref_id         INT UNSIGNED NOT NULL,
+    rcommit_id      INT UNSIGNED NOT NULL,
+    INDEX i_rref_id (rref_id),
+    UNIQUE KEY primary (rref_id, rcommit_id),
+    CONSTRAINT fk_rref_rcommit_rref_id FOREIGN KEY (rref_id) REFERENCES rref (rref_id),
+    CONSTRAINT fk_rref_rcommit_rcommit_id FOREIGN KEY (rcommit_id) REFERENCES rcommit (rcommit_id)
+) TYPE=InnoDB COMMENT='Repository referencies to rcommits mapping. Cache for last 500 rcommit in each rref. Tag: project.';
+</source>
+
+==== Table rfile ====
+<source lang=sql>
+CREATE TABLE rfile (
+    rfile_id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    rcommit_id      INT UNSIGNED NOT NULL,
+    rpath_id        INT UNSIGNED NOT NULL,
+    INDEX i_rcommit_id (rcommit_id),
+    CONSTRAINT fk_rfile_rcommit_id FOREIGN KEY (rcommit_id) REFERENCES rcommit (rcommit_id),
+    CONSTRAINT fk_rfile_rpath_id FOREIGN KEY (rpath_id) REFERENCES rpath (rpath_id)
+) TYPE=InnoDB COMMENT='Files in repository path. Tag: rfile.';
+</source>
+
+==== Table rpath ====
+<source lang=sql>
+CREATE TABLE rpath (
+    rpath_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    path        VARCHAR(1000) NOT NULL,
+    INDEX i_path (path)
+) TYPE=InnoDB COMMENT='All file paths in repositories. Tag: rfile.';
+</source>
+
+==== Table job ====
+<source lang=sql>
+CREATE TABLE job (
+    job_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    client_min_ver  VARCHAR(40),
+    priority        INT UNSIGNED NOT NULL DEFAULT 1,
+    name            VARCHAR(25),
+    descr           TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Job table can contain one part or more related parts. Tag: jobs.';
+</source>
+
+==== Table jobp ====
+<source lang=sql>
+CREATE TABLE jobp (
+    jobp_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    job_id          INT UNSIGNED NOT NULL,
+    project_id      INT UNSIGNED DEFAULT NULL,
+    rorder          INT UNSIGNED NOT NULL,
+    name            VARCHAR(25),
+    descr           TEXT DEFAULT NULL COMMENT 'Description.',
+    max_age         INT UNSIGNED DEFAULT NULL COMMENT 'Maximal commit age in hours.',
+    depends_on_id   INT UNSIGNED DEFAULT NULL COMMENT 'Depends on jobp.jobp_id. Job part (jobp_id) can not start if jobp.depends_on_id does not finished ok.',
+    extends         BOOLEAN NOT NULL DEFAULT 0 COMMENT 'Default 0. 1 if this part extends part defined in depends_on_id.',
+    INDEX i_job_id (job_id),
+    INDEX i_project_id (project_id),
+    CONSTRAINT fk_jobp_job_id FOREIGN KEY (job_id) REFERENCES job (job_id),
+    CONSTRAINT fk_jobp_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),
+    CONSTRAINT fk_jobp_depedns_on_id FOREIGN KEY (depends_on_id) REFERENCES jobp (jobp_id)
+) TYPE=InnoDB COMMENT='Job part. Tag: jobs.';
+</source>
+
+==== Table cmd ====
+<source lang=sql>
+CREATE TABLE cmd (
+    cmd_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(25),
+    descr       TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Possible commands to run on clients. Tag: jobs.';
+</source>
+
+Client should known what to run for each cmd_id. E.g. 1 (perlconf) means run 'perl Configure.pl' or 'perl.exe Configure.pl' (under win32). Server shoul know, which params client needs.
+
+==== Table jobp_cmd ====
+<source lang=sql>
+CREATE TABLE jobp_cmd (
+    jobp_cmd_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    jobp_id         INT UNSIGNED NOT NULL,
+    rorder          INT UNSIGNED NOT NULL,
+    cmd_id          INT UNSIGNED NOT NULL,
+    params          TEXT,
+    INDEX i_jobp_id (jobp_id),
+    CONSTRAINT fk_jobp_cmd_jobp_id FOREIGN KEY (jobp_id) REFERENCES jobp (jobp_id),
+    CONSTRAINT fk_jobp_cmd_cmd_id FOREIGN KEY (cmd_id) REFERENCES cmd (cmd_id)
+) TYPE=InnoDB COMMENT='Job part command. Tag: jobs.';
+</source>
+
+==== Table wconf_session ====
+<source lang=sql>
+CREATE TABLE wconf_session (
+    wconf_session_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    machine_id          INT UNSIGNED NOT NULL,
+    processes_num       INT UNSIGNED NOT NULL,
+    INDEX i_machine_id (machine_id),
+    CONSTRAINT fk_wconf_session_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id)
+) TYPE=InnoDB COMMENT='Machine session configuration. Tag: wconfA.';
+</source>
+
+==== Table wconf_job ====
+<source lang=sql>
+CREATE TABLE wconf_job (
+    wconf_job_id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    wconf_session_id    INT UNSIGNED NOT NULL,
+    rep_id              INT UNSIGNED NOT NULL,
+    rref_id             INT UNSIGNED DEFAULT NULL,
+    job_id              INT UNSIGNED DEFAULT NULL,
+    priority            INT UNSIGNED NOT NULL DEFAULT 1,
+    INDEX i_wconf_session_id (wconf_session_id),
+    CONSTRAINT fk_wconf_job_wconf_session_id FOREIGN KEY (wconf_session_id) REFERENCES wconf_session (wconf_session_id),
+    CONSTRAINT fk_wconf_job_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
+    CONSTRAINT fk_wconf_job_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
+    CONSTRAINT fk_wconf_job_rref_id FOREIGN KEY (rref_id) REFERENCES rref (rref_id),
+    CONSTRAINT fk_wconf_job_job_id FOREIGN KEY (job_id) REFERENCES job (job_id)
+) TYPE=InnoDB COMMENT='Machine jobs configuration. Tag: wconfA.';
+</source>
+
+Defined project_id is the most general config. Defined job_id the most specific config.
+
+==== Table wconf_rref ====
+<source lang=sql>
+CREATE TABLE wconf_rref (
+    wconf_rref_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    rref_id         INT UNSIGNED NOT NULL,
+    priority        INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_wconf_rref_id FOREIGN KEY (rref_id) REFERENCES rref (rref_id)
+) TYPE=InnoDB COMMENT='Repository refs priorities. Tag: wconfB';
+</source>
+
+==== Table msession (ms) ====
+<source lang=sql>
+CREATE TABLE msession (
+    msession_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    machine_id          INT UNSIGNED NOT NULL,
+    client_rev          VARCHAR(21) NOT NULL COMMENT 'Client revision.',
+    pid                 INT UNSIGNED DEFAULT NULL COMMENT 'System process id on machine.',
+    watchdog_pid        INT UNSIGNED DEFAULT NULL COMMENT 'Watchdog process id on machine.',
+    start_time          DATETIME NOT NULL COMMENT 'Time when machine session was started.',
+    end_time            DATETIME DEFAULT NULL COMMENT 'Time when machine session ended.',
+    abort_reason_id     INT UNSIGNED DEFAULT NULL COMMENT 'FK to msession_abort_reason if exists.',
+    INDEX i_machine_id (machine_id),
+    CONSTRAINT fk_msession_machine_id FOREIGN KEY (machine_id) REFERENCES machine (machine_id),
+    CONSTRAINT fk_msession_abort_reason_id FOREIGN KEY (abort_reason_id) REFERENCES msabort_reason (msabort_reason_id)
+) TYPE=InnoDB COMMENT='Machine session. Each machine should run obly one session at a time. Tag: machine_sessions.';
+</source>
+
+==== Table msproc ====
+<source lang=sql>
+CREATE TABLE msproc (
+    msproc_id           INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msession_id         INT UNSIGNED NOT NULL,
+    start_time          DATETIME NOT NULL COMMENT 'Time when machine job was created.',
+    end_time            DATETIME DEFAULT NULL COMMENT 'Time when machine job ended.',
+    pid                 INT UNSIGNED DEFAULT NULL,
+    abort_reason_id     INT UNSIGNED DEFAULT NULL COMMENT 'FK to msproc_abort_reason if exists.',
+    INDEX i_msession_id (msession_id),
+    CONSTRAINT fk_msjob_msession_id FOREIGN KEY (msession_id) REFERENCES msession (msession_id),
+    CONSTRAINT fk_msproc_abort_reason_id FOREIGN KEY (abort_reason_id) REFERENCES msproc_abort_reason (msproc_abort_reason_id)
+) TYPE=InnoDB COMMENT='Machine session process. Tag: machine_sessions.';
+</source>
+
+==== Table msjob ====
+<source lang=sql>
+CREATE TABLE msjob (
+    msjob_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msproc_id           INT UNSIGNED NOT NULL,
+    job_id              INT UNSIGNED NOT NULL,
+    start_time          DATETIME NOT NULL COMMENT 'Time when machine job was created.',
+    end_time            DATETIME DEFAULT NULL COMMENT 'Time when machine job ended.',
+    pid                 INT UNSIGNED DEFAULT NULL,
+    INDEX i_msproc_id (msproc_id),
+    INDEX i_job_id (job_id),
+    CONSTRAINT fk_msjob_msproc_id FOREIGN KEY (msproc_id) REFERENCES msproc (msproc_id),
+    CONSTRAINT fk_msjob_job_id FOREIGN KEY (job_id) REFERENCES job (job_id)
+) TYPE=InnoDB COMMENT='Machine session job part. Tag: machine_sessions.';
+</source>
+
+Abort reason is determined by msession.
+
+==== Table msjobp ====
+<source lang=sql>
+CREATE TABLE msjobp (
+    msjobp_id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msjob_id        INT UNSIGNED NOT NULL,
+    jobp_id         INT UNSIGNED NOT NULL,
+    rcommit_id      INT UNSIGNED NOT NULL,
+    start_time      DATETIME NOT NULL COMMENT 'Time when machine job part was created.',
+    end_time        DATETIME DEFAULT NULL COMMENT 'Time when machine job part ended.',
+    INDEX i_msjob_id (msjob_id),
+    INDEX i_jobp_id (jobp_id),
+    INDEX i_rcommit_id (rcommit_id),
+    CONSTRAINT fk_msjobp_msjob_id FOREIGN KEY (msjob_id) REFERENCES msjob (msjob_id),
+    CONSTRAINT fk_msjobp_jobp_id FOREIGN KEY (jobp_id) REFERENCES jobp (jobp_id),
+    CONSTRAINT fk_msjobp_rcommit_id FOREIGN KEY (rcommit_id) REFERENCES rcommit (rcommit_id)
+) TYPE=InnoDB COMMENT='Machine session job part. Tag: machine_sessions.';
+</source>
+
+==== Table cmd_status ====
+<source lang=sql>
+CREATE TABLE cmd_status (
+    cmd_status_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(25),
+    descr           TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Command status. Tag: machine_sessions.';
+</source>
+
+Values:
+* 1 .. created -- created in DB, not started yet
+* 2 .. running
+* 3 .. paused -- paused by user
+* 4 .. ok -- finished ok
+* 5 .. stopped
+* 6 .. killed -- killed by watchdog
+* 7 .. error -- finished with error
+
+==== Table msjobp_cmd ====
+<source lang=sql>
+CREATE TABLE msjobp_cmd (
+    msjobp_cmd_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msjobp_id       INT UNSIGNED NOT NULL,
+    jobp_cmd_id     INT UNSIGNED NOT NULL,
+    status_id       INT UNSIGNED NOT NULL,
+    pid             INT UNSIGNED DEFAULT NULL,
+    start_time      DATETIME NOT NULL COMMENT  'Time when machine job part command was created.',
+    end_time        DATETIME DEFAULT NULL COMMENT 'Time when machine job part command ended.',
+    output_id       INT UNSIGNED DEFAULT NULL COMMENT 'Command output (stderr and stdout, .txt file).',
+    outdata_id      INT UNSIGNED DEFAULT NULL COMMENT 'Command data output (one .tar.gz file).',
+    INDEX i_msjobp_id (msjobp_id),
+    INDEX i_jobp_cmd_id (jobp_cmd_id),
+    CONSTRAINT fk_msjobp_cmd_msjobp_id FOREIGN KEY (msjobp_id) REFERENCES msjobp (msjobp_id),
+    CONSTRAINT fk_msjobp_cmd_jobp_cmd_id FOREIGN KEY (jobp_cmd_id) REFERENCES jobp_cmd (jobp_cmd_id),
+    CONSTRAINT fk_msjobp_cmd_job_status_id FOREIGN KEY (status_id) REFERENCES cmd_status (cmd_status_id),
+    CONSTRAINT fk_msjobp_cmd_output_id FOREIGN KEY (output_id) REFERENCES fsfile (fsfile_id),
+    CONSTRAINT fk_msjobp_cmd_outdata_id FOREIGN KEY (outdata_id) REFERENCES fsfile (fsfile_id)
+) TYPE=InnoDB COMMENT='Machine session job part command. Tag: machine_sessions.';
+</source>
+
+==== Table mslog ====
+<source lang=sql>
+CREATE TABLE mslog (
+    mslog_id                INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msession_id             INT UNSIGNED NOT NULL,
+    msstatus_id             INT UNSIGNED NOT NULL COMMENT 'Value os msstatus_id could stay same (waiting for new job) but attempt_number is increased each time.',
+    attempt_number          INT UNSIGNED DEFAULT 1,
+    change_time             DATETIME NOT NULL COMMENT 'Time when machine change msession state to this status_id.',
+    estimated_finish_time   DATETIME DEFAULT NULL COMMENT 'Time when machine will probably change msession status again.',
+    INDEX i_msession_id (msession_id),
+    CONSTRAINT fk_mslog_msession_id FOREIGN KEY (msession_id) REFERENCES msession (msession_id),
+    CONSTRAINT fk_mslog_msstatus_id FOREIGN KEY (msstatus_id) REFERENCES msstatus (msstatus_id)
+) TYPE=InnoDB COMMENT='Machine session log. Tag: machine_sessions.';
+</source>
+
+Could be part of msession table, but separate table is better for logging (and log cleaning).
+
+==== Table msstatus ====
+<source lang=sql>
+CREATE TABLE msstatus (
+    msstatus_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(25),
+    descr           TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Machine session status messages. Tag: machine_sessions.';
+</source>
+
+Values:
+* 1 .. unknown status
+* 2 .. msession just created
+* 3 .. msession running
+* 4 .. paused by user
+* 5 .. stop by user
+* 6 .. paused by user - refresh
+* 7 .. stop by web server -- see also msabort_reason table
+* 8 .. stop by anything else
+
+==== Table msabort_reason ====
+<source lang=sql>
+CREATE TABLE msabort_reason (
+    msabort_reason_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(25),
+    descr               TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Machine session abort reason. Tag: machine_sessions.';
+</source>
+
+Values:
+* 1 .. unknown reason
+* 2 .. deprecated client revision
+* 3 .. machine was disabled
+* 4 .. bad client behavior
+* 5 .. iterrupted by user
+
+==== Table mswatch_log ====
+<source lang=sql>
+CREATE TABLE mswatch_log (
+    mswatch_log_id          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msession_id             INT UNSIGNED NOT NULL,
+    pid                     INT UNSIGNED NOT NULL COMMENT 'PID of killed process.',
+    last_activity_time      DATETIME NOT NULL COMMENT 'When process was last active.',
+    kill_time               DATETIME NOT NULL COMMENT 'Time when process was killed.',
+    CONSTRAINT fk_mswatch_log_msession_id FOREIGN KEY (msession_id) REFERENCES msession (msession_id)
+) TYPE=InnoDB COMMENT='Machine session watchdog log. Tag: machine_sessions.';
+</source>
+
+==== Table msproc_log ====
+<source lang=sql>
+CREATE TABLE msproc_log (
+    msproc_log_id           INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msproc_id               INT UNSIGNED NOT NULL,
+    msproc_status_id        INT UNSIGNED NOT NULL,
+    attempt_number          INT UNSIGNED DEFAULT 1,
+    change_time             DATETIME NOT NULL COMMENT 'Time when machine process change state to this status_id.',
+    estimated_finish_time   DATETIME DEFAULT NULL COMMENT 'Time when machine process will probably change status again.',
+    INDEX i_msproc_id (msproc_id),
+    CONSTRAINT fk_mslog_msproc_id FOREIGN KEY (msproc_id) REFERENCES msproc (msproc_id),
+    CONSTRAINT fk_mslog_msproc_status_id FOREIGN KEY (msproc_status_id) REFERENCES msproc_status (msproc_status_id)
+) TYPE=InnoDB COMMENT='Machine session log. Tag: machine_sessions.';
+</source>
+
+==== Table msproc_status ====
+<source lang=sql>
+CREATE TABLE msproc_status (
+    msproc_status_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(25),
+    descr               TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Machine session process status messages. Tag: machine_sessions.';
+</source>
+
+Values:
+* 1 .. unknown status
+* 2 .. msproc just created
+* 3 .. waiting for new job
+* 4 .. command preparation
+* 5 .. running command
+* 6 .. killed by watchdog
+* 7 .. see msession status
+
+==== Table msproc_abort_reason ====
+<source lang=sql>
+CREATE TABLE msproc_abort_reason (
+    msproc_abort_reason_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                        VARCHAR(25),
+    descr                       TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Machine session process abort reason. Tag: machine_sessions.';
+</source>
+
+Values:
+* 1 .. unknown reason
+* 2 .. killed by watchdog
+* 3 .. session ended
+
+==== Table trun_status ====
+<source lang=sql>
+CREATE TABLE trun_status (
+    trun_status_id      INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(25),
+    descr               TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Test run loading status. Tag: test_runs.';
+</source>
+
+==== Table wui_project ====
+<source lang=sql>
+CREATE TABLE wui_project (
+    wui_project_id  INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    project_id      INT UNSIGNED NOT NULL,
+    wui_order INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_wui_project_project_id FOREIGN KEY (project_id) REFERENCES project (project_id)
+) TYPE=InnoDB COMMENT='Web UI project configuration. Tag: wui.';
+</source>
+
+==== Table wui_rref ====
+<source lang=sql>
+CREATE TABLE wui_rref (
+    wui_rref_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    rref_id         INT UNSIGNED NOT NULL,
+    wui_order INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_wui_rref_id FOREIGN KEY (rref_id) REFERENCES rref (rref_id)
+) TYPE=InnoDB COMMENT='Web UI branch configuration. Tag: wui.';
+</source>
+
+==== Table wui_build ====
+<source lang=sql>
+CREATE TABLE wui_build (
+    wui_build_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    project_id      INT UNSIGNED NOT NULL,
+    jobp_id         INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_wui_build_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),
+    CONSTRAINT fk_wui_build_jobp_id FOREIGN KEY (jobp_id) REFERENCES jobp (jobp_id)
+) TYPE=InnoDB COMMENT='Web UI BuildStatus configuration. Tag: wui.';
+</source>
+
+==== Table wui_test ====
+<source lang=sql>
+CREATE TABLE wui_test (
+    wui_test_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    project_id      INT UNSIGNED NOT NULL,
+    jobp_id         INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_wui_test_project_id FOREIGN KEY (project_id) REFERENCES project (project_id),
+    CONSTRAINT fk_wui_test_jobp_id FOREIGN KEY (jobp_id) REFERENCES jobp (jobp_id)
+) TYPE=InnoDB COMMENT='Web UI TestReport configuration. Tag: wui.';
+</source>
+
+==== Table trun ====
+<source lang=sql>
+CREATE TABLE trun (
+    trun_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msjobp_cmd_id   INT UNSIGNED NOT NULL,
+    trun_status_id  INT UNSIGNED NOT NULL,
+    parse_errors    INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
+    not_seen        INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
+    failed          INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
+    todo            INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
+    skip            INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
+    bonus           INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
+    ok              INT UNSIGNED NOT NULL COMMENT 'Table ttest sum cache.',
+    INDEX i_msjobp_cmd_id (msjobp_cmd_id),
+    CONSTRAINT fk_trun_trun_status_id FOREIGN KEY (trun_status_id) REFERENCES trun_status (trun_status_id),
+    CONSTRAINT fk_trun_msjobp_cmd_id FOREIGN KEY (msjobp_cmd_id) REFERENCES msjobp_cmd (msjobp_cmd_id)
+) TYPE=InnoDB COMMENT='Test run info and test run statistics (cache). Tag: test_runs.';
+</source>
+
+==== Table tskipall_msg ====
+<source lang=sql>
+CREATE TABLE tskipall_msg (
+    tskipall_msg_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msg                 TEXT,
+    hash                CHAR(30) NOT NULL,
+    INDEX i_hash (hash)
+) TYPE=InnoDB COMMENT='Reasons to skipp all tests. Tag: test_runs.';
+</source>
+
+==== Table tfile ====
+<source lang=sql>
+CREATE TABLE tfile (
+    tfile_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    trun_id             INT UNSIGNED NOT NULL,
+    rfile_id            INT UNSIGNED NOT NULL,
+    all_passed          BOOLEAN NOT NULL DEFAULT 0 COMMENT 'In Harness::Straps max == seen == ok.',
+    tskipall_msg_id     INT UNSIGNED DEFAULT NULL,
+    hang                BOOLEAN DEFAULT 0 COMMENT 'One if test hang and was killed.',
+    INDEX i_trun_id (trun_id),
+    CONSTRAINT fk_tfile_trun_id FOREIGN KEY (trun_id) REFERENCES trun (trun_id),
+    CONSTRAINT fk_tfile_rfile_id FOREIGN KEY (rfile_id) REFERENCES rfile (rfile_id),
+    CONSTRAINT fk_tfile_tskipall_msg_id FOREIGN KEY (tskipall_msg_id) REFERENCES tskipall_msg (tskipall_msg_id)
+) TYPE=InnoDB COMMENT='Test file summary results. Summary result for all tests in file. All_passed is shortcup to data test. Tag: test_runs.';
+</source>
+
+==== Table trest ====
+<source lang=sql>
+CREATE TABLE trest (
+    trest_id    INT UNSIGNED NOT NULL PRIMARY KEY,
+    name        VARCHAR(25),
+    descr       TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='Test result info. Tag: test_runs.';
+</source>
+
+Values:
+* 1 .. not seen
+* 2 .. failed
+* 3 .. unknown
+* 4 .. todo
+* 5 .. bonus -- unexpectedly succeeded
+* 6 .. skip
+* 7 .. ok
+
+==== Table rtest ====
+<source lang=sql>
+CREATE TABLE rtest (
+    rtest_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    rfile_id            INT UNSIGNED NOT NULL,
+    number              INT UNSIGNED NOT NULL COMMENT 'Test number in rfile.',
+    name                VARCHAR(255) NOT NULL COMMENT 'First inserted name of the test (if any and not empty).',
+    has_another_name    BOOLEAN NOT NULL DEFAULT 0 COMMENT 'One if another name was found.',
+    INDEX i_rfile_id (rfile_id),
+    INDEX i_rfile_id_number (rfile_id, number),
+    CONSTRAINT fk_rtest_rfile_id FOREIGN KEY (rfile_id) REFERENCES rfile (rfile_id)
+) TYPE=InnoDB COMMENT='Number and name of the test. Each rfile can contains many tests. Repository file gets new id after each file change. Tag: test_runs.';
+</source>
+
+==== Table ttest ====
+<source lang=sql>
+CREATE TABLE ttest (
+    ttest_id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    trun_id         INT UNSIGNED NOT NULL,
+    rtest_id     INT UNSIGNED NOT NULL,
+    trest_id        INT UNSIGNED NOT NULL,
+    INDEX i_rtest_id (rtest_id),
+    INDEX i_trun_id (trun_id),
+    INDEX i_trest_id (trest_id),
+    CONSTRAINT fk_ttest_trun_id FOREIGN KEY (trun_id) REFERENCES trun (trun_id),
+    CONSTRAINT fk_ttest_rtest_id FOREIGN KEY (rtest_id) REFERENCES rtest (rtest_id),
+    CONSTRAINT fk_ttest_trest_id FOREIGN KEY (trest_id) REFERENCES trest (trest_id)
+) TYPE=InnoDB COMMENT='Test results for each test (test case, subtest) submitted in trun. Tag: test_runs.';
+</source>
+
+==== Table tdiag_msg ====
+<source lang=sql>
+CREATE TABLE tdiag_msg (
+    tdiag_msg_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    ttest_id        INT UNSIGNED NOT NULL,
+    msg             TEXT,
+    hash            CHAR(30) NOT NULL,
+    INDEX i_ttest_id (ttest_id),
+    INDEX i_hash (hash),
+    CONSTRAINT fk_tdiag_msg_ttest_id FOREIGN KEY (ttest_id) REFERENCES ttest (ttest_id)
+) TYPE=InnoDB COMMENT='Diagnostic messages. Tag: test_runs.';
+</source>
+
+==== Table brun_conf ====
+<source lang=sql>
+CREATE TABLE brun_conf (
+    brun_conf_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    hash            CHAR(30) NOT NULL,
+    args            VARCHAR(255) DEFAULT NULL,
+    alias_conf_id   INT UNSIGNED DEFAULT NULL COMMENT 'Another conf with the same semantics, but different syntax.',
+    INDEX i_hash (hash),
+    CONSTRAINT fk_brun_conf_alias_conf_id FOREIGN KEY (alias_conf_id) REFERENCES brun_conf (brun_conf_id)
+) TYPE=InnoDB COMMENT='Benchmark run. Tag: benchmark_runs.';
+</source>
+
+==== Table brun ====
+<source lang=sql>
+CREATE TABLE brun (
+    brun_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    msjobp_cmd_id   INT UNSIGNED NOT NULL,
+    conf_id         INT UNSIGNED NOT NULL,
+    INDEX i_msjobp_cmd_id (msjobp_cmd_id),
+    INDEX i_conf_id (conf_id),
+    CONSTRAINT fk_brun_msjobp_cmd_id FOREIGN KEY (msjobp_cmd_id) REFERENCES msjobp_cmd (msjobp_cmd_id),
+    CONSTRAINT fk_brun_conf_id FOREIGN KEY (conf_id) REFERENCES brun_conf (brun_conf_id)
+) TYPE=InnoDB COMMENT='Benchmark runs. Tag: benchmark_runs.';
+</source>
+
+==== Table bfile ====
+<source lang=sql>
+CREATE TABLE bfile (
+    bfile_id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    brun_id             INT UNSIGNED NOT NULL,
+    rfile_id            INT UNSIGNED NOT NULL,
+    run_time            INT UNSIGNED DEFAULT NULL,
+    hang                BOOLEAN DEFAULT 0 COMMENT 'If test hang and was killed.',
+    INDEX i_brun_id (brun_id),
+    CONSTRAINT fk_bfile_brun_id FOREIGN KEY (brun_id) REFERENCES brun (brun_id),
+    CONSTRAINT fk_bfile_rfile_id FOREIGN KEY (rfile_id) REFERENCES rfile (rfile_id)
+) TYPE=InnoDB COMMENT='Bench file results. Tag: benchmark_runs.';
+</source>
+
+==== Table fspath ====
+<source lang=sql>
+CREATE TABLE fspath (
+    fspath_id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    path            VARCHAR(1023) COMMENT 'Full path from filesystem root.',
+    web_path        VARCHAR(255),
+    public          BOOLEAN DEFAULT 0,
+    created         DATETIME NOT NULL,
+    deleted         DATETIME DEFAULT NULL,
+    name            VARCHAR(25),
+    descr           TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='List of directories with files. Tag: files_paths.';
+</source>
+
+==== Table fsfile ====
+<source lang=sql>
+CREATE TABLE fsfile (
+    fsfile_id       INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    fspath_id       INT UNSIGNED NOT NULL,
+    name            VARCHAR(255),
+    size            INT UNSIGNED NOT NULL COMMENT 'File size in bytes.',
+    created         DATETIME NOT NULL,
+    deleted         DATETIME DEFAULT NULL,
+    INDEX i_fspath_id (fspath_id),
+    CONSTRAINT fk_fsfile_fspath_id FOREIGN KEY (fspath_id) REFERENCES fspath (fspath_id)
+) TYPE=InnoDB COMMENT='List of saved files. Tag: files_paths.';
+</source>
+
+==== Table fsfile_ext ====
+<source lang=sql>
+CREATE TABLE fsfile_ext (
+    fsfile_ext_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    archive_id      INT UNSIGNED NOT NULL,
+    org_name        VARCHAR(255) COMMENT 'Orginal file name inside archive.',
+    fsfile_id       INT UNSIGNED NOT NULL,
+    INDEX i_archive_id_fsfile_id (archive_id, fsfile_id),
+    CONSTRAINT fk_fsfile_ext_archive_id FOREIGN KEY (archive_id) REFERENCES fsfile (fsfile_id),
+    CONSTRAINT fk_fsfile_ext_fsfile_id FOREIGN KEY (fsfile_id) REFERENCES fsfile (fsfile_id)
+) TYPE=InnoDB COMMENT='Files extracted from another files (archives). Tag: files_paths.';
+</source>
+
+==== Table fsfile_type ====
+<source lang=sql>
+CREATE TABLE fsfile_type (
+    fsfile_type_id  INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(25),
+    descr           TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='List of file types. Used to select proper path. Tag: fspath_select.';
+</source>
+
+==== Table fspath_select ====
+<source lang=sql>
+CREATE TABLE fspath_select (
+    fspath_select_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    fsfile_type_id      INT UNSIGNED NOT NULL,
+    rep_id              INT UNSIGNED DEFAULT NULL,
+    fspath_id           INT UNSIGNED NOT NULL,
+    INDEX i_fsfile_type_id_rref_id (fsfile_type_id,rref_id),
+    CONSTRAINT fk_fspath_select_fsfile_type_id FOREIGN KEY (fsfile_type_id) REFERENCES fsfile_type (fsfile_type_id),
+    CONSTRAINT fk_fspath_select_rep_id FOREIGN KEY (rep_id) REFERENCES rep (rep_id),
+    CONSTRAINT fk_fspath_select_fspath_id FOREIGN KEY (fspath_id) REFERENCES fspath (fspath_id)
+) TYPE=InnoDB COMMENT='Default fsfile_path to save files for each rref and file_type. Tag: fspath_select.';
+</source>
+
+==== Table param_type ====
+<source lang=sql>
+CREATE TABLE param_type (
+    param_type_id   INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(20) NOT NULL,
+    descr           TEXT DEFAULT NULL COMMENT 'Description.',
+    INDEX i_name (name)
+) TYPE=InnoDB COMMENT='Types of parameters. Tag: config.';
+</source>
+
+==== Table param ====
+<source lang=sql>
+CREATE TABLE param (
+    param_id        INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    param_type_id   INT UNSIGNED NOT NULL,
+    value           VARCHAR(255) DEFAULT NULL,
+    INDEX i_name (param_type_id),
+    CONSTRAINT fk_param_param_type_id FOREIGN KEY (param_type_id) REFERENCES param_type (param_type_id)
+) TYPE=InnoDB COMMENT='Parameters values. Tag: config.';
+</source>
+
+==== Table ibot ====
+<source lang=sql>
+CREATE TABLE ibot (
+    ibot_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nick            VARCHAR(50) NOT NULL,
+    full_name       VARCHAR(255) NOT NULL,
+    server          VARCHAR(50) NOT NULL,
+    port            INT UNSIGNED NOT NULL,
+    operator_id     INT UNSIGNED NOT NULL COMMENT 'User operating the robot.',
+    CONSTRAINT fk_ibot_operator_id FOREIGN KEY (operator_id) REFERENCES user (user_id)
+) TYPE=InnoDB COMMENT='IRC bots. Tag: irc_robot.';
+</source>
+
+==== Table ichannel ====
+<source lang=sql>
+CREATE TABLE ichannel (
+    ichannel_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(50) NOT NULL
+) TYPE=InnoDB COMMENT='IRC channel. Tag: irc_robot.';
+</source>
+
+==== Table ireport_type_id ====
+<source lang=sql>
+CREATE TABLE ireport_type (
+    ireport_type_id     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(15) NOT NULL,
+    descr               TEXT DEFAULT NULL COMMENT 'Description.'
+) TYPE=InnoDB COMMENT='IRC robot report types. Tag: irc_robot.';
+</source>
+
+==== Table ichannel_conf ====
+<source lang=sql>
+CREATE TABLE ichannel_conf (
+    ichannel_conf_id    INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    ibot_id             INT UNSIGNED NOT NULL,
+    ichannel_id         INT UNSIGNED NOT NULL,
+    ireport_type_id     INT UNSIGNED NOT NULL,
+    errors_only         BOOLEAN NOT NULL DEFAULT 1,
+    jobp_cmd_id         INT UNSIGNED DEFAULT NULL,
+    max_age             INT UNSIGNED DEFAULT NULL COMMENT 'Maximal commit age in hours.',
+    CONSTRAINT fk_ichannel_conf_ibot_id FOREIGN KEY (ibot_id) REFERENCES ibot (ibot_id),
+    CONSTRAINT fk_ichannel_conf_ichannel_id FOREIGN KEY (ichannel_id) REFERENCES ichannel (ichannel_id),
+    CONSTRAINT fk_ichannel_conf_ireport_type_id FOREIGN KEY (ireport_type_id) REFERENCES ireport_type (ireport_type_id),
+    CONSTRAINT fk_ichannel_conf_jobp_cmd_id FOREIGN KEY (jobp_cmd_id) REFERENCES jobp_cmd (jobp_cmd_id)
+) TYPE=InnoDB COMMENT='IRC robot parameter values. Tag: irc_robot.';
+</source>
+
+==== Table ibot_log ====
+<source lang=sql>
+CREATE TABLE ibot_log (
+    ibot_log_id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    ibot_id             INT UNSIGNED NOT NULL,
+    ichannel_conf_id    INT UNSIGNED NOT NULL,
+    rcommit_id          INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_ibot_log_ibot_id FOREIGN KEY (ibot_id) REFERENCES ibot (ibot_id),
+    CONSTRAINT fk_ibot_log_ichannel_conf_id FOREIGN KEY (ichannel_conf_id) REFERENCES ichannel_conf (ichannel_conf_id),
+    CONSTRAINT fk_ibot_log_rcommit_id FOREIGN KEY (rcommit_id) REFERENCES rcommit (rcommit_id)
+) TYPE=InnoDB COMMENT='IRC bot log. Tag: irc_robot.';
+</source>
+
+
+=== Footer ===
+
+<source lang=sql>
+commit;
+</source>
+<!-- PARSE PART DBCREATE END -->

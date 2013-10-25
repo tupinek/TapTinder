@@ -1,0 +1,18 @@
+[% DEFAULT title = 'Login' -%]
+
+[% IF ! c.user_exists %]
+	<form action="[% c.uri_for('/user/login') %]"	method="post" accept-charset="utf-8">
+		<label for="login">Login</label>
+		<input type="text" name="login" value="" id="login"/>
+		<br/><br/>
+		<label for="password">Password</label>
+		<input type="password" name="password" value="" id="password"/>
+		<p><input type="submit" value="Login"></p>
+	</form>
+[% ELSE %]
+	<p>You are already logged in.</p>
+[% END %]
+
+<div class=nav>
+  Go to <a href="[% c.uri_for('/') %]">homepage</a>.
+</div>

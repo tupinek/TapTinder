@@ -1,5 +1,35 @@
-TapTinder is continuous integration and automated testing tool for software engineering.
+TapTinder is continuous integration and automated testing tool 
+for software engineering.
 
-See http://dev.taptinder.org
+This is TapTinder Server. 
 
-You want to help? Join irc://irc.freenode.org/taptinder
+You will also need to install TapTinder Client from 
+https://github.com/mj41/TapTinder-Client to setup something
+useful.
+
+TapTinder Server require modern Perl 5 and MySQL database on Linux
+machine. TapTinder Client require base installation of Perl 5
+on Linux/Unix, Windows, FreeBSD or MacOS machine.
+
+TapTinder is used to test Parrot and Rakudo Perl 6 related 
+projects on http://tt.taptinder.org regularly.
+
+See http://www.taptinder.org for more info.
+
+Join irc://irc.freenode.org/taptinder
+
+Clone server and client repositories
+  cd ~/ && mkdir ttdev && cd ttdev
+  git clone git://github.com/mj41/TapTinder.git tt-server
+  git clone git://github.com/mj41/TapTinder-Client.git tt-client
+
+use pod2text command to see how to setup and start server
+
+  cd ~/ttdev/tt-server
+  pod2text docs/overview.pod
+  pod2text docs/install.pod
+
+use ttclient and follow instructions
+
+  cd ~/ttdev/tt-client
+  perl ttclient.pl

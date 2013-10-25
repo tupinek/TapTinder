@@ -1,0 +1,19 @@
+[% DEFAULT title = 'User' -%]
+
+<div class=nav>
+  Go to <a href="[% c.uri_for('/') %]">homepage</a>.
+</div>
+
+<p>
+Hi [% login %][% IF is_admin %] (admin)[% END -%].
+</p>
+
+Your roles:
+<ul>
+[% FOREACH role = user.get_user_roles %]
+<li>[% role.role_id.role %]</li>
+[% END %]
+</ul>
+
+<a href="[% c.uri_for('/user/logout') %]">Logout</a>
+

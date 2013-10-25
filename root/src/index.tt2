@@ -1,0 +1,26 @@
+<br>
+
+[% FOREACH pr IN projects -%]
+<div class=mcell_row>
+ <div class=mcell>
+  <h2>[% pr.name %]</h2>
+  <div class="mcell_content">
+  [% FOREACH rr IN rref -%]
+    [% IF rr.project_id == pr.project_id %]
+      <a href="[% c.uri_for( '/buildstatus/' _ pr.name _ '/' _ rr.rref_name.replace('/','--') ) %]">[% rr.rref_name %]</a>
+      <br>
+    [% END %]
+  [% END %]
+  </div>
+ </div>
+</div>
+[% IF loop.count() % 3 == 0 %]<br style="clear:both;">[% END %]
+[% END %]
+</div>
+
+<br>
+<ul style="margin:10px; padding:5px;">
+<li><a href="/clientmonitor">Client monitor</a> - status of clients (slow)</li>
+<li><a href="/cwm">See web magic</a> - browse tables</li>
+<li><a href="/dbdoc">DBdoc</a> - database schema images</li>
+</ul>
